@@ -58,6 +58,7 @@ main() {
   run_bootstrap_mermaid_browser_warning_test
   run_ci_render_dependencies_test
   run_ci_full_gate_test
+  run_ci_candidate_acceptance_test
   run_validate_config_tests
   run_validate_yaml_loader_no_parser_test
   run_validate_metadata_file_test
