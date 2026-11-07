@@ -46,3 +46,38 @@ PY
     fi
   done
 }
+
+run_ci_full_gate_test() {
+  if python3 - "${ROOT_DIR}/.github/workflows/ci.yml" <<'PY'
+import re
+import sys
+from pathlib import Path
+
+workflow = Path(sys.argv[1]).read_text()
+inputs, jobs = workflow.split("jobs:\n", 1)
+flag = re.search(r"^      run_full_gate_macos:\n(.*?)(?=^      [\w-]+:|\Z)", inputs, re.M | re.S)
+assert flag, "Missing optional full-gate input"
+assert "default: false" in flag[1] and "type: boolean" in flag[1]
+job = re.search(r"^  full-gate-macos:\n(.*?)(?=^  [\w-]+:|\Z)", jobs, re.M | re.S)
+assert job, "Missing disposable full-gate job"
+block = job[1]
+assert re.search(r"github.event_name == 'workflow_dispatch' &&\s+inputs.run_full_gate_macos == true", block)
+assert "runs-on: macos-15" in block and "timeout-minutes: 20" in block
+assert "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1" in block
+assert "persist-credentials: false" in block
+assert 'test "$(git rev-parse HEAD)" = "$GITHUB_SHA"' in block
+assert 'mktemp -d "${RUNNER_TEMP%/}/skelepress-gate.XXXXXXXX"' in block
+for name in ("HOME", "TMPDIR", "XDG_CACHE_HOME", "NODE_COMPILE_CACHE"):
+    assert f'export {name}="${{scratch}}/' in block, name
+assert 'git -C "$TMPDIR" rev-parse --show-toplevel' in block
+assert 'test "$discovery" -eq 128' in block
+assert re.search(r"^\s+make gate$", block, re.M)
+assert block.count('test -z "$(git status --porcelain)"') == 2
+assert not re.search(r"\b(?:sudo|docker)\b|bootstrap\.sh", block)
+PY
+  then
+    pass "manual full gate uses a disposable Git-backed macOS VM without changing defaults"
+  else
+    fail "manual full gate must preserve native allocation inside a disposable Git-backed macOS VM"
+  fi
+}

@@ -168,6 +168,7 @@ CI levels:
 Workflow and manual inputs:
 
 - Workflow: `.github/workflows/ci.yml`
+- `run_full_gate_macos=true` to run the [isolated full gate](#isolated-full-gate)
 - `run_render_integration=true` to run **L2**
 - `run_render_full=true` to run **L3**
 
@@ -183,6 +184,30 @@ gh workflow run ci.yml -f run_render_full=true
 gh run list --workflow ci.yml
 gh run view --log
 ```
+
+### Isolated full gate
+
+For the complete `make gate` in a disposable hosted macOS VM, select the
+opt-in input on the branch containing the workflow:
+
+```bash
+gh workflow run ci.yml --ref <branch> -f run_full_gate_macos=true
+```
+
+The input defaults to false and does not change the existing CI levels.
+The job uses a real Git checkout: example enumeration and packaging require
+Git metadata, and packaging intentionally reads committed `HEAD`. An archive
+export is not a substitute. Temporary documentation fixtures use a fresh root
+outside the checkout so negative checks cannot inherit its Git index.
+
+The isolation boundary is the whole fresh hosted VM, not just `TMPDIR`.
+Native-default tests intentionally unset or empty `TMPDIR`; their allocations
+and the release tests' temporary checkout edits stay inside that VM. The job
+isolates home/cache directories, records the commit, tree and platform, runs
+the complete gate, and requires a clean checkout afterward. It does not install
+or publish a release, alter temporary-allocation contracts, or establish all
+release acceptance on its own. Record the exact run, head SHA and test results;
+a runner that never starts is missing evidence, not a passed check.
 
 ## Repository housekeeping
 

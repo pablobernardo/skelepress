@@ -17,6 +17,11 @@ on:
       - main
   workflow_dispatch:
     inputs:
+      run_full_gate_macos:
+        description: "Run the complete gate in a disposable macOS VM"
+        required: false
+        default: false
+        type: boolean
       run_l1_macos:
         description: "Run L1 on macOS (weekly otherwise; release evidence)"
         required: false
@@ -74,13 +79,15 @@ jobs:
     # waits on it, and it still runs every week and on demand — where a release
     # candidate dispatches it and records the result. See docs/releasing.md.
     name: L1 tests (macos-15)
-    if: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.run_l1_macos == true) }}
-    # Pinned, not `latest`. `macos-latest` moved to macOS 26 in June 2026, and the
-    # newest image is the smallest and most contended pool: a job can wait fifteen
-    # minutes and then be cancelled without ever running. What this job validates
-    # is the BSD userland and how paths resolve on macOS, not a particular version,
-    # so an established image gives the same signal and does not change under us on
-    # the next migration. Revisit when macOS 15 approaches retirement.
+    if: >-
+      ${{ github.event_name == 'schedule' ||
+          (github.event_name == 'workflow_dispatch' &&
+           inputs.run_l1_macos == true) }}
+    # Pinned, not `latest`: macos-latest moved to macOS 26 in June 2026.
+    # The newest pool is smaller: jobs can wait fifteen minutes, then fail
+    # without running. This job checks BSD tools and macOS path resolution,
+    # not a particular version. An established image gives the same signal
+    # without changing at the next migration. Revisit at macOS 15 retirement.
     runs-on: macos-15
 
     steps:
@@ -104,10 +111,58 @@ jobs:
       - name: Run L1 CLI test suite
         run: tests/run.sh
 
+  full-gate-macos:
+    name: Full gate (macos-15, manual)
+    if: >-
+      ${{ github.event_name == 'workflow_dispatch' &&
+          inputs.run_full_gate_macos == true }}
+    runs-on: macos-15
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Run complete gate in the disposable VM
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "$(git status --porcelain)"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          git rev-parse HEAD 'HEAD^{tree}'
+          sw_vers
+          uname -m
+          # Keep Git-free fixtures outside the checkout. Native-default probes
+          # may allocate elsewhere; the whole fresh job VM is their boundary.
+          scratch="$(mktemp -d "${RUNNER_TEMP%/}/skelepress-gate.XXXXXXXX")"
+          export HOME="${scratch}/home"
+          export TMPDIR="${scratch}/tmp"
+          export XDG_CACHE_HOME="${scratch}/cache"
+          export NODE_COMPILE_CACHE="${scratch}/node"
+          export PYTHONDONTWRITEBYTECODE=1 NO_UPDATE_NOTIFIER=1
+          mkdir -p "$HOME" "$TMPDIR" "$XDG_CACHE_HOME" "$NODE_COMPILE_CACHE"
+          discovery=0
+          git -C "$TMPDIR" rev-parse --show-toplevel \
+            >/dev/null 2>&1 || discovery=$?
+          test "$discovery" -eq 128
+          set +e
+          make gate
+          gate_status=$?
+          set -e
+          printf 'make_gate_exit=%s\n' "$gate_status"
+          if [[ "$gate_status" -ne 0 ]]; then
+            exit "$gate_status"
+          fi
+          test -z "$(git status --porcelain)"
+
   l2-render-integration:
     name: L2 render integration (ubuntu, optional)
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_render_integration == true }}
+    if: >-
+      ${{ github.event_name == 'workflow_dispatch' &&
+          inputs.run_render_integration == true }}
 
     steps:
       - name: Checkout
@@ -154,7 +209,10 @@ jobs:
   l3-render-full:
     name: L3 full integration (ubuntu, scheduled/manual)
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.run_render_full == true) }}
+    if: >-
+      ${{ github.event_name == 'schedule' ||
+          (github.event_name == 'workflow_dispatch' &&
+           inputs.run_render_full == true) }}
 
     steps:
       - name: Checkout
@@ -207,7 +265,9 @@ jobs:
   epub-acceptance:
     name: EPUB acceptance (ubuntu, manual)
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_epub_acceptance == true }}
+    if: >-
+      ${{ github.event_name == 'workflow_dispatch' &&
+          inputs.run_epub_acceptance == true }}
 
     steps:
       - name: Checkout
@@ -252,7 +312,8 @@ jobs:
           status=0
           for publication in examples/.output/*/*.epub; do
             echo "::group::$(basename "$publication")"
-            java -jar epubcheck-5.4.0/epubcheck.jar "$publication" --locale en || status=1
+            java -jar epubcheck-5.4.0/epubcheck.jar \
+              "$publication" --locale en || status=1
             echo "::endgroup::"
           done
           exit "$status"
