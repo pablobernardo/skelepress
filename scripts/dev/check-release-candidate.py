@@ -5,7 +5,6 @@ from __future__ import annotations
 import argparse
 import functools
 import hashlib
-import http.client
 import http.server
 import io
 import json
@@ -39,20 +38,24 @@ def fetch(url):
         require(parsed.scheme == "https" and not parsed.username and not parsed.password
                 and parsed.port in (None, 443) and (host in ("api.github.com", "github.com")
                 or host.endswith(".githubusercontent.com")), "Release download escaped permitted HTTPS hosts")
-        connection = http.client.HTTPSConnection(host, timeout=120)
-        try:
-            connection.request("GET", parsed.path + ("?" + parsed.query if parsed.query else ""),
-                               headers={"User-Agent": "skelepress-candidate-acceptance"})
-            response = connection.getresponse()
-            if response.status in (301, 302, 303, 307, 308):
-                location = response.getheader("Location")
+        # Use the installer's existing TLS client; never disable certificate checks
+        # or follow redirects before validating the next HTTPS destination.
+        with tempfile.TemporaryDirectory(prefix="skelepress-download-") as temporary:
+            body = Path(temporary) / "body"
+            response = subprocess.run(
+                ["curl", "--disable", "--fail", "--silent", "--show-error", "--globoff",
+                 "--proto", "=https", "--proto-redir", "=https", "--tlsv1.2", "--max-time", "120",
+                 "--user-agent", "skelepress-candidate-acceptance", "--output", str(body),
+                 "--write-out", "%{http_code}\\n%{redirect_url}", url],
+                capture_output=True, text=True, timeout=130)
+            require(response.returncode == 0, f"Release download failed: curl exit {response.returncode}: {response.stderr}")
+            status, _, location = response.stdout.partition("\n")
+            if status in ("301", "302", "303", "307", "308"):
                 require(bool(location), "Release redirect has no location")
                 url = urljoin(url, location)
                 continue
-            require(response.status == 200, f"Release download failed: HTTP {response.status}")
-            return response.read()
-        finally:
-            connection.close()
+            require(status == "200", f"Release download failed: HTTP {status}")
+            return body.read_bytes()
     raise RuntimeError("Too many release download redirects")
 
 
