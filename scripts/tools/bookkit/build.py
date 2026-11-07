@@ -354,6 +354,7 @@ def merge_defaults(manifest: dict, defaults: dict) -> dict:
         "publisher",
         "rights",
         "language",
+        "running_headers",
         "toc_separators",
         "toc_labels",
     )
@@ -540,6 +541,10 @@ def emit_config(
             # The book template receives \chapter for top-level headings through
             # the contract instead of a \let heading shift in the template.
             "  top_level_division: chapter",
+            # Emit only declared/inherited values: absent manifests keep their
+            # previous generated configuration, while explicit false survives.
+            *([f"  running_headers: {str(manifest['running_headers']).lower()}"]
+              if "running_headers" in manifest else []),
             f"  template: {quoted(template if is_bare_name(template) else relpath(Path(template), volume_dir))}",
             "  resource_path:",
             # Assets a chapter references resolve from the volume root, which is

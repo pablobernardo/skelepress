@@ -200,6 +200,26 @@ $endif$
 \renewcommand\mainmatter{\clearpage\@mainmattertrue\pagenumbering{arabic}}
 \makeatother
 
+$if(running-headers)$
+% ---- Opt-in book/chapter running headers ----
+% Fixed regions leave an 8% gutter. breakall also bounds a single long word;
+% only the repeated header is abbreviated, never the source title or heading.
+\usepackage[breakall,fit]{truncate}
+\fancyhead{}
+\fancyhead[L]{\fontsize{8}{10}\selectfont\itshape\truncate{0.46\textwidth}{$if(title)$$title$$endif$}}
+\fancyhead[R]{\fontsize{8}{10}\selectfont\itshape\truncate{0.46\textwidth}{\nouppercase{\leftmark}}}
+\renewcommand{\sectionmark}[1]{}
+% Wrap after hyperref and all class setup. Set the mark after the chapter's
+% page break, for both numbered and starred chapters; plain keeps its footer.
+\let\RunningHeaderChapter\chapter
+\RenewDocumentCommand{\chapter}{s o m}{%
+  \IfBooleanTF{#1}{\RunningHeaderChapter*{#3}}{%
+    \IfNoValueTF{#2}{\RunningHeaderChapter{#3}}{\RunningHeaderChapter[#2]{#3}}}%
+  \IfNoValueTF{#2}{\markboth{#3}{}}{\markboth{#2}{}}}
+% Class-inserted blank versos must be empty, not inherit fancy headers.
+\patchcmd{\cleardoublepage}{\hbox{}}{\hbox{}\thispagestyle{empty}}{}{}
+$endif$
+
 % ---- Document ----
 \begin{document}
 
@@ -228,6 +248,10 @@ $endif$
 $if(toc)$
 \tableofcontents
 \clearpage
+$if(running-headers)$
+% Contents is not the current chapter for subsequent front-matter prose.
+\markboth{}{}
+$endif$
 $endif$
 
 $body$

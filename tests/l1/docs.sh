@@ -1,7 +1,7 @@
 run_documentation_skill_test() {
   local out err code
-  out="$(mktemp)"
-  err="$(mktemp)"
+  out="$(new_test_tmpfile)" || return
+  err="$(new_test_tmpfile)" || return
   set +e
   python3 - "${ROOT_DIR}" >"$out" 2>"$err" <<'PY'
 import json
@@ -44,8 +44,8 @@ PY
 
 run_docs_consistency_test() {
   local out code tree covered
-  out="$(mktemp)"
-  tree="$(mktemp -d)"
+  out="$(new_test_tmpfile)" || return
+  tree="$(new_test_tmpdir)" || return
 
   set +e
   python3 "${ROOT_DIR}/scripts/dev/check-docs.py" "${ROOT_DIR}" >"$out" 2>&1
@@ -66,7 +66,7 @@ run_docs_consistency_test() {
   # never published, and the reported coverage drifted with whatever scratch
   # happened to be on the machine.
   local repo
-  repo="$(mktemp -d)"
+  repo="$(new_test_tmpdir)" || return
   git -C "$repo" init --quiet
   printf 'out/\n' >"$repo/.gitignore"
   printf '# Doc\n\nSee [the other doc](other.md).\n' >"$repo/tracked.md"
@@ -222,7 +222,7 @@ run_emoji_showcase_example_test() {
   fi
 
   local out code context
-  out="$(mktemp)"
+  out="$(new_test_tmpfile)" || return
   set +e
   "${REAL_PYTHON3}" - "${ROOT_DIR}/examples/ohmyfake/chapters/06-a-fake-that-tells-the-truth.md" >"$out" 2>&1 <<'PY'
 import json

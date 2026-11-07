@@ -92,6 +92,107 @@ PY
   rm -rf "$scratch"
 }
 
+# Exercise inheritance through emitted configurations, not adapter internals.
+run_book_running_headers_test() {
+  local scratch
+  scratch="$(mktemp -d)"
+  mkdir -p "$scratch/home"
+  if "$REAL_PYTHON3" - "$CLI" "$scratch" <<'PY'
+import json
+import os
+import subprocess
+import sys
+import unittest
+from pathlib import Path
+
+cli, scratch = sys.argv[1], Path(sys.argv[2]).resolve()
+env = dict(os.environ, HOME=str(scratch / "home"),
+           XDG_CONFIG_HOME=str(scratch / "home"), SKELEPRESS_LANG="en",
+           SKELEPRESS_PROJECT_ENV=str(scratch / "no-project-env"))
+
+
+class BookHeaders(unittest.TestCase):
+    def test_manifest_contract_and_inheritance(self):
+        baselines = {}
+        cases = [(None, None, None), (None, True, True), (None, False, False),
+                 (True, None, True), (True, False, False), (False, True, True),
+                 (False, None, False), (None, "false", "invalid"),
+                 ("true", None, "invalid"), (None, 1, "invalid"),
+                 (1, None, "invalid"), (None, [], "invalid"),
+                 ({}, None, "invalid")]
+        for index, (shared, override, expected) in enumerate(cases):
+            for series in (False, True):
+                if not series and shared is not None:
+                    continue
+                with self.subTest(shared=shared, override=override, series=series):
+                    root = scratch / f"case-{index}-{series}"
+                    project = root / "project"
+                    volume = project / "volume" if series else project
+                    volume.mkdir(parents=True)
+                    (volume / "chapter.md").write_text("# Chapter\n\nNeutral text.\n")
+                    manifest = dict(manifest_version=1, profile="book", title="Header Test",
+                                    chapters=["chapter.md"])
+                    if override is not None:
+                        manifest["running_headers"] = override
+                    (volume / "manifest.yaml").write_text(json.dumps(manifest))
+                    if series:
+                        defaults = dict(manifest_version=1, volumes=["volume"], author="Series Author")
+                        if shared is not None:
+                            defaults["running_headers"] = shared
+                        (project / "series.yaml").write_text(json.dumps(defaults))
+                    output = root / "out"
+                    # An invalid contract must not touch existing output/counters.
+                    output.mkdir()
+                    (output / "sentinel").write_text("unchanged\n")
+                    before = {str(p): p.read_bytes() for p in root.rglob("*") if p.is_file()}
+                    result = subprocess.run([cli, "book", "--check", "--out", "out", "project"],
+                                            cwd=root, env=env, capture_output=True, text=True)
+                    invalid = expected == "invalid"
+                    self.assertEqual(result.returncode, 1 if invalid else 0, result.stdout + result.stderr)
+                    self.assertEqual(result.stderr, "")
+                    if invalid:
+                        self.assertEqual(result.stdout, "❌ 'running_headers' must be of type boolean\n")
+                        self.assertEqual(before, {str(p): p.read_bytes() for p in root.rglob("*") if p.is_file()})
+                        continue
+                    relative = "project/volume" if series else "project"
+                    label = "project/volume" if series else "project/project"
+                    self.assertEqual(result.stdout, f"==> {label}\n    config: out/{relative}/skelepress.config.yaml\n"
+                                     "Check ok: 1 volume(s) validated, configurations in out\n")
+                    config = output / relative / "skelepress.config.yaml"
+                    text = config.read_text()
+                    if expected is None:
+                        self.assertNotIn("running_headers", text)
+                        baselines[series] = text
+                    else:
+                        setting = f"  running_headers: {str(expected).lower()}\n"
+                        self.assertIn(setting, text)
+                        self.assertEqual(text.replace(setting, ""), baselines[series],
+                                         "only the declared boolean changes the generated configuration")
+                    self.assertIn('template: "book"', text)
+                    self.assertIn("top_level_division: chapter", text)
+                    if series:
+                        self.assertIn('author: "Series Author"', text)
+                    self.assertEqual((config.parent / "generated/00-mainmatter.md").read_text().splitlines()[0],
+                                     "\\mainmatter")
+                    for path, content in before.items():
+                        self.assertEqual(Path(path).read_bytes(), content)
+                    # Generated output must be accepted by the public validator.
+                    validation = subprocess.run([cli, "validate-config", "-c", str(config)],
+                                                cwd=root, env=env, capture_output=True, text=True)
+                    self.assertEqual((validation.returncode, validation.stdout, validation.stderr),
+                                     (0, "✅ Config valid\n", ""))
+
+
+unittest.main(argv=[sys.argv[0]])
+PY
+  then
+    pass "book --check preserves absent output and applies boolean inheritance/false overrides"
+  else
+    fail "book running_headers public manifest contract"
+  fi
+  rm -rf "$scratch"
+}
+
 run_bookkit_tests() {
   local tool="${ROOT_DIR}/scripts/tools/bookkit/build.py"
   local single="${ROOT_DIR}/examples/book-kit/single"

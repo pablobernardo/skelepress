@@ -4,7 +4,7 @@
 
 run_render_native_test() {
   local sandbox
-  sandbox="$(mktemp -d)"
+  sandbox="$(new_test_tmpdir)" || return
   mkdir -p "${sandbox}/bin" "${sandbox}/schemas" "${sandbox}/scripts" "${sandbox}/scripts/runtime" "${sandbox}/chapters" "${sandbox}/templates"
 
   cp "$CLI" "${sandbox}/bin/skelepress"
@@ -44,7 +44,7 @@ title: Render Test
 EOF
 
   local tmpbin
-  tmpbin="$(mktemp -d)"
+  tmpbin="$(new_test_tmpdir)" || return
 
   cat >"${tmpbin}/pandoc" <<'EOF'
 #!/bin/bash
@@ -75,16 +75,18 @@ exit 0
 EOF
   chmod +x "${tmpbin}/pandoc"
 
-  local capture out suffix md_file pdf_file
-  capture="$(mktemp)"
-  out="$(mktemp)"
+  local capture out err code=0 suffix md_file pdf_file
+  capture="$(new_test_tmpfile)" || return
+  out="$(new_test_tmpfile)" || return
+  err="$(new_test_tmpfile)" || return
   suffix="$(date +%Y%m%d)"
   md_file="${sandbox}/custom-output/report-${suffix}.md"
   pdf_file="${sandbox}/custom-output/report-${suffix}.pdf"
 
-  if SKELEPRESS_LANG=es TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/skelepress" render -c "${sandbox}/render.config.yaml" >"$out" 2>&1; then
+  if SKELEPRESS_LANG=es TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/skelepress" render -c "${sandbox}/render.config.yaml" >"$out" 2>"$err"; then
     pass "native render runs pandoc"
   else
+    code=$?
     fail "native render should run pandoc"
   fi
 
@@ -108,13 +110,42 @@ EOF
 
   assert_contains "$md_file" "\\\\clearpage" "native render applies clearpage between H1"
 
+  # Keep this minimal runtime preflight-free: disabling headers must not add a
+  # runtime dependency or change public streams, pandoc arguments or artifacts.
+  if SKELEPRESS_LANG=es TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" \
+    "$REAL_PYTHON3" - "$sandbox" "$out" "$err" "$code" "$capture" "$md_file" "$pdf_file" <<'PY'
+import subprocess
+import sys
+from pathlib import Path
+
+sandbox, out, err, code, capture, markdown, pdf = sys.argv[1:]
+config = Path(sandbox) / "render.config.yaml"
+artifacts = [Path(markdown), Path(pdf)]
+before = {str(p): p.read_bytes() for p in artifacts if p.is_file()}
+argv_before = Path(capture).read_bytes()
+config.write_text(config.read_text().replace("pandoc:\n", "pandoc:\n  running_headers: false\n"))
+result = subprocess.run([str(Path(sandbox) / "bin/skelepress"), "render", "-c", str(config)],
+                        capture_output=True)
+assert result.returncode == int(code) == 0, (code, result.returncode, result.stderr)
+assert result.stdout == Path(out).read_bytes(), result.stdout
+assert result.stderr == Path(err).read_bytes(), result.stderr
+assert Path(capture).read_bytes() == argv_before
+assert len(before) == 2, "both baseline artifacts must exist"
+assert before == {str(p): p.read_bytes() for p in artifacts}
+PY
+  then
+    pass "explicit false matches absent headers: exit, exact streams, pandoc arguments and artifacts without preflight"
+  else
+    fail "explicit false must preserve preflight-free native rendering"
+  fi
+
   rm -rf "$sandbox" "$tmpbin"
-  rm -f "$capture" "$out"
+  rm -f "$capture" "$out" "$err"
 }
 
 run_render_native_advanced_paths_test() {
   local sandbox
-  sandbox="$(mktemp -d)"
+  sandbox="$(new_test_tmpdir)" || return
   mkdir -p "${sandbox}/bin" "${sandbox}/schemas" "${sandbox}/scripts" "${sandbox}/scripts/runtime" "${sandbox}/chapters" "${sandbox}/filters" "${sandbox}/assets/media" "${sandbox}/templates"
 
   cp "$CLI" "${sandbox}/bin/skelepress"
@@ -150,7 +181,7 @@ end
 EOF
 
   local tmpbin
-  tmpbin="$(mktemp -d)"
+  tmpbin="$(new_test_tmpdir)" || return
 
   cat >"${tmpbin}/pandoc" <<'EOF'
 #!/bin/bash
@@ -164,8 +195,8 @@ EOF
   chmod +x "${tmpbin}/pandoc"
 
   local capture out
-  capture="$(mktemp)"
-  out="$(mktemp)"
+  capture="$(new_test_tmpfile)" || return
+  out="$(new_test_tmpfile)" || return
 
   if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/skelepress" render -c "${sandbox}/render-extra-filter.config.yaml" >"$out" 2>&1; then
     pass "advanced render runs pandoc"
@@ -198,7 +229,7 @@ EOF
 
 run_render_missing_explicit_file_test() {
   local sandbox
-  sandbox="$(mktemp -d)"
+  sandbox="$(new_test_tmpdir)" || return
   mkdir -p "${sandbox}/bin" "${sandbox}/schemas" "${sandbox}/scripts" "${sandbox}/scripts/runtime" "${sandbox}/chapters" "${sandbox}/templates"
 
   cp "$CLI" "${sandbox}/bin/skelepress"
@@ -232,7 +263,7 @@ title: Missing explicit
 EOF
 
   local out
-  out="$(mktemp)"
+  out="$(new_test_tmpfile)" || return
 
   set +e
   SKELEPRESS_LANG=es "${sandbox}/bin/skelepress" render -c "${sandbox}/render-missing-explicit.config.yaml" >"$out" 2>&1
@@ -260,7 +291,7 @@ EOF
 run_render_top_level_division_test() {
   local sandbox tmpbin capture out cfg
 
-  sandbox="$(mktemp -d)"
+  sandbox="$(new_test_tmpdir)" || return
   mkdir -p "${sandbox}/bin" "${sandbox}/schemas" "${sandbox}/scripts" "${sandbox}/scripts/runtime" "${sandbox}/chapters" "${sandbox}/templates"
 
   cp "$CLI" "${sandbox}/bin/skelepress"
@@ -299,11 +330,11 @@ EOF2
 title: Render Test
 EOF2
 
-  tmpbin="$(mktemp -d)"
+  tmpbin="$(new_test_tmpdir)" || return
   write_pandoc_capture_mock "$tmpbin"
 
-  capture="$(mktemp)"
-  out="$(mktemp)"
+  capture="$(new_test_tmpfile)" || return
+  out="$(new_test_tmpfile)" || return
 
   # (a) A valid value reaches pandoc's argv as the exact CLI flag.
   cfg="${sandbox}/render-top-level-division.config.yaml"
@@ -359,7 +390,7 @@ run_render_python39_test() {
   fi
 
   local sandbox
-  sandbox="$(mktemp -d)"
+  sandbox="$(new_test_tmpdir)" || return
   mkdir -p "${sandbox}/bin" "${sandbox}/schemas" "${sandbox}/scripts/runtime" "${sandbox}/chapters" "${sandbox}/templates"
 
   cp "$CLI" "${sandbox}/bin/skelepress"
@@ -383,7 +414,7 @@ EOF
   # python3 on PATH is the macOS system interpreter; pandoc is a stub that
   # produces the output artifact without typesetting anything.
   local tmpbin
-  tmpbin="$(mktemp -d)"
+  tmpbin="$(new_test_tmpdir)" || return
   ln -s /usr/bin/python3 "${tmpbin}/python3"
   cat >"${tmpbin}/pandoc" <<'EOF'
 #!/bin/bash
@@ -409,7 +440,7 @@ EOF
   chmod +x "${tmpbin}/pandoc"
 
   local out pdf_file
-  out="$(mktemp)"
+  out="$(new_test_tmpfile)" || return
   pdf_file="${sandbox}/custom-output/report-$(date +%Y%m%d).pdf"
 
   if PATH="${tmpbin}:$PATH" "${sandbox}/bin/skelepress" render -c "${sandbox}/render.config.yaml" >"$out" 2>&1; then

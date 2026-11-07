@@ -393,6 +393,10 @@ def build_single_plan(cfg_user: dict, cfg_path: Path, root_dir: Path, format_nam
         # The cover switch is emitted below with the rest of the document options;
         # an unconditional -V here would make titlepage: false impossible.
         cmd.extend(["-V", "fig-pos=!htbp"])
+        # A PDF typesetting request, independent of metadata-file precedence.
+        # False/absent emits nothing; consumer templates decide how to adopt it.
+        if pandoc.get("running_headers") is True:
+            cmd.extend(["-V", "running-headers=true"])
     # Pandoc resolves a relative asset against the working directory and then the
     # resource path. The project base is appended last, so a declared resource_path
     # keeps its priority and a project-relative asset resolves no matter where the
@@ -772,6 +776,13 @@ def main() -> None:
         print_plan(plan)
         raise SystemExit(0)
 
+    # An execution-only guard: plans/defaults/custom templates/EPUB stay inert.
+    # Share the exact doctor predicate, lookup and localized failure surface.
+    if cfg_user.get("pandoc", {}).get("running_headers") is True:
+        import preflight
+
+        if not preflight.guard_running_headers(cfg_user, cfg_path):
+            raise SystemExit(1)
     raise SystemExit(execute_plan(plan))
 
 

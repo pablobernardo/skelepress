@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import re
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -16,9 +17,11 @@ except Exception:
             return fallback
 
 try:
+    import template_runtime
     from schema_runtime import YamlError, load_yaml_with_python, load_yaml_with_ruby
 except Exception:  # imported as a module from elsewhere: fix the path
     sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import template_runtime
     from schema_runtime import YamlError, load_yaml_with_python, load_yaml_with_ruby
 
 
@@ -168,6 +171,11 @@ def load_yaml_minimal_for_preflight(path: Path):
                     strict_value = raw_strict == "true"
                 continue
 
+            if in_pandoc and key == "running_headers" and value.strip().lower() in {"true", "yes", "on"}:
+                # YAML boolean opt-ins need typed parsing and template/path
+                # resolution: delegate to Ruby rather than guess either here.
+                return None
+
             if in_pandoc and key == "pdf_engine":
                 v = value.strip().strip('"\'')
                 if v:
@@ -305,6 +313,58 @@ def mermaid_smoke_check() -> str | None:
         return detail[0] if detail else f"mmdc exited {proc.returncode}"
 
 
+def running_headers_need_truncate(cfg: dict, config_path: Path) -> bool:
+    """Only shipped templates own this implementation/dependency decision."""
+    output = cfg.get("output", {})
+    if isinstance(output, dict) and FORMAT_PDF not in output.get("formats", [FORMAT_PDF]):
+        return False
+    pandoc = cfg.get("pandoc", {})
+    if not isinstance(pandoc, dict) or pandoc.get("running_headers") is not True:
+        return False
+    root = Path(__file__).resolve().parents[2]
+    raw = str(pandoc.get("template", "")).strip()
+    if not raw:
+        return True
+    if template_runtime.is_bare_name(raw):
+        return template_runtime.builtin_path(root, raw) is not None
+    project = cfg.get("project", {})
+    base = project.get("base_dir", ".") if isinstance(project, dict) else "."
+    resolved = (config_path.parent / str(base) / raw).resolve()
+    shipped = [template_runtime.default_path(root)]
+    for name in template_runtime.known_names():
+        path = template_runtime.builtin_path(root, name)
+        if path is not None:
+            shipped.append(path)
+    return resolved in shipped
+
+
+def tex_package_available(package: str) -> bool:
+    """Probe TeX's own lookup, never install or assume a host-specific path."""
+    lookup = shutil.which("kpsewhich")
+    if lookup is None:
+        return False
+    try:
+        result = subprocess.run([lookup, package], capture_output=True, text=True, timeout=10)
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return result.returncode == 0 and bool(result.stdout.strip())
+
+
+def report_missing_dependencies(missing: list[str]) -> None:
+    """The same localized failure surface for doctor and execution guards."""
+    print(f"❌ {t('doctor.missing', 'Doctor detected missing dependencies:')}")
+    for dependency in missing:
+        print(f"   - {dependency}")
+
+
+def guard_running_headers(cfg: dict, config_path: Path) -> bool:
+    """Check only the selected layout's dependency; never run global doctor."""
+    if running_headers_need_truncate(cfg, config_path) and not tex_package_available("truncate.sty"):
+        report_missing_dependencies(["truncate.sty"])
+        return False
+    return True
+
+
 def main() -> None:
     config_path = parse_config_path(sys.argv[1:])
 
@@ -313,6 +373,7 @@ def main() -> None:
     strict = True
     mermaid_enabled = True
     output_formats = [FORMAT_PDF]
+    needs_truncate = False
 
     if config_path:
         if not config_path.exists():
@@ -321,6 +382,7 @@ def main() -> None:
         cfg = load_config_for_preflight(config_path)
 
         if isinstance(cfg, dict):
+            needs_truncate = running_headers_need_truncate(cfg, config_path)
             runtime = cfg.get("runtime")
             if isinstance(runtime, dict):
                 runtime_cmds = runtime.get("required_commands")
@@ -389,7 +451,12 @@ def main() -> None:
     if missing_engine and not strict:
         print(t("doctor.error.tex_required", "A TeX engine is required to render a PDF; runtime.strict=false cannot waive it."))
 
+    # A selected layout cannot compile without its package, even in lax mode.
+    # Reuse the localized missing-dependency surface; no new catalog wording.
+    missing_package = needs_tex and needs_truncate and not tex_package_available("truncate.sty")
     missing = missing + missing_engine
+    if missing_package:
+        missing.append("truncate.sty")
     mermaid_error = None
     if mermaid_enabled and "mmdc" in required and command_exists("mmdc"):
         mermaid_error = mermaid_smoke_check()
@@ -409,7 +476,7 @@ def main() -> None:
         print(t("doctor.warn.continue", "Continuing because runtime.strict=false"))
 
     if missing:
-        if not strict and not missing_engine:
+        if not strict and not missing_engine and not missing_package:
             print(
                 f"⚠️  {t('doctor.warn.missing', 'Doctor warnings: missing dependencies (runtime.strict=false):')}"
             )
@@ -417,9 +484,7 @@ def main() -> None:
                 print(f"   - {m}")
             print(t("doctor.warn.continue", "Continuing because runtime.strict=false"))
             return
-        print(f"❌ {t('doctor.missing', 'Doctor detected missing dependencies:')}")
-        for m in missing:
-            print(f"   - {m}")
+        report_missing_dependencies(missing)
         raise SystemExit(1)
 
     print(f"✅ {t('doctor.ok', 'Doctor OK: dependencies available')}")
