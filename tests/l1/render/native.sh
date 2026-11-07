@@ -75,16 +75,18 @@ exit 0
 EOF
   chmod +x "${tmpbin}/pandoc"
 
-  local capture out suffix md_file pdf_file
+  local capture out err code=0 suffix md_file pdf_file
   capture="$(new_test_tmpfile)" || return
   out="$(new_test_tmpfile)" || return
+  err="$(new_test_tmpfile)" || return
   suffix="$(date +%Y%m%d)"
   md_file="${sandbox}/custom-output/report-${suffix}.md"
   pdf_file="${sandbox}/custom-output/report-${suffix}.pdf"
 
-  if SKELEPRESS_LANG=es TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/skelepress" render -c "${sandbox}/render.config.yaml" >"$out" 2>&1; then
+  if SKELEPRESS_LANG=es TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/skelepress" render -c "${sandbox}/render.config.yaml" >"$out" 2>"$err"; then
     pass "native render runs pandoc"
   else
+    code=$?
     fail "native render should run pandoc"
   fi
 
@@ -108,8 +110,37 @@ EOF
 
   assert_contains "$md_file" "\\\\clearpage" "native render applies clearpage between H1"
 
+  # Keep this minimal runtime preflight-free: disabling headers must not add a
+  # runtime dependency or change public streams, pandoc arguments or artifacts.
+  if SKELEPRESS_LANG=es TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" \
+    "$REAL_PYTHON3" - "$sandbox" "$out" "$err" "$code" "$capture" "$md_file" "$pdf_file" <<'PY'
+import subprocess
+import sys
+from pathlib import Path
+
+sandbox, out, err, code, capture, markdown, pdf = sys.argv[1:]
+config = Path(sandbox) / "render.config.yaml"
+artifacts = [Path(markdown), Path(pdf)]
+before = {str(p): p.read_bytes() for p in artifacts if p.is_file()}
+argv_before = Path(capture).read_bytes()
+config.write_text(config.read_text().replace("pandoc:\n", "pandoc:\n  running_headers: false\n"))
+result = subprocess.run([str(Path(sandbox) / "bin/skelepress"), "render", "-c", str(config)],
+                        capture_output=True)
+assert result.returncode == int(code) == 0, (code, result.returncode, result.stderr)
+assert result.stdout == Path(out).read_bytes(), result.stdout
+assert result.stderr == Path(err).read_bytes(), result.stderr
+assert Path(capture).read_bytes() == argv_before
+assert len(before) == 2, "both baseline artifacts must exist"
+assert before == {str(p): p.read_bytes() for p in artifacts}
+PY
+  then
+    pass "explicit false matches absent headers: exit, exact streams, pandoc arguments and artifacts without preflight"
+  else
+    fail "explicit false must preserve preflight-free native rendering"
+  fi
+
   rm -rf "$sandbox" "$tmpbin"
-  rm -f "$capture" "$out"
+  rm -f "$capture" "$out" "$err"
 }
 
 run_render_native_advanced_paths_test() {

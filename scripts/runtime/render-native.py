@@ -778,10 +778,11 @@ def main() -> None:
 
     # An execution-only guard: plans/defaults/custom templates/EPUB stay inert.
     # Share the exact doctor predicate, lookup and localized failure surface.
-    import preflight
+    if cfg_user.get("pandoc", {}).get("running_headers") is True:
+        import preflight
 
-    if not preflight.guard_running_headers(cfg_user, cfg_path):
-        raise SystemExit(1)
+        if not preflight.guard_running_headers(cfg_user, cfg_path):
+            raise SystemExit(1)
     raise SystemExit(execute_plan(plan))
 
 

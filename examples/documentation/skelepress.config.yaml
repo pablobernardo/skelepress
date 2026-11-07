@@ -27,6 +27,7 @@ input:
   # relative links lead nowhere inside a PDF with its own numbered index.
   explicit_files:
     - "install.md"
+    - "dependencies.md"
     - "usage.md"
     - "books.md"
     - "migration.md"

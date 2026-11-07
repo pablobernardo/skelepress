@@ -113,7 +113,7 @@ PY
 
 run_running_headers_preflight_test() {
   local scratch
-  scratch="$(mktemp -d)"
+  scratch="$(new_test_tmpdir)" || return
   mkdir -p "$scratch/work/chapters" "$scratch/home"
   printf '# Heading\n\nText.\n' >"$scratch/work/chapters/01.md"
   write_contract_config "$scratch/config.yaml" natural true "" false false
