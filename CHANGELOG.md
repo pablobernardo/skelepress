@@ -5,7 +5,44 @@ All notable changes to this toolkit are documented in this file.
 The project follows semantic versioning and keeps two versioned contracts:
 
 - `VERSION` for the toolkit version
-- `pdf.config.yaml -> version` for the configuration contract
+- `skelepress.config.yaml -> version` for the configuration contract
+
+## [3.1.0] - 2026-11-07
+
+### Added
+
+- Optional PDF running headers through `pandoc.running_headers: true`, including
+  book/series inheritance and an explicit per-volume `false` override. The shipped
+  templates place bounded book and current top-level heading text above body
+  pages; covers, title pages, intentional blanks and top-level openings omit the
+  header. EPUB output is unaffected.
+- Expanded, translated `skelepress --help` with command discovery and examples.
+  `skelepress book --help` now explains its options, defaults and examples without
+  changing argument forwarding or error behavior.
+- Default-off CI profiles for a Pandoc-backed disposable macOS full gate and
+  Ubuntu release-candidate acceptance. The latter checks real archives,
+  reproducibility, isolated installation/update/rollback and retains logs plus
+  PDF/PNG evidence for separate visual inspection; it never publishes a release.
+
+### Fixed
+
+- Rendering with omitted or false running headers no longer imports the optional
+  header preflight path. The added template dependency check applies only to
+  enabled PDF headers using the shipped templates.
+- Header preflight handles YAML boolean aliases consistently through the shared
+  Ruby fallback when PyYAML is unavailable.
+- The documentation example includes its dependency reference. Affected L1
+  fixtures honor caller-owned temporary roots while retaining native behavior
+  when `TMPDIR` is unset or empty.
+
+### Compatibility and dependencies
+
+- Configuration contract version `1`, existing CLI commands/options and default
+  rendering behavior remain unchanged; omitted or false running headers are inert.
+- Enabled running headers in shipped PDF templates require `truncate.sty` and its
+  preflight lookup. Custom templates remain responsible for their own requirements.
+  Pandoc and TeX remain distribution-provided, not newly pinned. The acceptance
+  profile's FreeSerif font is still optional for consumers and ordinary CI.
 
 ## [3.0.0] - 2026-11-05
 
