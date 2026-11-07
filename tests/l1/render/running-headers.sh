@@ -2,7 +2,7 @@
 # Public contract/routing only; visible PDF headers are tested with the layout.
 run_render_running_headers_test() {
   local scratch
-  scratch="$(mktemp -d)"
+  scratch="$(new_test_tmpdir)" || return
   mkdir -p "$scratch/work/chapters" "$scratch/home"
   printf '# First chapter\n\nText.\n' >"$scratch/work/chapters/01.md"
   write_contract_config "$scratch/config.yaml" natural true "" false false
