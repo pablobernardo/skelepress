@@ -26,6 +26,8 @@ done
 main() {
   echo "== Running skelepress tests =="
   run_suite_registration_test
+  run_test_temp_explicit_root_test
+  run_test_temp_native_defaults_test
   run_rename_contract_tests
   run_rename_symlink_root_test
   run_help_test
@@ -68,6 +70,8 @@ main() {
   run_render_python39_test
   run_render_missing_explicit_file_test
   run_render_top_level_division_test
+  run_render_running_headers_test
+  run_running_headers_preflight_test
   run_no_hidden_defaults_test
   run_render_order_semantics_test
   run_render_keep_merged_markdown_test
@@ -124,6 +128,7 @@ main() {
   run_multi_format_export_test
   run_plan_conformance_tests
   run_book_default_output_test
+  run_book_running_headers_test
   run_bookkit_tests
   run_bookkit_toc_separators_test
   run_bookkit_series_defaults_test

@@ -312,6 +312,27 @@ $endif$
 \pagenumbering{arabic}
 }
 
+$if(running-headers)$
+% ---- Opt-in book/top-level-section running headers ----
+% Keep the article class and heading hierarchy. Only repeated header text is
+% abbreviated; two fixed 46% regions leave an 8% gutter at a readable 8pt.
+\usepackage[breakall,fit]{truncate}
+\fancyhead{}
+\fancyhead[L]{\fontsize{8}{10}\selectfont\itshape\truncate{0.46\textwidth}{$if(title)$$title$$endif$}}
+\fancyhead[R]{\fontsize{8}{10}\selectfont\itshape\truncate{0.46\textwidth}{\nouppercase{\leftmark}}}
+\renewcommand{\sectionmark}[1]{\markboth{#1}{}}
+\renewcommand{\subsectionmark}[1]{}
+% Set page style after heading placement (including Needspace), not before a
+% possible page break. Starred headings use the same mark and exception policy.
+\let\RunningHeaderSection\section
+\RenewDocumentCommand{\section}{s o m}{%
+  \IfBooleanTF{#1}{\RunningHeaderSection*{#3}}{%
+    \IfNoValueTF{#2}{\RunningHeaderSection{#3}}{\RunningHeaderSection[#2]{#3}}}%
+  \IfNoValueTF{#2}{\markboth{#3}{}}{\markboth{#2}{}}%
+  \thispagestyle{plain}}
+\patchcmd{\cleardoublepage}{\hbox{}}{\hbox{}\thispagestyle{empty}}{}{}
+$endif$
+
 % ---- Document begins ----
 % Let a paragraph stretch a little rather than send a word past the margin; the
 % break opportunities the filters insert need room to be used.
@@ -341,6 +362,9 @@ $endif$
 $if(toc)$
 \tableofcontents
 \clearpage
+$if(running-headers)$
+\markboth{}{}
+$endif$
 $endif$
 
 $body$

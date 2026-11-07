@@ -61,6 +61,10 @@
       "type": "string",
       "description": "Optional override of the series.yaml language; the tool restricts it to the toolkit's supported codes (en, es, pt, gl)."
     },
+    "running_headers": {
+      "type": "boolean",
+      "description": "Optional PDF running-header request; overrides the series default, including explicit false."
+    },
     "chapter_start": {
       "type": "integer",
       "minimum": 1,

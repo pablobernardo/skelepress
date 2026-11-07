@@ -161,6 +161,7 @@ renderer applies the value in the middle column when they are absent:
 | `filters.mermaid.background` | `transparent` | the mermaid filter is enabled |
 | `pandoc.metadata_file` | absent: `document.*` reaches the template | always |
 | `pandoc.top_level_division` | absent: Pandoc's own choice | the template typesets top-level headings differently from Pandoc's default |
+| `pandoc.running_headers` | `false` (no argument emitted) | a PDF template opts into book/chapter running headers |
 | `output.file_prefix` | a slug of `document.title` | always |
 | `output.formats` | `[pdf]` | you want EPUB or multiple formats |
 
@@ -272,6 +273,65 @@ The validator implements an explicit subset of JSON Schema (`type`, `properties`
 **`default` is not equivalent to `chapter`.** It is `chapter` that makes the `book` class typeset a top-level heading as `\chapter` — the one that prints "Chapter 1" and lists the entry in the contents with a chapter number. `default` only lets Pandoc infer the division from the class, which does not guarantee a `\chapter`: a template that expects chapters must say `top_level_division: chapter` explicitly, the way `templates/book.tex` relies on the value the bookkit adapter emits.
 
 Templates that expect chapters — the builtin `book` — pair with `top_level_division: chapter`; `templates/book.tex` relies on that and defines no heading commands of its own. The valid values, the error message and how a value becomes an argument live in one shared module (`scripts/runtime/top_level_division_runtime.py`), so `validate-config` and the renderer cannot disagree.
+
+### PDF running headers
+
+`pandoc.running_headers` is an optional boolean in configuration version 1:
+
+```yaml
+pandoc:
+  # Keep your other required pandoc fields.
+  running_headers: true
+```
+
+`true` adds only `-V running-headers=true` to PDF jobs, including when a
+`pandoc.metadata_file` supplies the title. Omitted or `false` leaves existing
+plans unchanged; strings such as `"false"` are rejected. EPUB jobs receive no
+extra argument or metadata: running headers belong to the reading application.
+Title precedence is unchanged: a configured metadata file still wins over
+`document.title`.
+
+Both shipped PDF templates place the **book title on the left** and the
+**current top-level heading on the right**, on odd and even normal body pages.
+The `book` template uses the current chapter; the default `article` template
+uses the current section without changing the document class or heading levels.
+Subordinate headings do not replace that title. Numbered and unnumbered
+(`{.unnumbered}` / starred LaTeX) headings follow the same policy; before the
+first top-level heading, the right side is empty. A LaTeX optional short heading
+title, when supplied, is also used in the header.
+
+Headers use 8pt italic text, two fixed-width regions and a gutter. Long titles,
+including single long words, are abbreviated with an ellipsis **only in the
+header**: title-page, contents and body text are not shortened. This does not
+redesign legacy title-page typography; an exceptionally long unbroken word can
+still overflow a large title or heading outside the header.
+
+| Page | Enabled header policy |
+| --- | --- |
+| Normal body, either parity | Book title left; current top-level title right |
+| Image cover and typeset title page | No header or header rule; existing empty page style preserved |
+| Top-level heading page (numbered or starred), including the contents opening | No header or rule; the normal plain-style page-number footer remains |
+| Class-inserted blank verso, or a deliberate blank marked `\\thispagestyle{empty}` | No header, rule or footer |
+| Contents continuation | Same bounded headers; contents title remains current until the contents ends |
+
+In an article, “heading page” means the entire page containing a top-level
+section heading, even if that heading starts partway down it. Body pages resume
+headers automatically. After the contents, the chapter side is reset until the
+next top-level heading. With the option omitted or `false`, both templates keep
+their historical headers, footers and layout (book chapter/section marks;
+default article publisher/title).
+
+The shipped implementation needs `truncate.sty` and `kpsewhich`; see
+[optional PDF layout dependencies](dependencies.md). Doctor checks this only
+for an enabled shipped PDF layout. Actual render also rejects a missing package
+before creating output or invoking Pandoc; `--dry-run` remains dependency-free.
+No new CLI flag or renderer is involved.
+
+Consumer-owned templates are never rewritten. A custom template can adopt the
+request with Pandoc's `$if(running-headers)$` conditional around its own header
+layout, using the existing `title` and its own chapter marks. It remains
+responsible for typography, overflow and suppressing headers on exceptional
+pages. A template that ignores the variable retains its existing layout.
 
 Render the PDF:
 
