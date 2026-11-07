@@ -85,3 +85,49 @@ PY
     fail "manual full gate must preserve native allocation inside a disposable Git-backed macOS VM"
   fi
 }
+
+run_ci_candidate_acceptance_test() {
+  if python3 - "${ROOT_DIR}/.github/workflows/ci.yml" <<'PY'
+import re
+import sys
+from pathlib import Path
+workflow = Path(sys.argv[1]).read_text()
+flag = re.search(r"^      run_release_acceptance:\n(.*?)(?=^      [\w-]+:|\Z)", workflow, re.M | re.S)
+assert flag and "default: false" in flag[1] and "type: boolean" in flag[1]
+job = re.search(r"^  l3-render-full:\n(.*?)(?=^  [\w-]+:|\Z)", workflow, re.M | re.S)[1]
+assert "inputs.run_release_acceptance == true" in job
+assert "python3 scripts/dev/check-release-candidate.py --out" in job
+assert "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02" in job
+assert "if-no-files-found: error" in job
+assert "fonts-freefont-ttf" in job and "poppler-utils" in job
+PY
+  then
+    pass "optional candidate acceptance provisions and retains release evidence"
+  else
+    fail "candidate acceptance must be opt-in with required dependencies and evidence"
+  fi
+  if python3 - "${ROOT_DIR}/scripts/dev/check-release-candidate.py" <<'PY'
+import os
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+script = sys.argv[1]
+help_result = subprocess.run([sys.executable, script, "--help"], capture_output=True, text=True, timeout=10)
+assert help_result.returncode == 0 and "--out" in help_result.stdout and not help_result.stderr
+env = os.environ.copy()
+env.pop("GITHUB_ACTIONS", None)
+env.pop("RUNNER_ENVIRONMENT", None)
+with tempfile.TemporaryDirectory(prefix="skelepress-candidate-guard-") as scratch:
+    result = subprocess.run([sys.executable, script, "--out", scratch + "/output"],
+                            env=env, capture_output=True, text=True, timeout=10)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, "", "Run release acceptance only in a disposable GitHub-hosted VM.\n")
+    assert not list(Path(scratch).iterdir()), "Rejected acceptance populated output"
+PY
+  then
+    pass "candidate acceptance exposes help and rejects non-VM execution without writes"
+  else
+    fail "candidate acceptance must fail closed outside the disposable VM"
+  fi
+}

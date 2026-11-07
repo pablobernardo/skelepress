@@ -37,6 +37,11 @@ on:
         required: false
         default: false
         type: boolean
+      run_release_acceptance:
+        description: "Accept candidate packages and retain PDF evidence"
+        required: false
+        default: false
+        type: boolean
       run_epub_acceptance:
         description: "Run EPUB acceptance: EPUBCheck over the shipped examples"
         required: false
@@ -219,7 +224,9 @@ jobs:
     if: >-
       ${{ github.event_name == 'schedule' ||
           (github.event_name == 'workflow_dispatch' &&
-           inputs.run_render_full == true) }}
+           inputs.run_render_full == true) ||
+          (github.event_name == 'workflow_dispatch' &&
+           inputs.run_release_acceptance == true) }}
 
     steps:
       - name: Checkout
@@ -268,6 +275,25 @@ jobs:
           test -x "$chrome_path"
           test -r "$(npm root -g)/@mermaid-js/mermaid-cli/dist/index.html"
           PUPPETEER_EXECUTABLE_PATH="$chrome_path" bash tests/l3-local.sh
+
+      - name: Accept committed release candidate
+        if: ${{ inputs.run_release_acceptance == true }}
+        run: |
+          sudo apt-get install -y poppler-utils fonts-freefont-ttf
+          make gate
+          PUPPETEER_EXECUTABLE_PATH="$(command -v google-chrome)" \
+            python3 scripts/dev/check-release-candidate.py --out \
+              "${RUNNER_TEMP}/skelepress-candidate-evidence"
+
+      - name: Retain candidate acceptance evidence
+        if: ${{ always() && inputs.run_release_acceptance == true }}
+        # actions/upload-artifact v4.6.2
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: candidate-${{ github.sha }}
+          path: ${{ runner.temp }}/skelepress-candidate-evidence/
+          if-no-files-found: error
+          retention-days: 14
 
   epub-acceptance:
     name: EPUB acceptance (ubuntu, manual)

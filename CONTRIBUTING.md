@@ -213,6 +213,33 @@ or publish a release, alter temporary-allocation contracts, or establish all
 release acceptance on its own. Record the exact run, head SHA and test results;
 a runner that never starts is missing evidence, not a passed check.
 
+### Candidate acceptance without publication
+
+For an unpublished version newer than the latest stable release, dispatch the
+candidate ref with the explicit release levels and acceptance input:
+
+```bash
+gh workflow run ci.yml --ref <candidate> \
+  -f run_full_gate_macos=true -f run_l1_macos=true \
+  -f run_render_integration=true -f run_render_full=true \
+  -f run_release_acceptance=true -f run_epub_acceptance=true
+```
+
+`run_release_acceptance` defaults to false and enables L3 when selected. Its
+additional step installs PDF inspection tools and the optional symbol font,
+runs the complete gate with the Ubuntu rendering toolchain, then executes
+`scripts/dev/check-release-candidate.py --out <external-evidence-directory>`.
+The script refuses execution outside a disposable GitHub-hosted VM. It checks
+four committed archives/checksums and a second build, installs real archives,
+exercises upgrade from the published stable artifact, checksum rejection and
+post-version-validation rollback over a local HTTP release-API fixture, and
+retains PDF/PNG smoke evidence. No candidate tag or release is created.
+
+Download the `candidate-<commit>` Actions artifact to inspect the PDFs and
+review `result.json` and the exact command logs. Successful generation does not
+establish visual acceptance. The actual candidate download path can only be
+checked after publication; these checks do not claim otherwise.
+
 ## Repository housekeeping
 
 To keep the toolkit clean and reusable:
