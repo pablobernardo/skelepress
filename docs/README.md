@@ -8,6 +8,7 @@ marked with an arrow.
 | Document | Answers |
 | --- | --- |
 | → [`install.md`](install.md) | How do I install it, and which system dependencies does it need? |
+| [`dependencies.md`](dependencies.md) | Which optional PDF layout features need additional dependencies? |
 | → [`usage.md`](usage.md) | How do I configure a repository, run the commands and wire it into CI? |
 | [`books.md`](books.md) | How do I build a book: the template, manifests, `skelepress book`, the cover and the contents. |
 

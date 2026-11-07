@@ -71,6 +71,7 @@ main() {
   run_render_missing_explicit_file_test
   run_render_top_level_division_test
   run_render_running_headers_test
+  run_running_headers_preflight_test
   run_no_hidden_defaults_test
   run_render_order_semantics_test
   run_render_keep_merged_markdown_test
