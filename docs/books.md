@@ -102,11 +102,19 @@ to share the request across volumes. A volume can opt out with
 `running_headers: false`. With neither declaration, generated configurations
 remain unchanged; quoted strings are not booleans and are rejected.
 
-This is currently **contract preparation only**, not visible header layout in
-the shipped templates. The generated configuration requests a PDF-only template
-variable; EPUB content is unaffected and custom templates are never modified.
-See [the routing contract and custom-template adoption](usage.md#pdf-running-header-request-contract-preparation)
-for the exact argument and metadata precedence.
+The shipped book template prints the book title on the left and the current
+chapter on the right, on both odd and even body pages. Headers use discreet 8pt
+italic text and abbreviate long titles within fixed regions. Chapter openings,
+title/cover pages and intentionally blank pages are exceptions; sections do not
+replace the current chapter. Numbered and unnumbered chapters update the header
+alike. Omitted or `false` preserves the previous book layout.
+
+This optional typesetting choice is an explicit exception to the manifest's
+content-first model, not a place to configure engines or renderer paths. The
+generated configuration requests a PDF-only template variable; EPUB content is
+unaffected and custom templates are never modified. See
+[the full page policy and custom-template adoption](usage.md#pdf-running-headers)
+and [the optional TeX dependency](dependencies.md) before enabling it.
 
 ## Separating the contents
 

@@ -76,6 +76,22 @@ When the guides change, regenerate the documentation PDF for visual review:
 bin/skelepress render -c examples/documentation/skelepress.config.yaml
 ```
 
+Running-header layout changes also need actual PDF acceptance (Pandoc, XeLaTeX
+and Poppler required):
+
+```bash
+python3 tests/integration/check-running-headers.py --work .git/pdf-running-headers/review/normal
+python3 tests/integration/check-running-headers.py --unbroken --work .git/pdf-running-headers/review/unbroken
+```
+
+The checker invokes public doctor/render commands and retains PDFs, per-page
+PNGs, text/bbox assertions and a page-role manifest. Inspect both parities,
+transitions and exceptional pages, not just extracted strings. The unbroken
+stress tests header bounds; the ordinary fixture additionally checks complete
+titles in title/TOC/heading content. Use `--disabled` for a default-off control;
+compare same-path text and raster output against a capture made before edits.
+Raw PDF hashes can differ even when text and pixels agree.
+
 For configuration input, subprocesses or dependency changes, follow the review
 guidance and trust model in [the security policy](.github/SECURITY.md).
 
