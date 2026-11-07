@@ -195,6 +195,10 @@ gh workflow run ci.yml --ref <branch> -f run_full_gate_macos=true
 ```
 
 The input defaults to false and does not change the existing CI levels.
+The job installs Homebrew's available Pandoc package inside the disposable VM,
+then requires the executable and logs its version before running the gate.
+Dependencies installed in L2/L3 or on a developer machine are not inherited by
+this job. Missing Pandoc must fail preparation, not silently omit its tests.
 The job uses a real Git checkout: example enumeration and packaging require
 Git metadata, and packaging intentionally reads committed `HEAD`. An archive
 export is not a substitute. Temporary documentation fixtures use a fresh root

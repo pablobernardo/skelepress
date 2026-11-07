@@ -74,6 +74,10 @@ assert 'test "$discovery" -eq 128' in block
 assert re.search(r"^\s+make gate$", block, re.M)
 assert block.count('test -z "$(git status --porcelain)"') == 2
 assert not re.search(r"\b(?:sudo|docker)\b|bootstrap\.sh", block)
+provision = block.index("HOMEBREW_NO_AUTO_UPDATE=1 brew install pandoc")
+gate = block.index("\n          make gate\n")
+for required in ("command -v pandoc", "pandoc --version"):
+    assert provision < block.index(required) < gate, required
 PY
   then
     pass "manual full gate uses a disposable Git-backed macOS VM without changing defaults"

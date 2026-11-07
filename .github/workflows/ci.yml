@@ -125,6 +125,11 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Provision Pandoc in the disposable VM
+        shell: bash
+        run: |
+          HOMEBREW_NO_AUTO_UPDATE=1 brew install pandoc
+
       - name: Run complete gate in the disposable VM
         shell: bash
         run: |
@@ -134,6 +139,8 @@ jobs:
           git rev-parse HEAD 'HEAD^{tree}'
           sw_vers
           uname -m
+          command -v pandoc
+          pandoc --version
           # Keep Git-free fixtures outside the checkout. Native-default probes
           # may allocate elsewhere; the whole fresh job VM is their boundary.
           scratch="$(mktemp -d "${RUNNER_TEMP%/}/skelepress-gate.XXXXXXXX")"
