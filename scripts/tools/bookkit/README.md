@@ -71,6 +71,7 @@ Validated against `scripts/tools/bookkit/series.schema.json`.
 | `collection` | Name of the series; passed to pandoc as the `collection` metadata variable. |
 | `author`, `publisher`, `rights`, `language` | Shared defaults; a volume's manifest overrides each of them. `language` must be one of the toolkit's supported codes (`en`, `es`, `pt`, `gl`). |
 | `volumes` | Required, at least one entry. Ordered list of volume directory names relative to the series directory; the order is the build and reading order. |
+| `running_headers` | Optional boolean shared PDF running-header request; a volume may override it, including with `false`. Omitted means no generated setting. |
 
 ## `manifest.yaml` (one per volume)
 
@@ -87,6 +88,7 @@ Validated against `scripts/tools/bookkit/manifest.schema.json`.
 | `collection` | Optional; in the single-volume shape the manifest may declare it, in the series shape `series.yaml` provides the default. |
 | `author`, `publisher`, `rights`, `language` | Optional overrides of the `series.yaml` defaults; in the single-volume shape the manifest is their only source. |
 | `chapter_start` | Optional integer, 1 or more. The volume's first chapter prints with that number: the generated mode file sets the LaTeX chapter counter to `chapter_start - 1`. |
+| `running_headers` | Optional boolean, overriding the series value. Emitted as `pandoc.running_headers` only when declared or inherited. Strings are rejected. |
 | `chapters` | Required, non-empty: either the keyword `ordered` or an ordered list of entries. |
 | `chapters_dir` | Optional string, default `chapters`. Only read when `chapters` is `ordered`. |
 | `front_matter`, `back_matter` | Optional ordered maps of **logical name to entry**; the render order follows the manifest order. |
@@ -94,6 +96,19 @@ Validated against `scripts/tools/bookkit/manifest.schema.json`.
 | `toc_labels` | Optional map of `chapters` and `appendices` to the words `toc_separators: label` prints. Required by that style, and only for the boundaries the volume actually has. |
 
 Every path in a manifest is relative to **the volume directory**.
+
+### `running_headers` (contract preparation)
+
+A series can declare `running_headers: true` once; a volume's
+`running_headers: false` opts that volume out. When neither manifest supplies
+it, the generated configuration stays unchanged. Both manifest contracts and
+the configuration contract remain version 1.
+
+The generated setting currently routes a request only: enabled PDF jobs get
+`-V running-headers=true`, and EPUB jobs get no header argument or metadata.
+Visible layout in the shipped templates is a separate follow-up, not delivered
+by this adapter change. Custom templates stay consumer-owned and must opt in
+themselves; see the [configuration routing contract](../../../docs/usage.md#pdf-running-header-request-contract-preparation).
 
 ### `chapters: ordered`
 

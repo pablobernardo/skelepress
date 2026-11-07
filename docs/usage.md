@@ -161,6 +161,7 @@ renderer applies the value in the middle column when they are absent:
 | `filters.mermaid.background` | `transparent` | the mermaid filter is enabled |
 | `pandoc.metadata_file` | absent: `document.*` reaches the template | always |
 | `pandoc.top_level_division` | absent: Pandoc's own choice | the template typesets top-level headings differently from Pandoc's default |
+| `pandoc.running_headers` | `false` (no argument emitted) | a PDF template opts into book/chapter running headers |
 | `output.file_prefix` | a slug of `document.title` | always |
 | `output.formats` | `[pdf]` | you want EPUB or multiple formats |
 
@@ -272,6 +273,34 @@ The validator implements an explicit subset of JSON Schema (`type`, `properties`
 **`default` is not equivalent to `chapter`.** It is `chapter` that makes the `book` class typeset a top-level heading as `\chapter` — the one that prints "Chapter 1" and lists the entry in the contents with a chapter number. `default` only lets Pandoc infer the division from the class, which does not guarantee a `\chapter`: a template that expects chapters must say `top_level_division: chapter` explicitly, the way `templates/book.tex` relies on the value the bookkit adapter emits.
 
 Templates that expect chapters — the builtin `book` — pair with `top_level_division: chapter`; `templates/book.tex` relies on that and defines no heading commands of its own. The valid values, the error message and how a value becomes an argument live in one shared module (`scripts/runtime/top_level_division_runtime.py`), so `validate-config` and the renderer cannot disagree.
+
+### PDF running-header request (contract preparation)
+
+`pandoc.running_headers` is an optional boolean in configuration version 1:
+
+```yaml
+pandoc:
+  # Keep your other required pandoc fields.
+  running_headers: true
+```
+
+`true` adds only `-V running-headers=true` to PDF jobs, including when a
+`pandoc.metadata_file` supplies the title. Omitted or `false` leaves existing
+plans unchanged; strings such as `"false"` are rejected. EPUB jobs receive no
+extra argument or metadata: running headers belong to the reading application.
+Title precedence is unchanged: a configured metadata file still wins over
+`document.title`.
+
+**This contract/routing step does not yet add visible headers to the shipped
+PDF templates.** Their layout and generated-PDF acceptance follow separately;
+do not treat this option alone as a completed layout feature. No new CLI flag
+or renderer is involved.
+
+Consumer-owned templates are never rewritten. A custom template can adopt the
+request with Pandoc's `$if(running-headers)$` conditional around its own header
+layout, using the existing `title` and its own chapter marks. It remains
+responsible for typography, overflow and suppressing headers on exceptional
+pages. A template that ignores the variable retains its existing layout.
 
 Render the PDF:
 

@@ -88,11 +88,25 @@ division and the number numbers the page.
 | `chapters` | Either an ordered list of files or the keyword `ordered`, which takes every `*.md` from `chapters_dir`. |
 | `chapters_dir` | Folder for `ordered`; defaults to `chapters`. |
 | `chapter_start` | The number the volume's first chapter prints with, so a second volume can continue the first instead of restarting at 1. |
+| `running_headers` | Optional boolean request, emitted as `pandoc.running_headers`. A series can share it; a volume's explicit `false` overrides `true`. |
 | `toc_separators` | Separates the contents into blocks: `none`, `space` (default), `rule`, or `label`. |
 | `toc_labels` | The words `label` prints, for `chapters` and `appendices`. |
 
 The generated configuration also carries what makes it a book: `template: book`
 and `top_level_division: chapter`.
+
+## Requesting running headers
+
+Set `running_headers: true` in a volume's `manifest.yaml`, or in `series.yaml`
+to share the request across volumes. A volume can opt out with
+`running_headers: false`. With neither declaration, generated configurations
+remain unchanged; quoted strings are not booleans and are rejected.
+
+This is currently **contract preparation only**, not visible header layout in
+the shipped templates. The generated configuration requests a PDF-only template
+variable; EPUB content is unaffected and custom templates are never modified.
+See [the routing contract and custom-template adoption](usage.md#pdf-running-header-request-contract-preparation)
+for the exact argument and metadata precedence.
 
 ## Separating the contents
 
