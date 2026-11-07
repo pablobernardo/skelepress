@@ -19,8 +19,9 @@ A **book project** is a directory that is one of two shapes:
   own `manifest.yaml`, which may override any shared field.
 
 A project without `series.yaml` is a single volume: one adapter handles
-both shapes. The manifests describe **what** each volume contains, never
-how it is rendered: no engine, no output settings. The tool turns that
+both shapes. The manifests primarily describe **what** each volume contains:
+no engine or output settings. `running_headers` is an optional, narrowly scoped
+typesetting exception, like the contents-separator choices below. The tool turns that
 model into one standard `skelepress.config.yaml` per volume and calls
 `bin/skelepress render`. The toolkit never learns that manifests or series
 exist.
@@ -97,18 +98,24 @@ Validated against `scripts/tools/bookkit/manifest.schema.json`.
 
 Every path in a manifest is relative to **the volume directory**.
 
-### `running_headers` (contract preparation)
+### `running_headers`
 
 A series can declare `running_headers: true` once; a volume's
 `running_headers: false` opts that volume out. When neither manifest supplies
 it, the generated configuration stays unchanged. Both manifest contracts and
 the configuration contract remain version 1.
 
-The generated setting currently routes a request only: enabled PDF jobs get
-`-V running-headers=true`, and EPUB jobs get no header argument or metadata.
-Visible layout in the shipped templates is a separate follow-up, not delivered
-by this adapter change. Custom templates stay consumer-owned and must opt in
-themselves; see the [configuration routing contract](../../../docs/usage.md#pdf-running-header-request-contract-preparation).
+Enabled PDF jobs get `-V running-headers=true`. The shipped book template prints
+book-title/current-chapter headers on both parities, abbreviating only repeated
+header text. Cover/title, chapter-opening and intentionally blank pages have no
+headers or rule. Numbered and starred chapters both update the current title;
+sections do not replace it. The default article template uses top-level sections
+instead. EPUB jobs get no header argument or metadata.
+
+The enabled shipped PDF layout requires `truncate.sty`, checked by doctor and
+by render before output creation; see [dependencies](../../../docs/dependencies.md).
+Custom templates stay consumer-owned and implement the template variable
+themselves; see the [page policy and adoption guide](../../../docs/usage.md#pdf-running-headers).
 
 ### `chapters: ordered`
 
