@@ -46,6 +46,19 @@ The suite is one process: `tests/run.sh` sources every area file under `tests/l1
 runs them in order. There is no per-area flag, so when you touch one area, read
 its file and expect the whole suite to tell you what else broke.
 
+## Temporary test allocations
+
+`new_test_tmpfile` and `new_test_tmpdir` in `tests/lib.sh` honor a nonempty
+`TMPDIR` using an explicit template. Supply an existing, caller-owned absolute
+root; spaces and a trailing slash are supported. An invalid root fails with
+native diagnostics, without creating the root or falling back elsewhere.
+Unset or empty `TMPDIR` preserves native `mktemp` / `mktemp -d` behavior.
+
+This contract covers `new_contract_sandbox` in `tests/lib.sh` and direct shell
+allocations in `tests/l1/render/native.sh`, `tests/l1/render/running-headers.sh`,
+and `tests/l1/docs.sh`. It is not a global isolation guarantee: unconverted L1,
+Python, and runtime allocations remain outside this scope.
+
 ## Test first
 
 A behaviour change comes with a test that fails before it. The suite is shell,

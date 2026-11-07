@@ -4,7 +4,7 @@
 
 run_render_native_test() {
   local sandbox
-  sandbox="$(mktemp -d)"
+  sandbox="$(new_test_tmpdir)" || return
   mkdir -p "${sandbox}/bin" "${sandbox}/schemas" "${sandbox}/scripts" "${sandbox}/scripts/runtime" "${sandbox}/chapters" "${sandbox}/templates"
 
   cp "$CLI" "${sandbox}/bin/skelepress"
@@ -44,7 +44,7 @@ title: Render Test
 EOF
 
   local tmpbin
-  tmpbin="$(mktemp -d)"
+  tmpbin="$(new_test_tmpdir)" || return
 
   cat >"${tmpbin}/pandoc" <<'EOF'
 #!/bin/bash
@@ -76,8 +76,8 @@ EOF
   chmod +x "${tmpbin}/pandoc"
 
   local capture out suffix md_file pdf_file
-  capture="$(mktemp)"
-  out="$(mktemp)"
+  capture="$(new_test_tmpfile)" || return
+  out="$(new_test_tmpfile)" || return
   suffix="$(date +%Y%m%d)"
   md_file="${sandbox}/custom-output/report-${suffix}.md"
   pdf_file="${sandbox}/custom-output/report-${suffix}.pdf"
@@ -114,7 +114,7 @@ EOF
 
 run_render_native_advanced_paths_test() {
   local sandbox
-  sandbox="$(mktemp -d)"
+  sandbox="$(new_test_tmpdir)" || return
   mkdir -p "${sandbox}/bin" "${sandbox}/schemas" "${sandbox}/scripts" "${sandbox}/scripts/runtime" "${sandbox}/chapters" "${sandbox}/filters" "${sandbox}/assets/media" "${sandbox}/templates"
 
   cp "$CLI" "${sandbox}/bin/skelepress"
@@ -150,7 +150,7 @@ end
 EOF
 
   local tmpbin
-  tmpbin="$(mktemp -d)"
+  tmpbin="$(new_test_tmpdir)" || return
 
   cat >"${tmpbin}/pandoc" <<'EOF'
 #!/bin/bash
@@ -164,8 +164,8 @@ EOF
   chmod +x "${tmpbin}/pandoc"
 
   local capture out
-  capture="$(mktemp)"
-  out="$(mktemp)"
+  capture="$(new_test_tmpfile)" || return
+  out="$(new_test_tmpfile)" || return
 
   if TMP_PANDOC_CAPTURE="$capture" PATH="${tmpbin}:$PATH" "${sandbox}/bin/skelepress" render -c "${sandbox}/render-extra-filter.config.yaml" >"$out" 2>&1; then
     pass "advanced render runs pandoc"
@@ -198,7 +198,7 @@ EOF
 
 run_render_missing_explicit_file_test() {
   local sandbox
-  sandbox="$(mktemp -d)"
+  sandbox="$(new_test_tmpdir)" || return
   mkdir -p "${sandbox}/bin" "${sandbox}/schemas" "${sandbox}/scripts" "${sandbox}/scripts/runtime" "${sandbox}/chapters" "${sandbox}/templates"
 
   cp "$CLI" "${sandbox}/bin/skelepress"
@@ -232,7 +232,7 @@ title: Missing explicit
 EOF
 
   local out
-  out="$(mktemp)"
+  out="$(new_test_tmpfile)" || return
 
   set +e
   SKELEPRESS_LANG=es "${sandbox}/bin/skelepress" render -c "${sandbox}/render-missing-explicit.config.yaml" >"$out" 2>&1
@@ -260,7 +260,7 @@ EOF
 run_render_top_level_division_test() {
   local sandbox tmpbin capture out cfg
 
-  sandbox="$(mktemp -d)"
+  sandbox="$(new_test_tmpdir)" || return
   mkdir -p "${sandbox}/bin" "${sandbox}/schemas" "${sandbox}/scripts" "${sandbox}/scripts/runtime" "${sandbox}/chapters" "${sandbox}/templates"
 
   cp "$CLI" "${sandbox}/bin/skelepress"
@@ -299,11 +299,11 @@ EOF2
 title: Render Test
 EOF2
 
-  tmpbin="$(mktemp -d)"
+  tmpbin="$(new_test_tmpdir)" || return
   write_pandoc_capture_mock "$tmpbin"
 
-  capture="$(mktemp)"
-  out="$(mktemp)"
+  capture="$(new_test_tmpfile)" || return
+  out="$(new_test_tmpfile)" || return
 
   # (a) A valid value reaches pandoc's argv as the exact CLI flag.
   cfg="${sandbox}/render-top-level-division.config.yaml"
@@ -359,7 +359,7 @@ run_render_python39_test() {
   fi
 
   local sandbox
-  sandbox="$(mktemp -d)"
+  sandbox="$(new_test_tmpdir)" || return
   mkdir -p "${sandbox}/bin" "${sandbox}/schemas" "${sandbox}/scripts/runtime" "${sandbox}/chapters" "${sandbox}/templates"
 
   cp "$CLI" "${sandbox}/bin/skelepress"
@@ -383,7 +383,7 @@ EOF
   # python3 on PATH is the macOS system interpreter; pandoc is a stub that
   # produces the output artifact without typesetting anything.
   local tmpbin
-  tmpbin="$(mktemp -d)"
+  tmpbin="$(new_test_tmpdir)" || return
   ln -s /usr/bin/python3 "${tmpbin}/python3"
   cat >"${tmpbin}/pandoc" <<'EOF'
 #!/bin/bash
@@ -409,7 +409,7 @@ EOF
   chmod +x "${tmpbin}/pandoc"
 
   local out pdf_file
-  out="$(mktemp)"
+  out="$(new_test_tmpfile)" || return
   pdf_file="${sandbox}/custom-output/report-$(date +%Y%m%d).pdf"
 
   if PATH="${tmpbin}:$PATH" "${sandbox}/bin/skelepress" render -c "${sandbox}/render.config.yaml" >"$out" 2>&1; then
