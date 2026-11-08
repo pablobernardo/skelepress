@@ -91,6 +91,7 @@
         "toc": { "type": "boolean" },
         "toc_depth": { "type": "integer", "minimum": 1 },
         "number_sections": { "type": "boolean" },
+        "running_headers": { "type": "boolean" },
         "top_level_division": {
           "type": "string",
           "enum": ["default", "section", "chapter", "part"]

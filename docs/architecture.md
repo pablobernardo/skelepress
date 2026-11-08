@@ -204,6 +204,24 @@ renders. There is no `defaults/default.yaml` and no baseline merge: the schema
 is the only source of truth, and the renderer applies only its historical
 code-level fallbacks for absent keys.
 
+`pandoc.running_headers: true` is a PDF-only opt-in in configuration version 1.
+The shipped templates use the existing title and top-level heading marks in two
+bounded 8pt header regions; only those repeated strings are abbreviated with
+`truncate`. The book class uses chapters, the default article uses sections,
+and numbered/starred headings share the exception policy documented in
+[usage](usage.md#pdf-running-headers). Neither template changes its default-off
+layout, class or hierarchy. Consumer-owned templates implement the variable
+themselves and are never rewritten; EPUB receives no header metadata.
+
+The optional `truncate.sty` dependency is selected by one shared preflight
+predicate (PDF selected, option exactly true, shipped template resolved through
+`template_runtime`). Doctor includes it in its normal localized missing list;
+the renderer reuses the predicate, package lookup and error surface before
+execution creates output. This is a narrow guard, not a new global doctor run:
+absent/false, custom templates, EPUB-only and dry-run execution are unchanged.
+It is not waivable with `runtime.strict: false`. See
+[dependencies](dependencies.md).
+
 `skelepress render -c <config> --dry-run [--json]` computes a pure plan
 (nothing is written or created) with `plan_version: 1`, containing the
 selected chapters, output targets, the exact pandoc `argv`, and the filter

@@ -92,6 +92,107 @@ PY
   rm -rf "$scratch"
 }
 
+# Exercise inheritance through emitted configurations, not adapter internals.
+run_book_running_headers_test() {
+  local scratch
+  scratch="$(mktemp -d)"
+  mkdir -p "$scratch/home"
+  if "$REAL_PYTHON3" - "$CLI" "$scratch" <<'PY'
+import json
+import os
+import subprocess
+import sys
+import unittest
+from pathlib import Path
+
+cli, scratch = sys.argv[1], Path(sys.argv[2]).resolve()
+env = dict(os.environ, HOME=str(scratch / "home"),
+           XDG_CONFIG_HOME=str(scratch / "home"), SKELEPRESS_LANG="en",
+           SKELEPRESS_PROJECT_ENV=str(scratch / "no-project-env"))
+
+
+class BookHeaders(unittest.TestCase):
+    def test_manifest_contract_and_inheritance(self):
+        baselines = {}
+        cases = [(None, None, None), (None, True, True), (None, False, False),
+                 (True, None, True), (True, False, False), (False, True, True),
+                 (False, None, False), (None, "false", "invalid"),
+                 ("true", None, "invalid"), (None, 1, "invalid"),
+                 (1, None, "invalid"), (None, [], "invalid"),
+                 ({}, None, "invalid")]
+        for index, (shared, override, expected) in enumerate(cases):
+            for series in (False, True):
+                if not series and shared is not None:
+                    continue
+                with self.subTest(shared=shared, override=override, series=series):
+                    root = scratch / f"case-{index}-{series}"
+                    project = root / "project"
+                    volume = project / "volume" if series else project
+                    volume.mkdir(parents=True)
+                    (volume / "chapter.md").write_text("# Chapter\n\nNeutral text.\n")
+                    manifest = dict(manifest_version=1, profile="book", title="Header Test",
+                                    chapters=["chapter.md"])
+                    if override is not None:
+                        manifest["running_headers"] = override
+                    (volume / "manifest.yaml").write_text(json.dumps(manifest))
+                    if series:
+                        defaults = dict(manifest_version=1, volumes=["volume"], author="Series Author")
+                        if shared is not None:
+                            defaults["running_headers"] = shared
+                        (project / "series.yaml").write_text(json.dumps(defaults))
+                    output = root / "out"
+                    # An invalid contract must not touch existing output/counters.
+                    output.mkdir()
+                    (output / "sentinel").write_text("unchanged\n")
+                    before = {str(p): p.read_bytes() for p in root.rglob("*") if p.is_file()}
+                    result = subprocess.run([cli, "book", "--check", "--out", "out", "project"],
+                                            cwd=root, env=env, capture_output=True, text=True)
+                    invalid = expected == "invalid"
+                    self.assertEqual(result.returncode, 1 if invalid else 0, result.stdout + result.stderr)
+                    self.assertEqual(result.stderr, "")
+                    if invalid:
+                        self.assertEqual(result.stdout, "❌ 'running_headers' must be of type boolean\n")
+                        self.assertEqual(before, {str(p): p.read_bytes() for p in root.rglob("*") if p.is_file()})
+                        continue
+                    relative = "project/volume" if series else "project"
+                    label = "project/volume" if series else "project/project"
+                    self.assertEqual(result.stdout, f"==> {label}\n    config: out/{relative}/skelepress.config.yaml\n"
+                                     "Check ok: 1 volume(s) validated, configurations in out\n")
+                    config = output / relative / "skelepress.config.yaml"
+                    text = config.read_text()
+                    if expected is None:
+                        self.assertNotIn("running_headers", text)
+                        baselines[series] = text
+                    else:
+                        setting = f"  running_headers: {str(expected).lower()}\n"
+                        self.assertIn(setting, text)
+                        self.assertEqual(text.replace(setting, ""), baselines[series],
+                                         "only the declared boolean changes the generated configuration")
+                    self.assertIn('template: "book"', text)
+                    self.assertIn("top_level_division: chapter", text)
+                    if series:
+                        self.assertIn('author: "Series Author"', text)
+                    self.assertEqual((config.parent / "generated/00-mainmatter.md").read_text().splitlines()[0],
+                                     "\\mainmatter")
+                    for path, content in before.items():
+                        self.assertEqual(Path(path).read_bytes(), content)
+                    # Generated output must be accepted by the public validator.
+                    validation = subprocess.run([cli, "validate-config", "-c", str(config)],
+                                                cwd=root, env=env, capture_output=True, text=True)
+                    self.assertEqual((validation.returncode, validation.stdout, validation.stderr),
+                                     (0, "✅ Config valid\n", ""))
+
+
+unittest.main(argv=[sys.argv[0]])
+PY
+  then
+    pass "book --check preserves absent output and applies boolean inheritance/false overrides"
+  else
+    fail "book running_headers public manifest contract"
+  fi
+  rm -rf "$scratch"
+}
+
 run_bookkit_tests() {
   local tool="${ROOT_DIR}/scripts/tools/bookkit/build.py"
   local single="${ROOT_DIR}/examples/book-kit/single"
@@ -401,6 +502,52 @@ run_book_command_test() {
   assert_contains "$help_out" "skelepress book" "--help lists the book subcommand"
   rm -f "$help_out"
 
+  # --- Detailed help describes the public interface without writing ------
+
+  mkdir -p "$scratch/help-work"
+  local book_help="$scratch/book-help" book_err="$scratch/book-help.err"
+  local flat="$scratch/book-help-flat" translated="$scratch/book-help-translated"
+  if (cd "$scratch/help-work" && SKELEPRESS_LANG=en "$CLI" book --help) >"$book_help" 2>"$book_err"; then
+    pass "book --help exits successfully"
+  else
+    fail "book --help must exit successfully"
+  fi
+  assert_contains "$book_help" "^usage: skelepress book " "book help uses its public command name"
+  assert_not_contains "$book_help" "build\\.py|<project>/templates/book\\.tex" "book help hides internal naming and the stale template default"
+  tr '\n' ' ' <"$book_help" >"$flat"
+  assert_contains "$flat" "manifest.yaml.*series.yaml" "book help explains volume and series inputs"
+  assert_contains "$flat" "default:[[:space:]]+\\.skelepress" "book help states the default output directory"
+  assert_contains "$flat" "working[[:space:]]+directory" "book help explains relative output resolution"
+  assert_contains "$flat" "default:[[:space:]]+book" "book help states the actual builtin template default"
+  assert_contains "$flat" "without rendering" "book help explains check-only behavior"
+  assert_contains "$book_help" "skelepress book --check path/to/volume" "book help includes a check-only example"
+  assert_contains "$book_help" "skelepress book --out output path/to/volume path/to/series" "book help includes a multiple-project example"
+  if [[ ! -s "$book_err" ]]; then pass "successful book help has empty stderr"; else fail "book help must not emit stderr"; fi
+  local lang
+  for lang in es pt gl; do
+    if (cd "$scratch/help-work" && SKELEPRESS_LANG="$lang" "$CLI" book --help) >"$translated" 2>"$book_err"; then
+      pass "book help succeeds in ${lang}"
+    else
+      fail "book help must succeed in ${lang}"
+    fi
+    if cmp -s "$book_help" "$translated"; then fail "book help must translate ${lang}"; else pass "book help translates ${lang}"; fi
+    assert_contains "$translated" "usage: skelepress book " "localized help retains the public command in ${lang}"
+    assert_not_contains "$translated" "\\{out\\}|\\{template\\}" "localized help substitutes defaults in ${lang}"
+    if [[ ! -s "$book_err" ]]; then pass "localized book help has empty stderr in ${lang}"; else fail "localized help must not emit stderr"; fi
+  done
+  set +e
+  (cd "$scratch/help-work" && "$CLI" book --unknown-option) >"$translated" 2>"$book_err"
+  local argument_code=$?
+  set -e
+  assert_exit_code "2" "$argument_code" "book argument errors retain their exit code"
+  assert_contains "$book_err" "^usage: build\\.py " "non-help argument diagnostics retain their previous program name"
+  if [[ ! -s "$translated" ]]; then pass "book argument errors retain empty stdout"; else fail "book argument errors must not emit stdout"; fi
+  if [[ -z "$(find "$scratch/help-work" -mindepth 1 -print -quit)" ]]; then
+    pass "help and rejected arguments do not create output or mutate the working directory"
+  else
+    fail "help and rejected arguments must not write project data"
+  fi
+
   # --- The subcommand matches the direct tool invocation ------------------
 
   local direct_out cli_out
@@ -408,19 +555,19 @@ run_book_command_test() {
   cli_out="$(mktemp)"
   mkdir -p "$scratch/run-direct" "$scratch/run-cli"
   set +e
-  (cd "$scratch/run-direct" && python3 "$tool" --check --out out "$proj") >"$direct_out" 2>&1
+  (cd "$scratch/run-direct" && python3 "$tool" --check --out out "$proj") >"$direct_out" 2>"$direct_out.err"
   local direct_code=$?
-  (cd "$scratch/run-cli" && "$CLI" book --check --out out "$proj") >"$cli_out" 2>&1
+  (cd "$scratch/run-cli" && "$CLI" book --check --out out "$proj") >"$cli_out" 2>"$cli_out.err"
   local cli_code=$?
   set -e
   assert_exit_code "0" "$direct_code" "the direct tool invocation passes for the example project"
   assert_exit_code "$direct_code" "$cli_code" "skelepress book exits with the tool's own exit code"
-  if cmp -s "$direct_out" "$cli_out"; then
-    pass "skelepress book prints exactly what the direct tool invocation prints"
+  if cmp -s "$direct_out" "$cli_out" && cmp -s "$direct_out.err" "$cli_out.err"; then
+    pass "skelepress book forwards exact stdout and stderr from the direct tool"
   else
-    fail "skelepress book must forward stdout unchanged to the tool"
+    fail "skelepress book must forward stdout and stderr unchanged to the tool"
   fi
-  rm -f "$direct_out" "$cli_out"
+  rm -f "$direct_out" "$cli_out" "$direct_out.err" "$cli_out.err"
 
   # --- A failing invocation still fails with the tool's own message -------
 

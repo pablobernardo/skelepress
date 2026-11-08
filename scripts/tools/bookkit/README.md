@@ -19,8 +19,9 @@ A **book project** is a directory that is one of two shapes:
   own `manifest.yaml`, which may override any shared field.
 
 A project without `series.yaml` is a single volume: one adapter handles
-both shapes. The manifests describe **what** each volume contains, never
-how it is rendered: no engine, no output settings. The tool turns that
+both shapes. The manifests primarily describe **what** each volume contains:
+no engine or output settings. `running_headers` is an optional, narrowly scoped
+typesetting exception, like the contents-separator choices below. The tool turns that
 model into one standard `skelepress.config.yaml` per volume and calls
 `bin/skelepress render`. The toolkit never learns that manifests or series
 exist.
@@ -71,6 +72,7 @@ Validated against `scripts/tools/bookkit/series.schema.json`.
 | `collection` | Name of the series; passed to pandoc as the `collection` metadata variable. |
 | `author`, `publisher`, `rights`, `language` | Shared defaults; a volume's manifest overrides each of them. `language` must be one of the toolkit's supported codes (`en`, `es`, `pt`, `gl`). |
 | `volumes` | Required, at least one entry. Ordered list of volume directory names relative to the series directory; the order is the build and reading order. |
+| `running_headers` | Optional boolean shared PDF running-header request; a volume may override it, including with `false`. Omitted means no generated setting. |
 
 ## `manifest.yaml` (one per volume)
 
@@ -87,6 +89,7 @@ Validated against `scripts/tools/bookkit/manifest.schema.json`.
 | `collection` | Optional; in the single-volume shape the manifest may declare it, in the series shape `series.yaml` provides the default. |
 | `author`, `publisher`, `rights`, `language` | Optional overrides of the `series.yaml` defaults; in the single-volume shape the manifest is their only source. |
 | `chapter_start` | Optional integer, 1 or more. The volume's first chapter prints with that number: the generated mode file sets the LaTeX chapter counter to `chapter_start - 1`. |
+| `running_headers` | Optional boolean, overriding the series value. Emitted as `pandoc.running_headers` only when declared or inherited. Strings are rejected. |
 | `chapters` | Required, non-empty: either the keyword `ordered` or an ordered list of entries. |
 | `chapters_dir` | Optional string, default `chapters`. Only read when `chapters` is `ordered`. |
 | `front_matter`, `back_matter` | Optional ordered maps of **logical name to entry**; the render order follows the manifest order. |
@@ -94,6 +97,25 @@ Validated against `scripts/tools/bookkit/manifest.schema.json`.
 | `toc_labels` | Optional map of `chapters` and `appendices` to the words `toc_separators: label` prints. Required by that style, and only for the boundaries the volume actually has. |
 
 Every path in a manifest is relative to **the volume directory**.
+
+### `running_headers`
+
+A series can declare `running_headers: true` once; a volume's
+`running_headers: false` opts that volume out. When neither manifest supplies
+it, the generated configuration stays unchanged. Both manifest contracts and
+the configuration contract remain version 1.
+
+Enabled PDF jobs get `-V running-headers=true`. The shipped book template prints
+book-title/current-chapter headers on both parities, abbreviating only repeated
+header text. Cover/title, chapter-opening and intentionally blank pages have no
+headers or rule. Numbered and starred chapters both update the current title;
+sections do not replace it. The default article template uses top-level sections
+instead. EPUB jobs get no header argument or metadata.
+
+The enabled shipped PDF layout requires `truncate.sty`, checked by doctor and
+by render before output creation; see [dependencies](../../../docs/dependencies.md).
+Custom templates stay consumer-owned and implement the template variable
+themselves; see the [page policy and adoption guide](../../../docs/usage.md#pdf-running-headers).
 
 ### `chapters: ordered`
 

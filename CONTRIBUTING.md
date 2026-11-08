@@ -56,6 +56,19 @@ separate from the normal suite; it does not replace EPUBCheck or establish
 four-publication visual acceptance by itself. See its guide for safe mounts,
 sandbox prerequisites, bounded execution and evidence interpretation.
 
+## Temporary test allocations
+
+`new_test_tmpfile` and `new_test_tmpdir` in `tests/lib.sh` honor a nonempty
+`TMPDIR` using an explicit template. Supply an existing, caller-owned absolute
+root; spaces and a trailing slash are supported. An invalid root fails with
+native diagnostics, without creating the root or falling back elsewhere.
+Unset or empty `TMPDIR` preserves native `mktemp` / `mktemp -d` behavior.
+
+This contract covers `new_contract_sandbox` in `tests/lib.sh` and direct shell
+allocations in `tests/l1/render/native.sh`, `tests/l1/render/running-headers.sh`,
+and `tests/l1/docs.sh`. It is not a global isolation guarantee: unconverted L1,
+Python, and runtime allocations remain outside this scope.
+
 ## Test first
 
 A behaviour change comes with a test that fails before it. The suite is shell,
@@ -72,6 +85,22 @@ When the guides change, regenerate the documentation PDF for visual review:
 ```bash
 bin/skelepress render -c examples/documentation/skelepress.config.yaml
 ```
+
+Running-header layout changes also need actual PDF acceptance (Pandoc, XeLaTeX
+and Poppler required):
+
+```bash
+python3 tests/integration/check-running-headers.py --work .git/pdf-running-headers/review/normal
+python3 tests/integration/check-running-headers.py --unbroken --work .git/pdf-running-headers/review/unbroken
+```
+
+The checker invokes public doctor/render commands and retains PDFs, per-page
+PNGs, text/bbox assertions and a page-role manifest. Inspect both parities,
+transitions and exceptional pages, not just extracted strings. The unbroken
+stress tests header bounds; the ordinary fixture additionally checks complete
+titles in title/TOC/heading content. Use `--disabled` for a default-off control;
+compare same-path text and raster output against a capture made before edits.
+Raw PDF hashes can differ even when text and pixels agree.
 
 For configuration input, subprocesses or dependency changes, follow the review
 guidance and trust model in [the security policy](.github/SECURITY.md).
@@ -149,6 +178,7 @@ CI levels:
 Workflow and manual inputs:
 
 - Workflow: `.github/workflows/ci.yml`
+- `run_full_gate_macos=true` to run the [isolated full gate](#isolated-full-gate)
 - `run_render_integration=true` to run **L2**
 - `run_render_full=true` to run **L3**
 
@@ -164,6 +194,61 @@ gh workflow run ci.yml -f run_render_full=true
 gh run list --workflow ci.yml
 gh run view --log
 ```
+
+### Isolated full gate
+
+For the complete `make gate` in a disposable hosted macOS VM, select the
+opt-in input on the branch containing the workflow:
+
+```bash
+gh workflow run ci.yml --ref <branch> -f run_full_gate_macos=true
+```
+
+The input defaults to false and does not change the existing CI levels.
+The job installs Homebrew's available Pandoc package inside the disposable VM,
+then requires the executable and logs its version before running the gate.
+Dependencies installed in L2/L3 or on a developer machine are not inherited by
+this job. Missing Pandoc must fail preparation, not silently omit its tests.
+The job uses a real Git checkout: example enumeration and packaging require
+Git metadata, and packaging intentionally reads committed `HEAD`. An archive
+export is not a substitute. Temporary documentation fixtures use a fresh root
+outside the checkout so negative checks cannot inherit its Git index.
+
+The isolation boundary is the whole fresh hosted VM, not just `TMPDIR`.
+Native-default tests intentionally unset or empty `TMPDIR`; their allocations
+and the release tests' temporary checkout edits stay inside that VM. The job
+isolates home/cache directories, records the commit, tree and platform, runs
+the complete gate, and requires a clean checkout afterward. It does not install
+or publish a release, alter temporary-allocation contracts, or establish all
+release acceptance on its own. Record the exact run, head SHA and test results;
+a runner that never starts is missing evidence, not a passed check.
+
+### Candidate acceptance without publication
+
+For an unpublished version newer than the latest stable release, dispatch the
+candidate ref with the explicit release levels and acceptance input:
+
+```bash
+gh workflow run ci.yml --ref <candidate> \
+  -f run_full_gate_macos=true -f run_l1_macos=true \
+  -f run_render_integration=true -f run_render_full=true \
+  -f run_release_acceptance=true -f run_epub_acceptance=true
+```
+
+`run_release_acceptance` defaults to false and enables L3 when selected. Its
+additional step installs PDF inspection tools and the optional symbol font,
+runs the complete gate with the Ubuntu rendering toolchain, then executes
+`scripts/dev/check-release-candidate.py --out <external-evidence-directory>`.
+The script refuses execution outside a disposable GitHub-hosted VM. It checks
+four committed archives/checksums and a second build, installs real archives,
+exercises upgrade from the published stable artifact, checksum rejection and
+post-version-validation rollback over a local HTTP release-API fixture, and
+retains PDF/PNG smoke evidence. No candidate tag or release is created.
+
+Download the `candidate-<commit>` Actions artifact to inspect the PDFs and
+review `result.json` and the exact command logs. Successful generation does not
+establish visual acceptance. The actual candidate download path can only be
+checked after publication; these checks do not claim otherwise.
 
 ## Repository housekeeping
 

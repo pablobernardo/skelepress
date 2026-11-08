@@ -50,8 +50,11 @@ evidence. Release preparation must explicitly request and inspect both jobs.
 The template's default prose and mono faces do not contain the six ballot and
 warning symbols of #83 (`☐ ☑ ☒ ✅ ❌ ⚠`). The template maps exactly those glyphs,
 and only those glyphs, to GNU FreeSerif when the font exists (D14 in
-`docs/architecture.md`). This font is an **optional** dependency: nothing in the
-toolkit, `bootstrap.sh` or CI installs or downloads it.
+`docs/architecture.md`). This font is an **optional** dependency: the toolkit,
+`bootstrap.sh` and ordinary CI do not install or download it. The opt-in
+`run_release_acceptance` profile installs `fonts-freefont-ttf` only in its
+disposable VM to exercise symbol rendering and retain review evidence. It does
+not change consumer prerequisites or the font-absent degradation below.
 
 Where it comes from:
 

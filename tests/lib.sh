@@ -94,9 +94,26 @@ EOF
   chmod +x "${bin_dir}/pandoc"
 }
 
+# Honor explicit caller roots even where native mktemp ignores bare TMPDIR.
+new_test_tmpfile() {
+  if [[ -n "${TMPDIR:-}" ]]; then
+    mktemp "${TMPDIR%/}/tmp.XXXXXXXXXX"
+  else
+    mktemp
+  fi
+}
+
+new_test_tmpdir() {
+  if [[ -n "${TMPDIR:-}" ]]; then
+    mktemp -d "${TMPDIR%/}/tmp.XXXXXXXXXX"
+  else
+    mktemp -d
+  fi
+}
+
 new_contract_sandbox() {
   local sandbox
-  sandbox="$(mktemp -d)"
+  sandbox="$(new_test_tmpdir)" || return
   mkdir -p "${sandbox}/bin" "${sandbox}/work/chapters" "${sandbox}/templates"
   cp "$CLI" "${sandbox}/bin/skelepress"
   chmod +x "${sandbox}/bin/skelepress"

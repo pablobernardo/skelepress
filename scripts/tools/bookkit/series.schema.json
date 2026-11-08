@@ -31,6 +31,10 @@
       "type": "string",
       "description": "Shared default; a volume's language overrides it. The tool restricts it to the toolkit's supported codes (en, es, pt, gl)."
     },
+    "running_headers": {
+      "type": "boolean",
+      "description": "Optional shared PDF running-header request; a volume may override it with true or false."
+    },
     "toc_separators": {
       "type": "string",
       "enum": ["none", "space", "rule", "label"],

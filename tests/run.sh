@@ -26,6 +26,8 @@ done
 main() {
   echo "== Running skelepress tests =="
   run_suite_registration_test
+  run_test_temp_explicit_root_test
+  run_test_temp_native_defaults_test
   run_rename_contract_tests
   run_rename_symlink_root_test
   run_help_test
@@ -55,6 +57,8 @@ main() {
   run_bootstrap_linux_pkg_manager_detection_tests
   run_bootstrap_mermaid_browser_warning_test
   run_ci_render_dependencies_test
+  run_ci_full_gate_test
+  run_ci_candidate_acceptance_test
   run_validate_config_tests
   run_validate_yaml_loader_no_parser_test
   run_validate_metadata_file_test
@@ -68,6 +72,8 @@ main() {
   run_render_python39_test
   run_render_missing_explicit_file_test
   run_render_top_level_division_test
+  run_render_running_headers_test
+  run_running_headers_preflight_test
   run_no_hidden_defaults_test
   run_render_order_semantics_test
   run_render_keep_merged_markdown_test
@@ -124,6 +130,7 @@ main() {
   run_multi_format_export_test
   run_plan_conformance_tests
   run_book_default_output_test
+  run_book_running_headers_test
   run_bookkit_tests
   run_bookkit_toc_separators_test
   run_bookkit_series_defaults_test
