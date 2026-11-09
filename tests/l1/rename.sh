@@ -7,12 +7,14 @@ run_rename_contract_tests() {
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 import sys
 import tempfile
 
 root = Path(sys.argv[1]).resolve()
 cli = root / "bin/skelepress"
+version = (root / "VERSION").read_text(encoding="utf-8").strip()
 
 def check(ok, message, result=None):
     if not ok and result is not None:
@@ -35,7 +37,9 @@ with tempfile.TemporaryDirectory(prefix="skelepress-rename-") as directory:
                 for p in work.rglob("*") if p.is_file()}
 
     result = run("--version")
-    check((result.returncode, result.stdout, result.stderr) == (0, "skelepress 3.0.0\n", ""),
+    check((result.returncode, result.stdout, result.stderr) == (0, f"skelepress {version}\n", "")
+          and re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", version) is not None
+          and int(version.split(".", 1)[0]) >= 3,
           "renamed version has exact identity and major version", result)
     check(not (root / "bin/pandoc-pdf").exists(), "old CLI entrypoint is absent")
     result = run("--help")
@@ -110,7 +114,7 @@ with tempfile.TemporaryDirectory(prefix="skelepress-rename-") as directory:
     result = subprocess.run(["/bin/bash", str(root / "scripts/delivery/install-local.sh"), "dev"],
                             cwd=work, env=install_env, capture_output=True, text=True)
     check(result.returncode == 0 and result.stderr == ""
-          and (work / "managed/versions/v3.0.0-dev/bin/skelepress").is_file()
+          and (work / f"managed/versions/v{version}-dev/bin/skelepress").is_file()
           and (work / "new-bin/skelepress-dev").is_symlink()
           and not (work / "new-bin/pandoc-pdf-dev").exists()
           and not (work / "managed/current").exists(),
