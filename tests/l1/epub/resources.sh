@@ -65,8 +65,33 @@ covers = [item for item in items if "cover-image" in (item.get("properties") or 
 check(len(covers) == 1, "the manifest declares exactly one cover-image item")
 cover_id = covers[0].get("id") if covers else ""
 metas = package.findall(".//o:metadata/o:meta", opf)
-check([m.get("content") for m in metas if m.get("name") == "cover"] == [cover_id],
-      "the package points its cover meta at the cover-image item")
+# EPUB 3 identifies the cover by its manifest property. The EPUB 2 name/content
+# meta is optional, but any supplied reference must identify that actual cover:
+# https://www.w3.org/TR/epub-33/#pkg-legacy-support
+# https://www.w3.org/TR/epub-33/#sec-cover-image
+
+def valid_cover_reference(actual_id, references):
+    return bool(actual_id) and (not references or references == [actual_id])
+
+
+check(valid_cover_reference(cover_id, [m.get("content") for m in metas if m.get("name") == "cover"]),
+      "the cover has an ID and any legacy cover meta points only to that cover-image item")
+
+# Controls exercise the same validator used for the actual package above.
+for actual_id, references, expected, message in [
+    ("cover", [], True, "an EPUB 3 cover needs no legacy cover meta"),
+    ("cover", ["cover"], True, "a single matching legacy cover reference remains valid"),
+    ("cover", ["chapter"], False, "a legacy reference to a different item is rejected"),
+    ("cover", ["missing"], False, "a dangling legacy cover reference is rejected"),
+    ("cover", ["cover", "cover"], False, "duplicate matching legacy cover references are rejected"),
+    ("cover", ["cover", "missing"], False, "mixed duplicate legacy cover references are rejected"),
+    ("cover", [""], False, "an empty legacy cover reference is rejected"),
+    ("cover", [None], False, "a legacy cover meta without content is rejected"),
+    ("", [], False, "an absent cover ID is rejected even without legacy metadata"),
+    ("", [""], False, "an empty cover ID cannot validate an empty legacy reference"),
+    (None, [], False, "a missing cover item ID is rejected"),
+]:
+    check(valid_cover_reference(actual_id, references) == expected, message)
 
 spine = package.findall(".//o:spine/o:itemref", opf)
 first = spine[0].get("idref") if spine else ""
