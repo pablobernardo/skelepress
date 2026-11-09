@@ -46,6 +46,16 @@ The suite is one process: `tests/run.sh` sources every area file under `tests/l1
 runs them in order. There is no per-area flag, so when you touch one area, read
 its file and expect the whole suite to tell you what else broke.
 
+### Opt-in real EPUB reader proof
+
+The isolated [Calibre/Xvfb probe](tests/acceptance/epub-reader/README.md) uses
+Docker to observe the four prepared public EPUB fixtures, activate actual native
+TOC items and live links, and capture paginated evidence without accessing the
+host desktop. It is opt-in and
+separate from the normal suite; it does not replace EPUBCheck or establish
+four-publication visual acceptance by itself. See its guide for safe mounts,
+sandbox prerequisites, bounded execution and evidence interpretation.
+
 ## Temporary test allocations
 
 `new_test_tmpfile` and `new_test_tmpdir` in `tests/lib.sh` honor a nonempty
