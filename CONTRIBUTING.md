@@ -195,6 +195,30 @@ gh run list --workflow ci.yml
 gh run view --log
 ```
 
+### Hosted section-link destination proof
+
+Use `run_section_link_acceptance=true` to run the existing L3 job plus the
+minimal public PDF probe in `tests/l1/render/links.sh`. This input defaults to
+false and does not run release acceptance or change ordinary/release jobs.
+The hosted VM additionally provisions `python3-pypdf` for artifact inspection;
+consumers and the normal suite do not need that optional dependency.
+
+```bash
+gh workflow run ci.yml -f run_section_link_acceptance=true
+```
+
+The probe follows actual PDF GoTo annotations to named destinations. Its fixture
+puts the requested section on a different page from the chapter introduction,
+so a chapter-start destination cannot pass. Download `section-links-<head-sha>`
+to inspect the PDF, render log and `destinations.json` report, including target
+pages and coordinates. A successful local EPUB test does not prove this PDF path.
+
+The PDF test is default-off and reports **SKIP**, not PASS, unless
+`SKELEPRESS_SECTION_LINK_PDF=1`, Pandoc, XeLaTeX and pypdf are available. Set
+`SKELEPRESS_SECTION_LINK_EVIDENCE` to a caller-owned absolute output directory
+to retain its PDF/report/log. Run this opt-in only in disposable hosted VMs,
+never on a shared development machine.
+
 ### Isolated full gate
 
 For the complete `make gate` in a disposable hosted macOS VM, select the

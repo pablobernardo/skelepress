@@ -128,6 +128,7 @@ main() {
   run_epub_document_links_stay_inside_publication_test
   run_chapter_link_rewrite_test
   run_section_link_fragment_tests
+  run_section_link_pdf_destination_test
   run_multi_format_export_test
   run_plan_conformance_tests
   run_book_default_output_test

@@ -53,6 +53,33 @@ PY
   rm -rf "$sandbox"
 }
 
+# Default-off: a hosted VM supplies TeX and pypdf; never render PDF on shared hosts.
+run_section_link_pdf_destination_test() {
+  if [[ "${SKELEPRESS_SECTION_LINK_PDF:-0}" != "1" ]] || \
+    ! command -v pandoc >/dev/null 2>&1 || ! command -v xelatex >/dev/null 2>&1 || \
+    ! "${REAL_PYTHON3}" -c 'import pypdf' >/dev/null 2>&1; then
+    echo "SKIP section link PDF destination (opt-in hosted Pandoc/XeLaTeX/pypdf required)"
+    return 0
+  fi
+  local sandbox code=0
+  sandbox="$(new_epub_sandbox)"
+  cp "${FIXTURES_DIR}/chapter-section-links/pdf/"*.md "${sandbox}/work/chapters/"
+  cp "${FIXTURES_DIR}/chapter-section-links/pdf/default.tex" "${sandbox}/templates/default.tex"
+  write_epub_config "${sandbox}/skelepress.config.yaml" pdf "Section Link Guide" en true
+  "${sandbox}/bin/skelepress" render -c "${sandbox}/skelepress.config.yaml" >"${sandbox}/render.log" 2>&1 || code=$?
+  assert_exit_code "0" "$code" "hosted public PDF section-link render succeeds"
+  code=0
+  "${REAL_PYTHON3}" "${FIXTURES_DIR}/chapter-section-links/check-pdf.py" \
+    "${sandbox}/work/out/epub-guide-manual.pdf" "${sandbox}/destinations.json" || code=$?
+  assert_exit_code "0" "$code" "PDF annotations resolve to the section, not the chapter start"
+  if [[ -n "${SKELEPRESS_SECTION_LINK_EVIDENCE:-}" ]]; then
+    mkdir -p "$SKELEPRESS_SECTION_LINK_EVIDENCE"
+    cp "${sandbox}/work/out/epub-guide-manual.pdf" "${sandbox}/destinations.json" \
+      "${sandbox}/render.log" "$SKELEPRESS_SECTION_LINK_EVIDENCE/"
+  fi
+  rm -rf "$sandbox"
+}
+
 run_chapter_link_rewrite_test() {
   if ! command -v pandoc >/dev/null 2>&1; then
     echo "SKIP chapter links (pandoc not available)"

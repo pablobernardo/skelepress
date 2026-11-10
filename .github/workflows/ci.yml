@@ -42,6 +42,11 @@ on:
         required: false
         default: false
         type: boolean
+      run_section_link_acceptance:
+        description: "Inspect actual cross-chapter PDF destinations (hosted L3)"
+        required: false
+        default: false
+        type: boolean
       run_epub_acceptance:
         description: "Run EPUB acceptance: EPUBCheck over the shipped examples"
         required: false
@@ -226,7 +231,9 @@ jobs:
           (github.event_name == 'workflow_dispatch' &&
            inputs.run_render_full == true) ||
           (github.event_name == 'workflow_dispatch' &&
-           inputs.run_release_acceptance == true) }}
+           inputs.run_release_acceptance == true) ||
+          (github.event_name == 'workflow_dispatch' &&
+           inputs.run_section_link_acceptance == true) }}
 
     steps:
       - name: Checkout
@@ -275,6 +282,50 @@ jobs:
           test -x "$chrome_path"
           test -r "$(npm root -g)/@mermaid-js/mermaid-cli/dist/index.html"
           PUPPETEER_EXECUTABLE_PATH="$chrome_path" bash tests/l3-local.sh
+
+      - name: Inspect actual section-link PDF destinations
+        if: >-
+          ${{ github.event_name == 'workflow_dispatch' &&
+              inputs.run_section_link_acceptance == true }}
+        run: |
+          sudo apt-get install -y python3-pypdf
+          scratch="$(mktemp -d "${RUNNER_TEMP}/section-links.XXXXXXXX")"
+          evidence="${RUNNER_TEMP}/section-link-evidence"
+          mkdir -p "$scratch/home" "$scratch/tmp" "$scratch/cache" \
+            "$scratch/config" "$scratch/data"
+          # The inner shell expands its own fixture variables.
+          # shellcheck disable=SC2016
+          env -i PATH=/usr/bin:/bin HOME="$scratch/home" TMPDIR="$scratch/tmp" \
+            XDG_CACHE_HOME="$scratch/cache" XDG_CONFIG_HOME="$scratch/config" \
+            XDG_DATA_HOME="$scratch/data" PYTHONDONTWRITEBYTECODE=1 \
+            LANG=C LC_ALL=C \
+            SKELEPRESS_LANG=en SKELEPRESS_SECTION_LINK_PDF=1 \
+            SKELEPRESS_SECTION_LINK_EVIDENCE="$evidence" \
+            bash -c 'set -euo pipefail
+              command -v pandoc xelatex
+              python3 -c "import pypdf"
+              ROOT_DIR="$PWD"; CLI="$ROOT_DIR/bin/skelepress"
+              FIXTURES_DIR="$ROOT_DIR/tests/fixtures"
+              REAL_PYTHON3="$(command -v python3)"
+              PASS=0; FAIL=0
+              source tests/lib.sh
+              source tests/l1/epub/support.sh
+              source tests/l1/render/links.sh
+              run_section_link_pdf_destination_test
+              printf "Summary: PASS=%s FAIL=%s\\n" "$PASS" "$FAIL"
+              test "$FAIL" -eq 0'
+
+      - name: Retain section-link PDF evidence
+        if: >-
+          ${{ always() && github.event_name == 'workflow_dispatch' &&
+              inputs.run_section_link_acceptance == true }}
+        # actions/upload-artifact v4.6.2
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: section-links-${{ github.sha }}
+          path: ${{ runner.temp }}/section-link-evidence/
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Accept committed release candidate
         if: ${{ inputs.run_release_acceptance == true }}
