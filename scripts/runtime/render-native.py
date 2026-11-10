@@ -684,8 +684,8 @@ def merged_markdown(chapters: list[str], insert_clearpage: bool) -> str:
     merged = "".join(parts)
     # Chapter-only/no-crossref projects need no extra Pandoc reader invocation.
     has_fragments = any(
-        match.group(2) and Path(match.group(1)).name in markers
-        for text in texts for match in SIBLING_LINK.finditer(text)
+        link_match.group(2) and Path(link_match.group(1)).name in markers
+        for text in texts for link_match in SIBLING_LINK.finditer(text)
     )
     if not markers:
         return merged
