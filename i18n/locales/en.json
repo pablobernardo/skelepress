@@ -59,6 +59,7 @@
   "cli.update.error.dev_blocked": "update is disabled for skelepress-dev; use skelepress",
   "cli.update.confirm": "Install {version} to {path}? [y/N]",
   "cli.update.cancelled": "Update cancelled",
+  "cli.update.checksum_verified": "Artifact matched the published checksum",
   "cli.update.installed": "Updated to version {version}",
   "cli.update.plan.version": "Target version: {version}",
   "cli.update.plan.artifact": "Artifact: {artifact}",

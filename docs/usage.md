@@ -236,7 +236,11 @@ skelepress update --install-dir <path>
 
 `update --check` reports the local version, the latest stable version and whether an update is available.
 
-`update` installs the latest stable version for the current platform.
+`update` installs the latest stable version for the current platform. After checksum
+verification, it prints one localized line confirming that the artifact matched
+the published checksum, before extraction. This confirms verification, not
+installation success; a later extraction or installation step can still fail.
+`--check` and `--dry-run` do not verify downloaded artifacts or print this line.
 
 `update --to <tag>` installs a specific version (for example `v1.2.3`).
 
