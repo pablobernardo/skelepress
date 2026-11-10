@@ -48,7 +48,7 @@ on:
         default: false
         type: boolean
       published_release_tag:
-        description: "Published stable tag to verify; empty skips this job"
+        description: "Published tag; leave all four fields empty to skip"
         required: false
         default: ""
         type: string
@@ -321,7 +321,10 @@ jobs:
     timeout-minutes: 20
     if: >-
       ${{ github.event_name == 'workflow_dispatch' &&
-          inputs.published_release_tag != '' }}
+          (inputs.published_release_tag != '' ||
+           inputs.published_release_sha != '' ||
+           inputs.published_release_checksum != '' ||
+           inputs.published_release_baseline_tag != '') }}
     steps:
       - name: Checkout verification harness
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7

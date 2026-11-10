@@ -132,7 +132,8 @@ an existing tag. A pull request does not exercise this tag/manual workflow.
    | `published_release_checksum` | Approved SHA-256 shared by the four archives |
    | `published_release_baseline_tag` | Previous compatible tag, such as `v3.0.0` |
 
-   Empty inputs leave the new job disabled and preserve existing CI defaults.
+   Leave all four inputs empty to disable the job and preserve existing CI defaults.
+   Supplying any input enables validation; incomplete combinations fail closed.
    The job verifies real GitHub downloads, a clean install and a checksum-verified
    baseline seeded into the documented managed layout; it then exercises that
    old CLI's real `update --check` and default-latest update. Both installed CLIs

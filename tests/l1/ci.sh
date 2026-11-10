@@ -1,6 +1,26 @@
 #!/bin/bash
 # CI dependency declarations; real package installation/rendering runs in L2/L3.
 
+run_ci_published_partial_inputs_test() {
+  if python3 - "${ROOT_DIR}/.github/workflows/ci.yml" <<'PY'
+import re
+import sys
+from pathlib import Path
+workflow = Path(sys.argv[1]).read_text()
+block = re.search(r"^  published-release-acceptance:\n(.*?)(?=^  [\w-]+:|\Z)", workflow, re.M | re.S)[1]
+guard = re.search(r"    if: >-\n(.*?)    steps:", block, re.S)[1]
+names = ("tag", "sha", "checksum", "baseline_tag")
+clauses = ["inputs.published_release_" + name + " != ''" for name in names]
+expected = "${{ github.event_name == 'workflow_dispatch' && (" + " || ".join(clauses) + ") }}"
+assert " ".join(guard.split()) == expected, "Partial inputs silently disable verification"
+PY
+  then
+    pass "published acceptance validates every explicitly supplied input"
+  else
+    fail "partial published acceptance inputs must not silently skip validation"
+  fi
+}
+
 run_ci_published_acceptance_test() {
   if python3 - "${ROOT_DIR}/.github/workflows/ci.yml" <<'PY'
 import re

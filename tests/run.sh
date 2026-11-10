@@ -60,6 +60,7 @@ main() {
   run_ci_full_gate_test
   run_ci_candidate_acceptance_test
   run_ci_published_acceptance_test
+  run_ci_published_partial_inputs_test
   run_validate_config_tests
   run_validate_yaml_loader_no_parser_test
   run_validate_metadata_file_test
