@@ -1,6 +1,65 @@
 #!/bin/bash
 # CI dependency declarations; real package installation/rendering runs in L2/L3.
 
+run_ci_published_acceptance_test() {
+  if python3 - "${ROOT_DIR}/.github/workflows/ci.yml" <<'PY'
+import re
+import sys
+from pathlib import Path
+workflow = Path(sys.argv[1]).read_text()
+for name in ("tag", "sha", "checksum", "baseline_tag"):
+    flag = re.search(r"^      published_release_" + name + r":\n(.*?)(?=^      [\w-]+:|\Z)", workflow, re.M | re.S)
+    assert flag and 'default: ""' in flag[1] and "type: string" in flag[1], name
+block = re.search(r"^  published-release-acceptance:\n(.*?)(?=^  [\w-]+:|\Z)", workflow, re.M | re.S)[1]
+assert "github.event_name == 'workflow_dispatch'" in block
+assert "inputs.published_release_tag != ''" in block
+assert "runs-on: ubuntu-latest" in block and "timeout-minutes: 20" in block
+assert "persist-credentials: false" in block
+assert "python3 scripts/dev/check-published-release.py" in block
+for variable in ("RELEASE_TAG", "RELEASE_SHA", "RELEASE_CHECKSUM", "BASELINE_TAG"):
+    assert '"$' + variable + '"' in block, variable
+assert "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02" in block
+assert "if-no-files-found: error" in block and "retention-days: 14" in block
+PY
+  then
+    pass "published acceptance is an isolated opt-in hosted VM with retained evidence"
+  else
+    fail "published acceptance must not change existing CI defaults or reuse candidate fixtures"
+  fi
+  if python3 - "${ROOT_DIR}/scripts/dev/check-published-release.py" <<'PY'
+import os
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+script = sys.argv[1]
+help_result = subprocess.run([sys.executable, script, "--help"], capture_output=True, text=True, timeout=10)
+assert help_result.returncode == 0 and not help_result.stderr
+for flag in ("--tag", "--sha", "--checksum", "--baseline-tag", "--out"):
+    assert flag in help_result.stdout, flag
+env = os.environ.copy()
+env.pop("GITHUB_ACTIONS", None)
+env.pop("RUNNER_ENVIRONMENT", None)
+with tempfile.TemporaryDirectory(prefix="skelepress-published-guard-") as scratch:
+    sentinel = Path(scratch) / "sentinel"
+    sentinel.write_bytes(b"preserve")
+    result = subprocess.run([sys.executable, script, "--tag", "v3.1.0", "--sha", "a" * 40,
+                             "--checksum", "b" * 64, "--baseline-tag", "v3.0.0",
+                             "--out", scratch + "/output"],
+                            env=env, capture_output=True, text=True, timeout=10)
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1, "", "Run published release acceptance only in a disposable GitHub-hosted VM.\n")
+    assert sorted(p.name for p in Path(scratch).iterdir()) == ["sentinel"]
+    assert sentinel.read_bytes() == b"preserve", "Rejected check changed stored data"
+PY
+  then
+    pass "published acceptance exposes help and rejects non-VM execution without writes"
+  else
+    fail "published acceptance must fail closed outside the disposable VM"
+  fi
+}
+
+
 run_ci_render_dependencies_test() {
   local rule
   for rule in fonts svg existing template browser; do

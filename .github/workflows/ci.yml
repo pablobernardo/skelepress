@@ -47,6 +47,26 @@ on:
         required: false
         default: false
         type: boolean
+      published_release_tag:
+        description: "Published stable tag to verify; empty skips this job"
+        required: false
+        default: ""
+        type: string
+      published_release_sha:
+        description: "Approved commit SHA resolved by the published tag"
+        required: false
+        default: ""
+        type: string
+      published_release_checksum:
+        description: "Approved SHA-256 shared by the four platform archives"
+        required: false
+        default: ""
+        type: string
+      published_release_baseline_tag:
+        description: "Previous compatible published stable tag"
+        required: false
+        default: ""
+        type: string
   schedule:
     - cron: "0 3 * * 1"
 
@@ -292,6 +312,45 @@ jobs:
         with:
           name: candidate-${{ github.sha }}
           path: ${{ runner.temp }}/skelepress-candidate-evidence/
+          if-no-files-found: error
+          retention-days: 14
+
+  published-release-acceptance:
+    name: Published release acceptance (ubuntu, manual)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    if: >-
+      ${{ github.event_name == 'workflow_dispatch' &&
+          inputs.published_release_tag != '' }}
+    steps:
+      - name: Checkout verification harness
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Provision smoke-render dependencies in the disposable VM
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pandoc texlive-xetex texlive-latex-extra \
+            texlive-fonts-recommended fonts-freefont-ttf poppler-utils
+      - name: Verify actual published assets and installed CLIs
+        env:
+          RELEASE_TAG: ${{ inputs.published_release_tag }}
+          RELEASE_SHA: ${{ inputs.published_release_sha }}
+          RELEASE_CHECKSUM: ${{ inputs.published_release_checksum }}
+          BASELINE_TAG: ${{ inputs.published_release_baseline_tag }}
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: |
+          python3 scripts/dev/check-published-release.py \
+            --tag "$RELEASE_TAG" --sha "$RELEASE_SHA" \
+            --checksum "$RELEASE_CHECKSUM" --baseline-tag "$BASELINE_TAG" \
+            --out "${RUNNER_TEMP}/skelepress-published-evidence"
+      - name: Retain published-release evidence
+        if: ${{ always() }}
+        # actions/upload-artifact v4.6.2
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: published-${{ inputs.published_release_tag }}-${{ github.sha }}
+          path: ${{ runner.temp }}/skelepress-published-evidence/
           if-no-files-found: error
           retention-days: 14
 

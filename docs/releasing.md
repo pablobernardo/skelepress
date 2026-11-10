@@ -122,6 +122,24 @@ an existing tag. A pull request does not exercise this tag/manual workflow.
    nonzero exit and leave its managed root, binary directory and `current`
    pointer unchanged; then clean-install Skelepress and confirm its version and
    a smoke render. No aliases or duplicate artifacts are an acceptable workaround.
+   The existing **Skelepress CI** workflow has a separate manual published-release
+   job. Dispatch `ci.yml` on the reviewed verification branch with all four inputs:
+
+   | Input | Value |
+   |---|---|
+   | `published_release_tag` | Intended stable tag, such as `v3.1.0` |
+   | `published_release_sha` | Full approved commit SHA of that tag |
+   | `published_release_checksum` | Approved SHA-256 shared by the four archives |
+   | `published_release_baseline_tag` | Previous compatible tag, such as `v3.0.0` |
+
+   Empty inputs leave the new job disabled and preserve existing CI defaults.
+   The job verifies real GitHub downloads, a clean install and a checksum-verified
+   baseline seeded into the documented managed layout; it then exercises that
+   old CLI's real `update --check` and default-latest update. Both installed CLIs
+   must pass doctor, validation and PDF smoke checks. The 14-day artifact retains
+   metadata, downloaded assets, command streams and PDFs. This is not a replay of
+   candidate acceptance or a visual signoff. Record the verification-branch SHA
+   separately from the published tag SHA: do not retag to the verification branch.
 3. Preserve published tags and assets. If a correction is needed, document it
    and publish a new patch release through the same checks and approval.
 
