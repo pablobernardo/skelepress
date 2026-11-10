@@ -106,7 +106,9 @@ These fields are required in `schemas/skelepress-config.schema.json` and the run
 Cross-references between chapters — `[migration](migration.md)`:
 
 - Chapters become sections of one document, so a link to another selected chapter file is rewritten to an internal anchor instead of pointing at a file the publication does not contain. It works in the PDF and in the EPUB, where the link resolves to the right spine document.
-- Only the chapters something actually links to get an anchor, and a project with no cross-references produces exactly the same merged Markdown as before.
+- Include a heading fragment to reach a section: `[migration](migration.md#version-1-to-2)` targets `## Version 1 to 2`, not the chapter introduction. Use the target file's Pandoc identifier, including an explicit `{#upgrade-now}` or a duplicate suffix such as `#repeat-1`. The renderer maps that file-local identifier to the merged document's identifier without renaming headings.
+- An unknown fragment keeps the chapter fallback and adds **(section unavailable)** beside the link in the publication (localized by `SKELEPRESS_LANG`). It does not add a CLI warning. Ambiguous duplicate explicit IDs or incompatible heading structure across chapter boundaries also use this visible fallback rather than guessing a destination.
+- Only the chapters something actually links to get an anchor, and a project with no cross-references produces exactly the same merged Markdown as before. Intrachapter anchors keep their existing identifiers.
 - A link to a file that is not part of the selection is left as written, and a fenced code block is never rewritten, so a chapter documenting the link syntax keeps its example.
 
 `output.keep_merged_markdown` — fate of the merged Markdown:

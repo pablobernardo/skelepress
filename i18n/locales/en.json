@@ -150,6 +150,7 @@
   ,"render.error.chapters_dir_missing": "input.chapters_dir does not exist: {path}"
   ,"render.error.explicit_file_missing": "Explicit file not found: {path}"
   ,"render.error.no_chapters": "No chapters found to render"
+  ,"render.link.section_unavailable": "(section unavailable)"
   ,"render.error.chapter_count_mismatch": "Chapter count mismatch: {chapters} chapters but {texts} chapter texts"
   ,"render.error.order_invalid": "Invalid 'input.order' value: {value}. Supported values: {supported}"
   ,"render.error.format_invalid": "Invalid 'output.formats' value: {value}. Supported values: {supported}"

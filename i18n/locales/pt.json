@@ -150,6 +150,7 @@
   "render.error.chapters_dir_missing": "input.chapters_dir não existe: {path}",
   "render.error.explicit_file_missing": "Arquivo explícito não encontrado: {path}",
   "render.error.no_chapters": "Nenhum capítulo encontrado para renderizar",
+  "render.link.section_unavailable": "(seção indisponível)",
   "render.error.chapter_count_mismatch": "Discrepância no número de capítulos: {chapters} capítulos mas {texts} textos de capítulo",
   "render.error.order_invalid": "Valor inválido em 'input.order': {value}. Valores suportados: {supported}",
   "render.error.format_invalid": "Valor inválido em 'output.formats': {value}. Valores suportados: {supported}",

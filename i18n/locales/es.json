@@ -150,6 +150,7 @@
   ,"render.error.chapters_dir_missing": "No existe input.chapters_dir: {path}"
   ,"render.error.explicit_file_missing": "Archivo explícito no encontrado: {path}"
   ,"render.error.no_chapters": "No se encontraron capítulos para renderizar"
+  ,"render.link.section_unavailable": "(sección no disponible)"
   ,"render.error.chapter_count_mismatch": "Desajuste en el número de capítulos: {chapters} capítulos pero {texts} textos de capítulo"
   ,"render.error.order_invalid": "Valor no válido en 'input.order': {value}. Valores admitidos: {supported}"
   ,"render.error.format_invalid": "Valor no válido en 'output.formats': {value}. Valores admitidos: {supported}"

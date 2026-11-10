@@ -11,6 +11,7 @@ import unicodedata
 from datetime import datetime
 from pathlib import Path
 from typing import NoReturn
+from urllib.parse import unquote
 
 try:
     import template_runtime
@@ -531,7 +532,63 @@ def sibling_link_markers(chapters: list[str], texts: list[str]) -> dict[str, str
     return {name: f"ch-{slugify(Path(name).stem)}" for name in sorted(targets)}
 
 
-def rewrite_sibling_links(text: str, markers: dict[str, str]) -> str:
+def canonical_headers(text: str) -> list:
+    """Use the final .md input's reader dialect, without running writer filters."""
+    result = subprocess.run(
+        ["pandoc", "--from=markdown", "--to=json"], input=text,
+        text=True, capture_output=True,
+    )
+    if result.returncode:
+        return []
+    try:
+        document = json.loads(result.stdout)
+    except ValueError:
+        return []
+
+    def walk(node):
+        if isinstance(node, dict):
+            if node.get("t") == "Header":
+                yield node["c"]
+            for value in node.values():
+                yield from walk(value)
+        elif isinstance(node, list):
+            for child in node:
+                yield from walk(child)
+    return list(walk(document.get("blocks", [])))
+
+
+def chapter_section_targets(chapters: list[str], texts: list[str], merged: str) -> tuple[dict, list]:
+    """Pair canonical file-local IDs with canonical merged IDs, never slug guesses.
+
+    Comparing full heading structure guards against chapter boundaries changing
+    how Markdown is parsed. A failed/ambiguous map deliberately leaves section
+    links visibly unavailable. No heading ID is renamed.
+    """
+    local = [canonical_headers(text) for text in texts]
+    actual = canonical_headers(merged)
+    flat = [heading for chapter in local for heading in chapter]
+    # Ignore only the identifier itself: levels, classes, attributes and inline
+    # structure must match before positional pairing is safe.
+    def signature(heading):
+        return [heading[0], heading[1][1:], heading[2]]
+
+    if [signature(h) for h in flat] != [signature(h) for h in actual]:
+        return {}, []
+    identifiers = [h[1][0] for h in actual]
+    targets = {}
+    offset = 0
+    for index, chapter in enumerate(local):
+        mapping = {}
+        for position, heading in enumerate(chapter):
+            identifier = identifiers[offset + position]
+            if identifier and identifiers.count(identifier) == 1:
+                mapping[heading[1][0]] = identifier
+        targets[Path(chapters[index]).name] = mapping
+        offset += len(chapter)
+    return targets, identifiers
+
+
+def rewrite_sibling_links(text: str, markers: dict[str, str], sections: dict) -> str:
     """Point a link at an in-document anchor instead of a file the merge removes.
 
     Fenced code is left alone: a chapter that documents the link syntax must not
@@ -539,8 +596,19 @@ def rewrite_sibling_links(text: str, markers: dict[str, str]) -> str:
     """
 
     def replace(match: re.Match[str]) -> str:
-        marker = markers.get(Path(match.group(1)).name)
-        return f"](#{marker})" if marker else match.group(0)
+        name = Path(match.group(1)).name
+        marker = markers.get(name)
+        if not marker:
+            return match.group(0)
+        fragment = unquote((match.group(2) or "")[1:])
+        if fragment:
+            target = sections.get(name, {}).get(fragment)
+            if target:
+                return f"](#{target})"
+            # Keep the existing chapter fallback, but expose the degradation in
+            # the publication rather than only in author-side diagnostics.
+            return f"](#{marker}) " + t("render.link.section_unavailable", "")
+        return f"](#{marker})"
 
     rewritten = []
     fence = ""
@@ -597,8 +665,6 @@ def merged_markdown(chapters: list[str], insert_clearpage: bool) -> str:
     # way to keep the same guarantee.
     for index, raw_path in enumerate(chapters):
         text = texts[index]
-        if markers:
-            text = rewrite_sibling_links(text, markers)
         if index > 0 and insert_clearpage:
             first_nonempty = ""
             for line in text.splitlines():
@@ -615,7 +681,21 @@ def merged_markdown(chapters: list[str], insert_clearpage: bool) -> str:
         parts.append("\n")
         parts.append(text)
         parts.append("\n\n")
-    return "".join(parts)
+    merged = "".join(parts)
+    # Chapter-only/no-crossref projects need no extra Pandoc reader invocation.
+    has_fragments = any(
+        match.group(2) and Path(match.group(1)).name in markers
+        for text in texts for match in SIBLING_LINK.finditer(text)
+    )
+    if not markers:
+        return merged
+    sections, identifiers = chapter_section_targets(chapters, texts, merged) if has_fragments else ({}, [])
+    rewritten = "".join(rewrite_sibling_links(part, markers, sections) for part in parts)
+    # A visible annotation inside a heading can itself change an auto-ID. Never
+    # route links using a map invalidated by the rewrite we are about to publish.
+    if sections and [h[1][0] for h in canonical_headers(rewritten)] != identifiers:
+        return "".join(rewrite_sibling_links(part, markers, {}) for part in parts)
+    return rewritten
 
 
 def artifact_target(plan: dict) -> tuple[str, str]:
