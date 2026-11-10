@@ -28,7 +28,7 @@ together they cover it instead of repeating it:
 | `examples/documentation/` | The toolkit's own documentation: an explicit reading order over the six top-level guides in `docs/` (excluding the navigation README), with `base_dir` at the repository root, no filters and a numbered table of contents |
 | `examples/book-kit/` | One tool, two book shapes: a single-volume project without `series.yaml` and a two-volume series with it, sharing series defaults with per-volume overrides, a `chapter_start` that continues the chapter numbering across volumes, and generated mode files (`\mainmatter`, `\appendix`) so the content files carry no LaTeX markers. Built by the shipped tool `scripts/tools/bookkit/build.py` through the `skelepress book` subcommand |
 
-`examples/toPDF.sh` renders every example: the four configuration-driven ones
+`examples/render-all.sh` renders every example: the four configuration-driven ones
 (`ohmyfake`, `manual`, `no-titlepage` and `documentation`) through
 `skelepress render`,
 and the book example through `skelepress book`, because its volumes are declared
