@@ -7,6 +7,15 @@ The project follows semantic versioning and keeps two versioned contracts:
 - `VERSION` for the toolkit version
 - `skelepress.config.yaml -> version` for the configuration contract
 
+## [Unreleased]
+
+### Fixed
+
+- Cross-chapter links with heading fragments now resolve canonical file-local
+  Pandoc identifiers against the merged document, preserving duplicate-heading
+  suffixes, explicit IDs and existing intrachapter anchors. Missing sections
+  retain the chapter fallback with a localized, reader-visible annotation.
+
 ## [3.1.0] - 2026-11-07
 
 ### Added
