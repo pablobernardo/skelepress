@@ -40,13 +40,13 @@ documentation, which is MIT licensed.
 
 ### Consumer-owned media and filters
 
-The manual's [visual check](../examples/manual/chapters/05a-visual-check.md)
+The manual's visual check in `examples/manual/chapters/05a-visual-check.md`
 shows both extension points without changing the toolkit:
 
 - The image basename `indicator.svg` resolves the authored SVG through the
   manual's declared `media` resource path, relative to `project.base_dir`.
 - `filters.extra_lua_filters` registers the consumer's
-  [mark-check.lua](../examples/manual/filters/mark-check.lua), also relative
+  `examples/manual/filters/mark-check.lua`, with its registration relative
   to that base. It adds a bold **CHECK:** prefix only to an `operator-check`
   span; ordinary text is untouched. Consumer filters run after built-in filters.
 
