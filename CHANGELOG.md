@@ -7,6 +7,17 @@ The project follows semantic versioning and keeps two versioned contracts:
 - `VERSION` for the toolkit version
 - `skelepress.config.yaml -> version` for the configuration contract
 
+## [Unreleased]
+
+### Added
+
+- The manual demonstrates an original consumer-owned SVG through a declared
+  resource path and an opt-in Lua instruction marker with a visible **CHECK:**
+  prefix. Focused EPUB checks cover image embedding and a filter-disabled control.
+- Default-off `run_example_acceptance` CI input retains manual and documentation
+  PDFs and page PNGs for visual inspection, without release acceptance or a
+  version change.
+
 ## [3.1.0] - 2026-11-07
 
 ### Added

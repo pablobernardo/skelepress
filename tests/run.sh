@@ -100,6 +100,7 @@ main() {
   run_documentation_example_coverage_test
   run_emoji_showcase_example_test
   run_documentation_skill_test
+  run_consumer_extension_tests
   run_docs_consistency_test
   run_examples_validate_test
   run_render_mermaid_failed_test
