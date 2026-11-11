@@ -29,6 +29,7 @@ input:
     - "03-operation.md"
     - "04-error-codes.md"
     - "05-maintenance.md"
+    - "05a-visual-check.md"
     - "06-appendix.md"
 
 output:
@@ -47,6 +48,7 @@ pandoc:
   number_sections: true
   resource_path:
     - "chapters"
+    - "media"
 
 filters:
   emoji:
@@ -57,7 +59,8 @@ filters:
     enabled: true
     output_dir: "../.output/mermaid"
     background: "transparent"
-  extra_lua_filters: []
+  extra_lua_filters:
+    - "filters/mark-check.lua"
 
 runtime:
   required_commands:
