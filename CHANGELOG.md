@@ -11,6 +11,9 @@ The project follows semantic versioning and keeps two versioned contracts:
 
 ### Added
 
+- `skelepress update` confirms that the artifact matched the published checksum
+  before extraction, with localized output in English, Spanish, Galician and
+  Portuguese. Verification mechanics and failure messages are unchanged.
 - The manual demonstrates an original consumer-owned SVG through a declared
   resource path and an opt-in Lua instruction marker with a visible **CHECK:**
   prefix. Focused EPUB checks cover image embedding and a filter-disabled control.
