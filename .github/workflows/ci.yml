@@ -47,6 +47,16 @@ on:
         required: false
         default: false
         type: boolean
+      run_public_cli_acceptance:
+        description: "Compare public render/book against a baseline (hosted L3)"
+        required: false
+        default: false
+        type: boolean
+      compatibility_base_ref:
+        description: "Baseline ref; resolved SHA is retained with evidence"
+        required: false
+        default: main
+        type: string
       run_epub_acceptance:
         description: "Run EPUB acceptance: EPUBCheck over the shipped examples"
         required: false
@@ -81,6 +91,9 @@ jobs:
 
       - name: Run L1 CLI test suite
         run: tests/run.sh
+
+      - name: Check public CLI acceptance wiring without rendering
+        run: python3 tests/acceptance/render-book/test_compare.py -v
 
   l1-tests-macos:
     # Hosted macOS capacity is the one resource this workflow cannot rely on: a
@@ -233,7 +246,9 @@ jobs:
           (github.event_name == 'workflow_dispatch' &&
            inputs.run_release_acceptance == true) ||
           (github.event_name == 'workflow_dispatch' &&
-           inputs.run_section_link_acceptance == true) }}
+           inputs.run_section_link_acceptance == true) ||
+          (github.event_name == 'workflow_dispatch' &&
+           inputs.run_public_cli_acceptance == true) }}
 
     steps:
       - name: Checkout
@@ -282,6 +297,65 @@ jobs:
           test -x "$chrome_path"
           test -r "$(npm root -g)/@mermaid-js/mermaid-cli/dist/index.html"
           PUPPETEER_EXECUTABLE_PATH="$chrome_path" bash tests/l3-local.sh
+
+      - name: Checkout public CLI baseline
+        if: ${{ inputs.run_public_cli_acceptance == true }}
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.compatibility_base_ref }}
+          path: compatibility-base
+          persist-credentials: false
+
+      - name: Compare public render and book in isolated state
+        if: ${{ inputs.run_public_cli_acceptance == true }}
+        run: |
+          set -euo pipefail
+          evidence="${RUNNER_TEMP}/public-cli-evidence"
+          inputs="${RUNNER_TEMP}/public-cli-inputs"
+          mkdir "$inputs" "$evidence"
+          set +e
+          (
+            set -euo pipefail
+            sudo apt-get install -y ruby python3-yaml
+            env PATH=/usr/bin:/bin \
+              bash -c 'command -v pandoc xelatex ruby python3'
+            for package in fontspec fvextra mdframed hyperref; do
+              kpsewhich "$package.sty"
+            done
+            # Git selects revisions here, never inside the portable test.
+            for variant in base candidate; do
+              source="$GITHUB_WORKSPACE"
+              if [[ "$variant" = base ]]; then
+                source="$source/compatibility-base"
+              fi
+              git -C "$source" rev-parse HEAD 'HEAD^{tree}' \
+                > "$evidence/$variant-revision.txt"
+              git -C "$source" archive -o "$inputs/$variant.tar" HEAD -- \
+                bin/skelepress scripts/runtime scripts/tools/bookkit \
+                schemas/skelepress-config.schema.json i18n/locales \
+                filters/inline-code-breaks.lua templates/book.tex \
+                templates/default.tex templates/epub-header.html VERSION
+            done
+            /usr/bin/python3 tests/acceptance/render-book/compare.py \
+              "$inputs/base.tar" "$inputs/candidate.tar" \
+              --evidence "$evidence/comparison"
+          ) > "$evidence/runner.stdout" 2> "$evidence/runner.stderr"
+          status=$?
+          set -e
+          printf '%s\n' "$status" > "$evidence/runner.exit"
+          cat "$evidence/runner.stdout"
+          cat "$evidence/runner.stderr" >&2
+          exit "$status"
+
+      - name: Retain public CLI acceptance evidence
+        if: ${{ always() && inputs.run_public_cli_acceptance == true }}
+        # actions/upload-artifact v4.6.2
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: public-cli-${{ github.sha }}
+          path: ${{ runner.temp }}/public-cli-evidence/
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Inspect actual section-link PDF destinations
         if: >-

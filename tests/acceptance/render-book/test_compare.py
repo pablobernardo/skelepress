@@ -105,6 +105,15 @@ printf 'fixture stderr\\n' >&2
         self.assertFalse(self.calls.exists())
         self.assertFalse((self.root / "escape").exists())
 
+    def test_manual_ci_defaults_and_existing_l3_controls(self):
+        workflow = (HERE.parents[2] / ".github/workflows/ci.yml").read_text()
+        self.assertRegex(workflow, r"run_public_cli_acceptance:\s+description:.*\s+required: false\s+default: false\s+type: boolean")
+        for name in ("run_render_full", "run_release_acceptance", "run_section_link_acceptance"):
+            self.assertIn("inputs." + name + " == true", workflow)
+        self.assertIn("inputs.run_public_cli_acceptance == true", workflow)
+        self.assertIn("compatibility_base_ref", workflow)
+        self.assertIn("tests/acceptance/render-book/compare.py", workflow)
+
 
 if __name__ == "__main__":
     unittest.main()

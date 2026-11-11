@@ -221,10 +221,21 @@ never on a shared development machine.
 
 ### Portable public CLI compatibility proof
 
-The standalone harness compares actual `render` (EPUB) and `book` (PDF) from
-two prepared public runtime archives. Revision selection belongs to the caller;
-the test never selects revisions or reads Git history. With Pandoc, XeLaTeX,
-the book template packages and system Python/YAML support on a disposable runner:
+Use `run_public_cli_acceptance=true` and `compatibility_base_ref=<ref>` on the
+candidate branch to compare actual `render` (EPUB) and `book` (PDF). The existing
+L3 job supplies Pandoc/TeX; no Codespace or developer-machine installation is
+needed. This option defaults to false and does not select release acceptance.
+
+```bash
+gh workflow run ci.yml --ref <candidate-branch> \
+  -f run_public_cli_acceptance=true -f compatibility_base_ref=<baseline-ref>
+```
+
+The workflow resolves and records both commit/tree IDs and archives only public
+runtime files, never `.git`, private configuration or credentials. The portable
+harness receives these prepared payloads; it does not select revisions or read
+Git history. With the required rendering dependencies on a disposable runner,
+its standalone interface is:
 
 ```bash
 python3 tests/acceptance/render-book/compare.py base.tar candidate.tar \
@@ -234,20 +245,19 @@ python3 tests/acceptance/render-book/compare.py base.tar candidate.tar \
 Both versions run at identical paths with freshly recreated project/toolkit,
 cold HOME/XDG/temp state, neutral fixtures, English messages and system PATH.
 Public archives are limited to 4 MiB each and 2 MiB unpacked; scratch/evidence
-mounts need at least 1 GiB free before setup. Either command failing, a missing
-publication or any raw stdout/stderr/exit difference fails the check; unexpected
-changes are never normalized away. The new evidence directory retains payload
-hashes, command arguments, raw streams/statuses, generated artifacts and
-`result.json`, including partial command failure evidence.
+mounts need at least 1 GiB free before setup. Either command failing,
+a missing publication or any raw stdout/stderr/exit difference fails the check;
+nothing normalizes unexpected changes away. Download `public-cli-<head-sha>` for
+resolved revisions, payload hashes, raw streams/statuses and generated artifacts,
+including partial failure evidence. Publication byte equality is not required;
+this compatibility check does **not** inspect PDF destinations or validate EPUB
+structure. Use the section-link proof above and the EPUB suite for those claims.
 
-Publication byte equality is not required. This compatibility check does **not**
-inspect PDF destinations or validate EPUB structure: use the section-link proof
-above and the EPUB suite for those claims. Actual rendering and PDF generation
-belong only on disposable hosted runners, never the shared development Mac.
-
-Run `python3 tests/acceptance/render-book/test_compare.py -v` locally for the
-three tiny fake-CLI wiring tests (isolation, retained regression evidence and
-rejection before execution). They do not render or prove publication correctness.
+The ordinary Ubuntu job also runs the four tiny fake-CLI wiring tests. These
+exercise isolation, evidence retention, rejection and dispatch controls without
+rendering; they are not publication evidence. Run them locally with
+`python3 tests/acceptance/render-book/test_compare.py -v`. Actual rendering and
+PDF generation belong only on disposable hosted runners, not the shared Mac.
 
 ### Isolated full gate
 
