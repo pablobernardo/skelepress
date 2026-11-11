@@ -1,6 +1,14 @@
 #!/bin/bash
 # CI dependency declarations; real package installation/rendering runs in L2/L3.
 
+run_ci_runtime_preparation_test() {
+  if python3 -B "${ROOT_DIR}/tests/fixtures/ci-runtime-preparation/check.py" "$ROOT_DIR"; then
+    pass "L3 preparation fails clearly with bounded network waits and preserves dependencies"
+  else
+    fail "L3 preparation must fail clearly before publication checks"
+  fi
+}
+
 run_ci_render_dependencies_test() {
   local rule
   for rule in fonts svg existing template browser; do

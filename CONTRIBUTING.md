@@ -174,6 +174,13 @@ CI levels:
 - **L2 (semi-real, manual):** real render on Ubuntu against integration fixtures.
 - **L3 (full, manual or scheduled):** integration with the extended stack (includes the Mermaid CLI).
   - includes a real Mermaid fixture in `tests/integration/l3-mermaid-project/`.
+  - full-runtime preparation rejects incomplete APT index updates (including
+    transient DNS failures), disables download retries, and sets 30-second
+    HTTP/HTTPS connection/data timeouts. The entire preparation step has a
+    ten-minute limit; its failure does not mean the publication tests ran.
+  - L1 exercises the actual preparation commands with isolated fakes; it does
+    not install packages or require network access. Real publication checks
+    remain in the hosted L3 job, with their existing opt-in inputs unchanged.
 
 Workflow and manual inputs:
 

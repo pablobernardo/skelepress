@@ -259,9 +259,18 @@ jobs:
           persist-credentials: false
 
       - name: Install full runtime dependencies
+        timeout-minutes: 10
         run: |
-          sudo apt-get update
+          set -euo pipefail
+          trap 'echo "::error::L3 dependency preparation failed;" \
+            "see errors above. Publication checks have not started." >&2' ERR
+          # Reject incomplete indexes rather than installing after DNS warnings.
+          sudo apt-get update --error-on=any \
+            -o Acquire::Retries=0 \
+            -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30
           sudo apt-get install -y \
+            -o Acquire::Retries=0 \
+            -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 \
             pandoc texlive-latex-base texlive-latex-extra \
             texlive-fonts-recommended librsvg2-bin texlive-xetex nodejs npm
           # Check every declared template style, not only the last missing file.

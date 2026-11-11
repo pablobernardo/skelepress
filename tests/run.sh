@@ -57,6 +57,7 @@ main() {
   run_bootstrap_linux_pkg_manager_detection_tests
   run_bootstrap_mermaid_browser_warning_test
   run_ci_render_dependencies_test
+  run_ci_runtime_preparation_test
   run_ci_full_gate_test
   run_ci_candidate_acceptance_test
   run_validate_config_tests
