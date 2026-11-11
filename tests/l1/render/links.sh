@@ -36,12 +36,19 @@ PY
   else
     fail "section link EPUB checker failed"
   fi
-  # A missing-section annotation inside a heading changes its canonical ID.
-  # This must invalidate the map, not leave links pointing at stale IDs.
-  printf '\n## [heading-link](migration.md#not-a-heading)\n' >>"${sandbox}/work/chapters/chapter-1.md"
+  # Visible fallback in a heading must not invalidate its existing local ID
+  # or unrelated section targets. CLI streams must stay unchanged as well.
+  cp "$out" "${sandbox}/before-heading.log"
+  printf '\n## [heading-link](migration.md#not-a-heading)\n\n[jump](#heading-link)\n' >>"${sandbox}/work/chapters/chapter-1.md"
   code=0
   "${sandbox}/bin/skelepress" render -c "${sandbox}/skelepress.config.yaml" >"$out" 2>"${sandbox}/stderr" || code=$?
-  assert_exit_code "0" "$code" "public render handles a heading-map mismatch visibly"
+  assert_exit_code "0" "$code" "public render preserves heading anchors with visible fallback"
+  if cmp -s "$out" "${sandbox}/before-heading.log"; then
+    pass "heading fallback preserves exact CLI stdout"
+  else
+    fail "heading fallback changes CLI stdout"
+  fi
+  if [[ ! -s "${sandbox}/stderr" ]]; then pass "heading fallback keeps stderr empty"; else fail "heading fallback writes stderr"; fi
   if "${REAL_PYTHON3}" "${FIXTURES_DIR}/chapter-section-links/check-epub.py" \
     "${sandbox}/work/out/epub-guide-manual.epub" --heading-mismatch >"${sandbox}/checks"; then
     while IFS=$'\t' read -r result message; do

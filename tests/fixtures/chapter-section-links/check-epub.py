@@ -63,10 +63,18 @@ with zipfile.ZipFile(sys.argv[1]) as archive:
         return next((e for e in root.iter() if e.get('id') == unquote(url.fragment)), None) if root is not None else None
 
     if '--heading-mismatch' in sys.argv[2:]:
-        check(links['migration'][1].get('href', '').endswith('#ch-migration'),
-              'an invalidated heading map uses the chapter fallback instead of a guessed section')
-        check('migration (section unavailable)' in ''.join(roots[links['migration'][0]].itertext()),
-              'an invalidated heading map is visibly annotated in the publication')
+        migration = destination('migration')
+        check(migration is not None and migration.get('id') == 'version-1-to-2',
+              'heading fallback does not invalidate unrelated section destinations')
+        target = destination('jump')
+        check(target is not None and target.get('id') == 'heading-link'
+              and any(e.tag in ('}h1', '}h2', '}h3') and
+                      ''.join(e.itertext()).startswith('heading-link') for e in target.iter()),
+              'fallback annotation preserves an existing local heading destination')
+        check(links['heading-link'][1].get('href', '').endswith('#ch-migration'),
+              'missing section in a heading still falls back to its chapter')
+        check('heading-link (section unavailable)' in ''.join(roots[links['heading-link'][0]].itertext()),
+              'heading fallback remains visible to readers')
         sys.exit(0)
 
     def heading_text(target):
