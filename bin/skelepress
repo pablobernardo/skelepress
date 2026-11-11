@@ -590,6 +590,8 @@ run_update() {
     exit 1
   fi
 
+  echo "$(t "cli.update.checksum_verified" "cli.update.checksum_verified")"
+
   if ! tar -xzf "$artifact_path" -C "$extract_dir"; then
     echo "❌ $(t "cli.update.error.extract" "could not extract downloaded artifact")"
     update_log_event "ERROR" "artifact extraction failed: ${artifact_path}"
