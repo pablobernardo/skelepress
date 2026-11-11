@@ -219,6 +219,36 @@ The PDF test is default-off and reports **SKIP**, not PASS, unless
 to retain its PDF/report/log. Run this opt-in only in disposable hosted VMs,
 never on a shared development machine.
 
+### Portable public CLI compatibility proof
+
+The standalone harness compares actual `render` (EPUB) and `book` (PDF) from
+two prepared public runtime archives. Revision selection belongs to the caller;
+the test never selects revisions or reads Git history. With Pandoc, XeLaTeX,
+the book template packages and system Python/YAML support on a disposable runner:
+
+```bash
+python3 tests/acceptance/render-book/compare.py base.tar candidate.tar \
+  --evidence <new-external-evidence-directory>
+```
+
+Both versions run at identical paths with freshly recreated project/toolkit,
+cold HOME/XDG/temp state, neutral fixtures, English messages and system PATH.
+Public archives are limited to 4 MiB each and 2 MiB unpacked; scratch/evidence
+mounts need at least 1 GiB free before setup. Either command failing, a missing
+publication or any raw stdout/stderr/exit difference fails the check; unexpected
+changes are never normalized away. The new evidence directory retains payload
+hashes, command arguments, raw streams/statuses, generated artifacts and
+`result.json`, including partial command failure evidence.
+
+Publication byte equality is not required. This compatibility check does **not**
+inspect PDF destinations or validate EPUB structure: use the section-link proof
+above and the EPUB suite for those claims. Actual rendering and PDF generation
+belong only on disposable hosted runners, never the shared development Mac.
+
+Run `python3 tests/acceptance/render-book/test_compare.py -v` locally for the
+three tiny fake-CLI wiring tests (isolation, retained regression evidence and
+rejection before execution). They do not render or prove publication correctness.
+
 ### Isolated full gate
 
 For the complete `make gate` in a disposable hosted macOS VM, select the

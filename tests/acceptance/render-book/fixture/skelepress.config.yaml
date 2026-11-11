@@ -1,0 +1,36 @@
+version: 1
+project:
+  name: compatibility-guide
+  base_dir: ./work
+document:
+  title: Neutral Guide
+  author: Example Author
+  language: en
+input:
+  chapters_dir: chapters
+  glob: "*.md"
+  order: natural
+  explicit_files: []
+output:
+  dir: out
+  file_prefix: epub-guide
+  suffix: manual
+  keep_merged_markdown: true
+  formats: [epub]
+pandoc:
+  pdf_engine: xelatex
+  toc: true
+  toc_depth: 2
+  number_sections: false
+  resource_path: [chapters]
+filters:
+  emoji:
+    enabled: false
+  mermaid:
+    enabled: false
+  extra_lua_filters: []
+runtime:
+  required_commands: [pandoc]
+  strict: true
+compat:
+  legacy_clearpage_between_h1: false
