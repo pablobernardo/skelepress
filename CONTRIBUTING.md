@@ -234,7 +234,7 @@ gh workflow run ci.yml --ref <branch> -f run_example_acceptance=true
 ```
 
 This reuses the disposable Ubuntu L3 toolchain, runs public `doctor` checks,
-then `FORMATS=pdf bash examples/toPDF.sh` (including the documentation example).
+then `FORMATS=pdf bash examples/render-all.sh` (including the documentation example).
 It does not enable release acceptance, require a new version, install a toolkit
 release, or publish anything. Existing CI levels are unchanged unless selected.
 
