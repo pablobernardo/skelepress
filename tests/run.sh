@@ -43,6 +43,7 @@ main() {
   run_locale_command_tests
   run_update_check_tests
   run_update_diagnostics_tests
+  run_update_checksum_tests
   run_update_resolution_precedence_tests
   run_update_install_tests
   run_update_dev_command_blocked_test

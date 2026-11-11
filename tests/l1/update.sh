@@ -1,6 +1,185 @@
 #!/bin/bash
 # update area tests. Sourced by tests/run.sh (not run standalone).
 
+# Stop at extraction: these public CLI probes never install or execute a payload.
+run_update_checksum_tests() {
+  local results
+  results="$(new_test_tmpfile)"
+  "${REAL_PYTHON3}" - "$CLI" >"$results" <<'PY'
+import hashlib
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+
+cli = Path(sys.argv[1]).resolve()
+# Literal expectations deliberately do not read the catalogs under test.
+messages = {
+    "en": ("Artifact matched the published checksum",
+           "checksum mismatch for {artifact}",
+           "checksums.txt does not include {artifact}",
+           "could not extract downloaded artifact"),
+    "es": ("El artefacto coincide con el checksum publicado",
+           "checksum no válido para {artifact}",
+           "checksums.txt no incluye {artifact}",
+           "no se pudo extraer el artefacto descargado"),
+    "gl": ("O artefacto coincide co checksum publicado",
+           "checksum non válido para {artifact}",
+           "checksums.txt non inclúe {artifact}",
+           "non se puido extraer o artefacto descargado"),
+    "pt": ("O artefacto corresponde ao checksum publicado",
+           "checksum inválido para {artifact}",
+           "checksums.txt não inclui {artifact}",
+           "não foi possível extrair o artefacto descarregado"),
+}
+
+
+def check(ok, label, actual=None):
+    detail = "" if ok else f"; actual={actual!r}"
+    print(f"{'PASS' if ok else 'FAIL'} {label}{detail}")
+
+
+def snapshot(root):
+    # Include directory entries, modes, file bytes and symlink destinations.
+    return [(str(p.relative_to(root)), p.lstat().st_mode,
+             os.readlink(p) if p.is_symlink() else
+             p.read_bytes() if p.is_file() else None)
+            for p in sorted(root.rglob("*"))]
+
+
+with tempfile.TemporaryDirectory(prefix="checksum-", dir=os.environ.get("TMPDIR")) as tmp:
+    root = Path(tmp)
+    mockbin = root / "mocks"
+    mockbin.mkdir()
+    mocks = {
+        "uname": '#!/bin/bash\ncase "$1" in -s) echo Linux;; -m) echo x86_64;; *) exit 98;; esac\n',
+        "tar": '#!/bin/bash\nprintf "extract\\n" >> "$PROBE_TAR_LOG"\nexit 73\n',
+        "curl": '''#!/bin/bash
+set -euo pipefail
+url=""
+out=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -o) out="$2"; shift 2 ;;
+    -w) shift 2 ;;
+    -sS|-fsSL) shift ;;
+    *) url="$1"; shift ;;
+  esac
+done
+case "$url" in
+  https://releases.invalid/latest|https://releases.invalid/tags/v9.9.9)
+    cat "$PROBE_RELEASE"
+    printf '\\n200\\n'
+    ;;
+  https://downloads.invalid/*)
+    printf '%s\\n' "$url" >> "$PROBE_DOWNLOAD_LOG"
+    case "$url" in
+      */checksums.txt) cp "$PROBE_CHECKSUMS" "$out" ;;
+      */skelepress_linux_amd64.tar.gz) cp "$PROBE_ARTIFACT" "$out" ;;
+      *) exit 97 ;;
+    esac
+    ;;
+  *) exit 96 ;;
+esac
+''',
+    }
+    for name, text in mocks.items():
+        path = mockbin / name
+        path.write_text(text)
+        path.chmod(0o755)
+
+    artifact = "skelepress_linux_amd64.tar.gz"
+    payload = b"hermetic checksum fixture\n"
+    digest = hashlib.sha256(payload).hexdigest()
+    current = (cli.parent.parent / "VERSION").read_text().strip()
+    # Check/dry-run preserve their existing English output; verification and
+    # rejection messages are pinned independently for every supported locale.
+    cases = [(lang, mode) for lang in messages
+             for mode in ("verified", "mismatch", "missing")]
+    cases += [("en", "check"), ("en", "dry-run")]
+    for lang, mode in cases:
+        case = root / f"{lang}-{mode}"
+        case.mkdir()
+        for name in ("home", "config", "tmp", "work", "install", "managed/versions/v1.0.0/bin"):
+            (case / name).mkdir(parents=True)
+        old_bin = case / "managed/versions/v1.0.0/bin/skelepress"
+        old_bin.write_text("previous installation sentinel\n")
+        old_bin.chmod(0o755)
+        (case / "managed/current").symlink_to("versions/v1.0.0")
+        (case / "install/skelepress").symlink_to(old_bin)
+        before = (snapshot(case / "install"), snapshot(case / "managed"))
+        (case / artifact).write_bytes(payload)
+        entry = {"verified": f"{digest}  {artifact}\n",
+                 "mismatch": f"{'0' * 64}  {artifact}\n",
+                 "missing": f"{digest}  another-artifact.tar.gz\n"}.get(mode, "")
+        (case / "checksums.txt").write_text(entry)
+        release = {"tag_name": "v9.9.9", "assets": [
+            {"name": name, "browser_download_url": f"https://downloads.invalid/{name}"}
+            for name in (artifact, "checksums.txt")]}
+        (case / "release.json").write_text(json.dumps(release))
+        # Do not inherit credentials, installation settings or user config.
+        env = {
+            "PATH": f"{mockbin}:{Path(sys.executable).parent}:/usr/bin:/bin",
+            "HOME": str(case / "home"), "XDG_CONFIG_HOME": str(case / "config"),
+            "TMPDIR": str(case / "tmp"), "SKELEPRESS_LANG": lang,
+            "SKELEPRESS_PROJECT_ENV": str(case / "absent-project.env"),
+            "SKELEPRESS_UPDATE_HOME": str(case / "managed"),
+            "SKELEPRESS_UPDATE_LOG_FILE": str(case / "update.log"),
+            "SKELEPRESS_UPDATE_API_BASE": "https://releases.invalid",
+            "PROBE_RELEASE": str(case / "release.json"),
+            "PROBE_ARTIFACT": str(case / artifact),
+            "PROBE_CHECKSUMS": str(case / "checksums.txt"),
+            "PROBE_TAR_LOG": str(case / "tar.log"),
+            "PROBE_DOWNLOAD_LOG": str(case / "downloads.log"),
+        }
+        args = [str(cli), "update", "--install-dir", str(case / "install")]
+        args += ["--check"] if mode == "check" else ["--to", "v9.9.9", "--yes"]
+        if mode == "dry-run":
+            args += ["--dry-run"]
+        result = subprocess.run(args, cwd=case / "work", env=env, capture_output=True, timeout=5)
+        success, mismatch, missing, extract = messages[lang]
+        expected = {
+            "verified": f"{success}\n❌ {extract}\n",
+            "mismatch": f"❌ {mismatch.format(artifact=artifact)}\n",
+            "missing": f"❌ {missing.format(artifact=artifact)}\n",
+            "check": f"Current version: {current}\nLatest version: 9.9.9\nUpdate available: {current} -> 9.9.9\n",
+            "dry-run": (f"Target version: 9.9.9\nArtifact: {artifact}\n"
+                        f"Download URL: https://downloads.invalid/{artifact}\n"
+                        f"Install path: {case}/install/skelepress\n"
+                        f"Managed root: {case}/managed\n"
+                        f"Version dir: {case}/managed/versions/v9.9.9\n"),
+        }[mode].encode()
+        label = f"{lang} {mode}"
+        check(result.returncode == (0 if mode in ("check", "dry-run") else 1),
+              f"{label} exit", result.returncode)
+        check(result.stdout == expected, f"{label} exact stdout", result.stdout)
+        check(result.stderr == b"", f"{label} exact stderr", result.stderr)
+        after = (snapshot(case / "install"), snapshot(case / "managed"))
+        check(after == before, f"{label} installation state unchanged", after)
+        tar_log = case / "tar.log"
+        tar_calls = tar_log.read_text() if tar_log.exists() else ""
+        check(tar_calls == ("extract\n" if mode == "verified" else ""),
+              f"{label} extraction only after verification", tar_calls)
+        downloads = case / "downloads.log"
+        download_calls = downloads.read_text() if downloads.exists() else ""
+        expected_downloads = "" if mode in ("check", "dry-run") else (
+            f"https://downloads.invalid/{artifact}\nhttps://downloads.invalid/checksums.txt\n")
+        check(download_calls == expected_downloads,
+              f"{label} download boundary", download_calls)
+PY
+  local result
+  while IFS= read -r result; do
+    case "$result" in
+      PASS\ *) pass "${result#PASS }" ;;
+      *) fail "${result#FAIL }" ;;
+    esac
+  done <"$results"
+  rm -f "$results"
+  printf 'Checksum summary: PASS=%s FAIL=%s\n' "$PASS" "$FAIL"
+}
+
 run_update_check_tests() {
   local tmpbin
   tmpbin="$(mktemp -d)"

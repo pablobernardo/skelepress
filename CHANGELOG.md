@@ -7,6 +7,14 @@ The project follows semantic versioning and keeps two versioned contracts:
 - `VERSION` for the toolkit version
 - `skelepress.config.yaml -> version` for the configuration contract
 
+## [Unreleased]
+
+### Added
+
+- `skelepress update` confirms that the artifact matched the published checksum
+  before extraction, with localized output in English, Spanish, Galician and
+  Portuguese. Verification mechanics and failure messages are unchanged.
+
 ## [3.1.0] - 2026-11-07
 
 ### Added
