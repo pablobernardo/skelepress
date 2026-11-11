@@ -312,7 +312,7 @@ jobs:
       - name: Retain public example evidence
         if: ${{ inputs.run_example_acceptance == true }}
         # actions/upload-artifact v4.6.2
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: examples-${{ github.sha }}
           path: ${{ runner.temp }}/skelepress-example-evidence/
@@ -331,7 +331,7 @@ jobs:
       - name: Retain candidate acceptance evidence
         if: ${{ always() && inputs.run_release_acceptance == true }}
         # actions/upload-artifact v4.6.2
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: candidate-${{ github.sha }}
           path: ${{ runner.temp }}/skelepress-candidate-evidence/
