@@ -8,8 +8,10 @@ import shutil
 import subprocess
 import sys
 import unicodedata
+from contextlib import ExitStack
 from datetime import datetime
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import NoReturn
 from urllib.parse import unquote
 
@@ -588,7 +590,7 @@ def chapter_section_targets(chapters: list[str], texts: list[str], merged: str) 
     return targets, identifiers
 
 
-def rewrite_sibling_links(text: str, markers: dict[str, str], sections: dict) -> str:
+def rewrite_sibling_links(text: str, markers: dict[str, str], sections: dict, note: str) -> str:
     """Point a link at an in-document anchor instead of a file the merge removes.
 
     Fenced code is left alone: a chapter that documents the link syntax must not
@@ -607,7 +609,7 @@ def rewrite_sibling_links(text: str, markers: dict[str, str], sections: dict) ->
                 return f"](#{target})"
             # Keep the existing chapter fallback, but expose the degradation in
             # the publication rather than only in author-side diagnostics.
-            return f"](#{marker}) " + t("render.link.section_unavailable", "")
+            return f"](#{marker}){note}"
         return f"](#{marker})"
 
     rewritten = []
@@ -641,7 +643,7 @@ def with_marker(text: str, marker: str) -> str:
     return "[]{#" + marker + "}\n\n" + text
 
 
-def merged_markdown(chapters: list[str], insert_clearpage: bool) -> str:
+def merged_markdown(chapters: list[str], insert_clearpage: bool) -> tuple[str, str]:
     texts = [Path(raw_path).read_text(encoding="utf-8", errors="ignore") for raw_path in chapters]
     # Chapters become sections of one document, so a link to a sibling file would
     # point at a file the publication does not contain. Anchors are injected only
@@ -688,14 +690,19 @@ def merged_markdown(chapters: list[str], insert_clearpage: bool) -> str:
         for text in texts for link_match in SIBLING_LINK.finditer(text)
     )
     if not markers:
-        return merged
+        return merged, ""
+    number = 0
+    note = f"<!--skelepress-section-note-{number}-->"
+    while note in merged:
+        number += 1
+        note = f"<!--skelepress-section-note-{number}-->"
     sections, identifiers = chapter_section_targets(chapters, texts, merged) if has_fragments else ({}, [])
-    rewritten = "".join(rewrite_sibling_links(part, markers, sections) for part in parts)
-    # A visible annotation inside a heading can itself change an auto-ID. Never
-    # route links using a map invalidated by the rewrite we are about to publish.
+    rewritten = "".join(rewrite_sibling_links(part, markers, sections, note) for part in parts)
+    # Raw comments do not contribute to automatic heading IDs. Keep the guard
+    # for a genuine reader/structure mismatch rather than guessing a target.
     if sections and [h[1][0] for h in canonical_headers(rewritten)] != identifiers:
-        return "".join(rewrite_sibling_links(part, markers, {}) for part in parts)
-    return rewritten
+        return "".join(rewrite_sibling_links(part, markers, {}, note) for part in parts), note
+    return rewritten, note
 
 
 def artifact_target(plan: dict) -> tuple[str, str]:
@@ -737,8 +744,25 @@ def execute_plan(plan: dict) -> int:
     return 1 if failed else 0
 
 
+def section_note_filter(marker: str) -> str:
+    """Expand the visible note only after Pandoc has assigned heading IDs."""
+    def quote(value: str) -> str:
+        equals = ""
+        while f"]{equals}]" in value:
+            equals += "="
+        return f"[{equals}[{value}]{equals}]"
+
+    annotation = quote(t("render.link.section_unavailable", ""))
+    return (
+        "function RawInline(el)\n"
+        f"  if el.format == 'html' and el.text == {quote(marker)} then\n"
+        f"    return {{pandoc.Space(), pandoc.Str({annotation})}}\n"
+        "  end\nend\n"
+    )
+
+
 def execute_single_plan(plan: dict) -> int:
-    """Materialise and run one job; PDF behavior is unchanged."""
+    """Materialise and run one job with stable publication heading IDs."""
     target = plan["pandoc"]["target"]
     format_name, artifact_raw = artifact_target(plan)
     md_out = Path(target["markdown"])
@@ -746,10 +770,8 @@ def execute_single_plan(plan: dict) -> int:
     side_effects = plan["side_effects"]
 
     md_out.parent.mkdir(parents=True, exist_ok=True)
-    md_out.write_text(
-        merged_markdown(plan["chapters"], bool(side_effects["clearpage_between_h1"])),
-        encoding="utf-8",
-    )
+    markdown, note = merged_markdown(plan["chapters"], bool(side_effects["clearpage_between_h1"]))
+    md_out.write_text(markdown, encoding="utf-8")
 
     emoji = side_effects["emoji"]
     if emoji["enabled"]:
@@ -780,7 +802,15 @@ def execute_single_plan(plan: dict) -> int:
     print(f"🖨️  {t(output_label_key(format_name), 'Output: {path}', path=artifact_out)}")
     print(f"▶ {t('render.command.exec', 'Running: {command}', command=' '.join(plan['pandoc']['argv']))}")
 
-    result = subprocess.run(plan["pandoc"]["argv"], env=env)
+    with ExitStack() as temporary:
+        command = plan["pandoc"]["argv"]
+        if note and note in markdown:
+            directory = temporary.enter_context(TemporaryDirectory(prefix="skelepress-section-note-"))
+            note_filter = Path(directory) / "section-note.lua"
+            note_filter.write_text(section_note_filter(note), encoding="utf-8")
+            # Expand before consumer filters, without adding CLI diagnostics.
+            command = [*command[:2], f"--lua-filter={note_filter}", *command[2:]]
+        result = subprocess.run(command, env=env)
     if result.returncode == 0 and not side_effects["keep_merged_markdown"]:
         md_out.unlink(missing_ok=True)
 
