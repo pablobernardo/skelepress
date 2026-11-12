@@ -43,6 +43,7 @@ main() {
   run_locale_command_tests
   run_update_check_tests
   run_update_diagnostics_tests
+  run_update_checksum_tests
   run_update_resolution_precedence_tests
   run_update_install_tests
   run_update_dev_command_blocked_test
@@ -100,6 +101,7 @@ main() {
   run_documentation_example_coverage_test
   run_emoji_showcase_example_test
   run_documentation_skill_test
+  run_consumer_extension_tests
   run_docs_consistency_test
   run_examples_validate_test
   run_render_mermaid_failed_test

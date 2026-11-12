@@ -23,12 +23,12 @@ together they cover it instead of repeating it:
 | Example | What it shows |
 | --- | --- |
 | `examples/ohmyfake/` | Defaults: `glob` plus `order: natural`, `toc_depth: 2`, a cover built from `document.*`, merged Markdown kept, the name as a slug of the title |
-| `examples/manual/` | The other branch: `input.explicit_files`, `toc_depth: 3`, `keep_merged_markdown: false`, an explicit `file_prefix` and `document.metadata` |
+| `examples/manual/` | Explicit reading order, an original SVG from `media/` resolved through `pandoc.resource_path`, and a consumer-owned Lua filter with a visible **CHECK:** instruction marker; also `toc_depth: 3`, `keep_merged_markdown: false`, an explicit `file_prefix` and `document.metadata` |
 | `examples/no-titlepage/` | The smallest valid configuration, rendered in both formats, with `titlepage: false`: the document opens on the table of contents instead of a typeset title page |
 | `examples/documentation/` | The toolkit's own documentation: an explicit reading order over the six top-level guides in `docs/` (excluding the navigation README), with `base_dir` at the repository root, no filters and a numbered table of contents |
 | `examples/book-kit/` | One tool, two book shapes: a single-volume project without `series.yaml` and a two-volume series with it, sharing series defaults with per-volume overrides, a `chapter_start` that continues the chapter numbering across volumes, and generated mode files (`\mainmatter`, `\appendix`) so the content files carry no LaTeX markers. Built by the shipped tool `scripts/tools/bookkit/build.py` through the `skelepress book` subcommand |
 
-`examples/toPDF.sh` renders every example: the four configuration-driven ones
+`examples/render-all.sh` renders every example: the four configuration-driven ones
 (`ohmyfake`, `manual`, `no-titlepage` and `documentation`) through
 `skelepress render`,
 and the book example through `skelepress book`, because its volumes are declared
@@ -37,6 +37,26 @@ content examples (`ohmyfake`, `manual`, `no-titlepage` and `book-kit`) are
 original and released under CC0: they exercise the toolkit rather than serve
 as product documentation. The `documentation` example renders the repository
 documentation, which is MIT licensed.
+
+### Consumer-owned media and filters
+
+The manual's visual check in `examples/manual/chapters/05a-visual-check.md`
+shows both extension points without changing the toolkit:
+
+- The image basename `indicator.svg` resolves the authored SVG through the
+  manual's declared `media` resource path, relative to `project.base_dir`.
+- `filters.extra_lua_filters` registers the consumer's
+  `examples/manual/filters/mark-check.lua`, with its registration relative
+  to that base. It adds a bold **CHECK:** prefix only to an `operator-check`
+  span; ordinary text is untouched. Consumer filters run after built-in filters.
+
+Run `skelepress doctor -c examples/manual/skelepress.config.yaml`, then
+`skelepress render -c examples/manual/skelepress.config.yaml` from the repository
+root (or pass an absolute configuration path from elsewhere). In the visual-check
+chapter, inspect the three labelled indicator positions and the prefixed
+instruction. Removing the extra-filter registration preserves the original
+instruction without the prefix. Lua filters execute consumer code: review them
+before rendering an unfamiliar project.
 
 ### Command help
 
@@ -236,7 +256,11 @@ skelepress update --install-dir <path>
 
 `update --check` reports the local version, the latest stable version and whether an update is available.
 
-`update` installs the latest stable version for the current platform.
+`update` installs the latest stable version for the current platform. After checksum
+verification, it prints one localized line confirming that the artifact matched
+the published checksum, before extraction. This confirms verification, not
+installation success; a later extraction or installation step can still fail.
+`--check` and `--dry-run` do not verify downloaded artifacts or print this line.
 
 `update --to <tag>` installs a specific version (for example `v1.2.3`).
 

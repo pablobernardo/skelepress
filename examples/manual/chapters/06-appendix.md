@@ -40,9 +40,10 @@ that failure impossible rather than merely discouraged.
 ## Colophon
 
 This manual, its diagrams, and the machine it describes are fictional. The text is
-original and released under CC0, the diagrams are rendered from the Markdown
-sources, and the document you are reading was produced from a configuration
-example in the same repository.[^2]
+original and released under CC0. The diagrams are rendered from the Markdown
+sources; the indicator panel is an original SVG in this example's media directory.
+The consumer-owned instruction marker is a Lua filter. The document you are
+reading was produced from a configuration example in the same repository.[^2]
 
 [^2]: Nothing in this appendix describes a real device. The instructions are
     internally consistent, which is the most that any fictional appliance can

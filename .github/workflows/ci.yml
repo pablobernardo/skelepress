@@ -37,6 +37,11 @@ on:
         required: false
         default: false
         type: boolean
+      run_example_acceptance:
+        description: "Retain public example PDF/PNG evidence (no release)"
+        required: false
+        default: false
+        type: boolean
       run_release_acceptance:
         description: "Accept candidate packages and retain PDF evidence"
         required: false
@@ -226,7 +231,9 @@ jobs:
           (github.event_name == 'workflow_dispatch' &&
            inputs.run_render_full == true) ||
           (github.event_name == 'workflow_dispatch' &&
-           inputs.run_release_acceptance == true) }}
+           inputs.run_release_acceptance == true) ||
+          (github.event_name == 'workflow_dispatch' &&
+           inputs.run_example_acceptance == true) }}
 
     steps:
       - name: Checkout
@@ -275,6 +282,42 @@ jobs:
           test -x "$chrome_path"
           test -r "$(npm root -g)/@mermaid-js/mermaid-cli/dist/index.html"
           PUPPETEER_EXECUTABLE_PATH="$chrome_path" bash tests/l3-local.sh
+
+      - name: Render public example evidence
+        if: ${{ inputs.run_example_acceptance == true }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get install -y poppler-utils fonts-freefont-ttf
+          PUPPETEER_EXECUTABLE_PATH="$(command -v google-chrome)"
+          export PUPPETEER_EXECUTABLE_PATH
+          bin/skelepress doctor -c examples/manual/skelepress.config.yaml
+          bin/skelepress doctor -c examples/documentation/skelepress.config.yaml
+          FORMATS=pdf bash examples/render-all.sh
+          evidence="${RUNNER_TEMP}/skelepress-example-evidence"
+          mkdir -p "$evidence/manual" "$evidence/documentation"
+          # Only the two public publications: never upload checkout/home trees.
+          cp examples/.output/manual/honest-machine-manual-*.pdf \
+            "$evidence/manual/manual.pdf"
+          cp examples/.output/documentation/toolkit-documentation-*.pdf \
+            "$evidence/documentation/documentation.pdf"
+          for name in manual documentation; do
+            pdfinfo "$evidence/$name/$name.pdf" >"$evidence/$name/pdfinfo.txt"
+            pdftotext -layout "$evidence/$name/$name.pdf" \
+              "$evidence/$name/text.txt"
+            pdftoppm -png -scale-to 1400 "$evidence/$name/$name.pdf" \
+              "$evidence/$name/page"
+          done
+
+      - name: Retain public example evidence
+        if: ${{ inputs.run_example_acceptance == true }}
+        # actions/upload-artifact v4.6.2
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: examples-${{ github.sha }}
+          path: ${{ runner.temp }}/skelepress-example-evidence/
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Accept committed release candidate
         if: ${{ inputs.run_release_acceptance == true }}
@@ -327,7 +370,7 @@ jobs:
           # runner is narrowed to the format validated here. The PDF path is
           # covered by L1 and by the L2/L3 jobs, which install a TeX toolchain.
           PUPPETEER_EXECUTABLE_PATH="$chrome_path" \
-            FORMATS=epub bash examples/toPDF.sh
+            FORMATS=epub bash examples/render-all.sh
 
       - name: Install the pinned EPUBCheck
         # Acceptance only. A consumer producing a publication never needs a JVM,

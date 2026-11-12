@@ -181,6 +181,8 @@ Workflow and manual inputs:
 - `run_full_gate_macos=true` to run the [isolated full gate](#isolated-full-gate)
 - `run_render_integration=true` to run **L2**
 - `run_render_full=true` to run **L3**
+- `run_example_acceptance=true` to enable **L3** and retain public manual and
+  documentation PDF/PNG evidence without release acceptance
 
 In the GitHub UI, open **Actions → CI → Run workflow** and enable the input
 for the level you need. Or run from the CLI:
@@ -222,6 +224,28 @@ the complete gate, and requires a clean checkout afterward. It does not install
 or publish a release, alter temporary-allocation contracts, or establish all
 release acceptance on its own. Record the exact run, head SHA and test results;
 a runner that never starts is missing evidence, not a passed check.
+
+### Public example PDF evidence without a release
+
+Dispatch the branch containing the change with the default-off example input:
+
+```bash
+gh workflow run ci.yml --ref <branch> -f run_example_acceptance=true
+```
+
+This reuses the disposable Ubuntu L3 toolchain, runs public `doctor` checks,
+then `FORMATS=pdf bash examples/render-all.sh` (including the documentation example).
+It does not enable release acceptance, require a new version, install a toolkit
+release, or publish anything. Existing CI levels are unchanged unless selected.
+
+Download `examples-<commit>` from the run. It contains only the generated manual
+and documentation PDFs, per-page PNGs, PDF metadata and extracted text, copied
+under `RUNNER_TEMP`; no checkout or home directory is uploaded. Inspect the
+manual's **Visual check** page for the original three-position indicator and the
+bold **CHECK:** instruction prefix. Review the documentation PDF's examples and
+consumer-extension guidance for wrapping and layout. Exit status and extracted
+text alone do not establish visual acceptance. Record the run, exact SHA and
+pages inspected; the full gate remains separate evidence.
 
 ### Candidate acceptance without publication
 
