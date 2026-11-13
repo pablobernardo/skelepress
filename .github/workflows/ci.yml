@@ -293,7 +293,7 @@ jobs:
           export PUPPETEER_EXECUTABLE_PATH
           bin/skelepress doctor -c examples/manual/skelepress.config.yaml
           bin/skelepress doctor -c examples/documentation/skelepress.config.yaml
-          FORMATS=pdf bash examples/toPDF.sh
+          FORMATS=pdf bash examples/render-all.sh
           evidence="${RUNNER_TEMP}/skelepress-example-evidence"
           mkdir -p "$evidence/manual" "$evidence/documentation"
           # Only the two public publications: never upload checkout/home trees.
@@ -370,7 +370,7 @@ jobs:
           # runner is narrowed to the format validated here. The PDF path is
           # covered by L1 and by the L2/L3 jobs, which install a TeX toolchain.
           PUPPETEER_EXECUTABLE_PATH="$chrome_path" \
-            FORMATS=epub bash examples/toPDF.sh
+            FORMATS=epub bash examples/render-all.sh
 
       - name: Install the pinned EPUBCheck
         # Acceptance only. A consumer producing a publication never needs a JVM,

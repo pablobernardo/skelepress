@@ -162,7 +162,7 @@ skelepress/
     manual/                  # config + chapters
     ohmyfake/                # config + chapters
     test/                    # config + chapters
-    toPDF.sh
+    render-all.sh
   docs/
     README.md                # navigation index
     install.md
