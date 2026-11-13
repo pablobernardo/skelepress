@@ -97,7 +97,7 @@ assert flag and "default: false" in flag[1] and "type: boolean" in flag[1]
 job = re.search(r"^  l3-render-full:\n(.*?)(?=^  [\w-]+:|\Z)", workflow, re.M | re.S)[1]
 assert "inputs.run_release_acceptance == true" in job
 assert "python3 scripts/dev/check-release-candidate.py --out" in job
-assert "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02" in job
+assert "actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9" in job
 assert "if-no-files-found: error" in job
 assert "fonts-freefont-ttf" in job and "poppler-utils" in job
 PY
