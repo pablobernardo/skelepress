@@ -1,3 +1,139 @@
+# Exercise the consumer's files through the public CLI, not a second renderer.
+run_consumer_extension_tests() {
+  if ! command -v pandoc >/dev/null 2>&1; then
+    echo "SKIP consumer media/filter output (pandoc not available)"
+    return 0
+  fi
+
+  local scratch code
+  scratch="$(new_test_tmpdir)" || return
+  set +e
+  PYTHONDONTWRITEBYTECODE=1 "${REAL_PYTHON3}" - "$ROOT_DIR" "$CLI" "$scratch" <<'PY'
+import copy
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+import unittest
+import zipfile
+import xml.etree.ElementTree as ET
+
+root, cli, scratch = Path(sys.argv[1]), sys.argv[2], Path(sys.argv[3])
+sys.path.insert(0, str(root / "scripts/runtime"))
+from schema_runtime import load_yaml
+
+manual = root / "examples/manual"
+config = load_yaml(manual / "skelepress.config.yaml")
+chapter = "05a-visual-check.md"
+for name in ("home", "config", "cache", "tmp", "unrelated"):
+    (scratch / name).mkdir()
+env = {"PATH": os.environ["PATH"], "HOME": str(scratch / "home"),
+       "XDG_CONFIG_HOME": str(scratch / "config"),
+       "XDG_CACHE_HOME": str(scratch / "cache"), "TMPDIR": str(scratch / "tmp"),
+       "SKELEPRESS_PROJECT_ENV": str(scratch / "absent-project-env"),
+       "SKELEPRESS_LANG": "en", "PYTHONDONTWRITEBYTECODE": "1"}
+
+class ConsumerExtension(unittest.TestCase):
+    def render(self, enabled):
+        import tempfile
+        project = Path(tempfile.mkdtemp(prefix="enabled-" if enabled else "disabled-", dir=scratch))
+        for directory, filename in (("chapters", chapter), ("media", "indicator.svg"),
+                                    ("filters", "mark-check.lua")):
+            (project / directory).mkdir()
+            shutil.copyfile(manual / directory / filename, project / directory / filename)
+        derived = copy.deepcopy(config)
+        derived["project"]["base_dir"] = "."
+        derived["input"]["explicit_files"] = [chapter]
+        derived["output"].update(formats=["epub"], dir="out", file_prefix="probe", suffix="fixed")
+        derived["filters"]["emoji"] = {"enabled": False}
+        derived["filters"]["mermaid"] = {"enabled": False}
+        if not enabled:
+            derived["filters"]["extra_lua_filters"] = []
+        derived["runtime"]["required_commands"] = ["pandoc", "python3"]
+        # JSON is YAML too, using the same public version-1 contract.
+        import json
+        path = project / "skelepress.config.yaml"
+        path.write_text(json.dumps(derived), encoding="utf-8")
+        result = subprocess.run([cli, "render", "-c", str(path)], cwd=scratch / "unrelated",
+                                env=env, capture_output=True, text=True, timeout=15)
+        self.assertEqual(result.returncode, 0, (result.stdout, result.stderr))
+        publication = project / "out/probe-fixed.epub"
+        self.assertTrue(publication.is_file(), result.stdout)
+        return publication
+
+    def text(self, publication):
+        with zipfile.ZipFile(publication) as archive:
+            bodies = [ET.fromstring(archive.read(name)).find("{http://www.w3.org/1999/xhtml}body")
+                      for name in archive.namelist() if name.endswith(".xhtml")]
+            return " ".join(" ".join("".join(body.itertext()) for body in bodies).split())
+
+    def test_declared_consumer_paths_and_reading_order(self):
+        self.assertIn("media", config["pandoc"]["resource_path"])
+        self.assertEqual(config["filters"]["extra_lua_filters"], ["filters/mark-check.lua"])
+        order = config["input"]["explicit_files"]
+        self.assertLess(order.index("05-maintenance.md"), order.index(chapter))
+        self.assertLess(order.index(chapter), order.index("06-appendix.md"))
+        source = (manual / "chapters" / chapter).read_text()
+        self.assertIn("![Indicator panel][indicator-panel]", source)
+        self.assertIn("[indicator-panel]: indicator.svg", source)
+
+    def test_authored_figure_is_embedded_and_referenced(self):
+        publication = self.render(True)
+        with zipfile.ZipFile(publication) as archive:
+            images = [name for name in archive.namelist() if name.endswith(".svg")]
+            self.assertEqual(len(images), 1)
+            self.assertEqual(archive.read(images[0]), (manual / "media/indicator.svg").read_bytes())
+            import posixpath
+            references = []
+            for name in archive.namelist():
+                if name.endswith(".xhtml"):
+                    for node in ET.fromstring(archive.read(name)).iter():
+                        if node.tag.endswith("}img"):
+                            references.append(posixpath.normpath(posixpath.join(
+                                posixpath.dirname(name), node.attrib["src"])))
+            self.assertIn(images[0], references)
+
+    def test_lua_source_references_do_not_escape_the_publication(self):
+        import posixpath
+        from urllib.parse import unquote, urlsplit
+        publication = self.render(True)
+        self.assertIn("mark-check.lua", self.text(publication))
+        with zipfile.ZipFile(publication) as archive:
+            for name in archive.namelist():
+                if not name.endswith(".xhtml"):
+                    continue
+                for anchor in ET.fromstring(archive.read(name)).iter("{http://www.w3.org/1999/xhtml}a"):
+                    href = urlsplit(anchor.get("href", ""))
+                    if not href.scheme and not href.netloc and href.path.endswith(".lua"):
+                        target = posixpath.normpath(posixpath.join(
+                            posixpath.dirname(name), unquote(href.path)))
+                        self.assertIn(target, archive.namelist(),
+                                      f"{name}: Lua-source href {anchor.get('href')} is not packaged")
+
+    def test_opt_in_filter_has_named_visible_effect(self):
+        text = self.text(self.render(True))
+        self.assertIn("CHECK: Inspect the indicator before operation.", text)
+        self.assertIn("Ordinary text stays unchanged.", text)
+
+    def test_disabled_filter_preserves_original_phrase(self):
+        text = self.text(self.render(False))
+        self.assertIn("Inspect the indicator before operation.", text)
+        self.assertNotIn("CHECK: Inspect the indicator before operation.", text)
+        self.assertIn("Ordinary text stays unchanged.", text)
+
+try:
+    result = unittest.main(argv=["consumer-extension"], verbosity=2, exit=False).result
+    code = 0 if result.wasSuccessful() else 1
+finally:
+    shutil.rmtree(scratch)
+sys.exit(code)
+PY
+  code=$?
+  set -e
+  assert_exit_code "0" "$code" "consumer media and opt-in filter survive public EPUB rendering"
+}
+
 run_documentation_skill_test() {
   local out err code
   out="$(new_test_tmpfile)" || return
