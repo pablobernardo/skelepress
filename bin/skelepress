@@ -1047,12 +1047,20 @@ run_draft() {
     abs_files+=("$(cd "$(dirname "$path")" && pwd)/$(basename "$path")")
   done
 
+  # YAML double-quote escaping: a backslash or double quote in user text must
+  # stay literal inside the synthesized double-quoted scalars.
+  yaml_escape() {
+    printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g'
+  }
+
   local slug=""
   if [[ -n "$title" ]]; then
     slug="$(printf '%s' "$title" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^[:alnum:]]+/-/g; s/^-+//; s/-+$//')"
     [[ -z "$slug" ]] && slug="draft"
   else
-    slug="skeledraft-$(date +%Y%m%d-%H%M)"
+    # Second-resolution plus a short random tail: two drafts in the same minute
+    # (or even the same second) never share a target path.
+    slug="skeledraft-$(date +%Y%m%d-%H%M%S)-$((RANDOM % 10000))"
   fi
 
   local out_dir
@@ -1061,6 +1069,11 @@ run_draft() {
   if [[ -n "$output" ]]; then
     out_dir="$(cd "$(dirname "$output")" && pwd)"
     out_name="$(basename "$output")"
+    # Honor the explicit filename: the renderer always appends "-<suffix>",
+    # so the declared prefix is the -o stem and the suffix is empty.
+    slug="$(basename "$output")"
+    slug="${slug%.*}"
+    [[ -z "$slug" ]] && slug="draft"
   fi
 
   local tmpcfg
@@ -1069,7 +1082,7 @@ run_draft() {
     printf 'version: 1\n'
     printf 'project:\n  name: draft\n  base_dir: "%s"\n' "$out_dir"
     printf 'document:\n'
-    [[ -n "$title" ]] && printf '  title: "%s"\n' "$title"
+    [[ -n "$title" ]] && printf '  title: "%s"\n' "$(yaml_escape "$title")"
     printf '  titlepage: false\n'
     printf '  language: en\n'
     printf 'input:\n'
@@ -1079,9 +1092,9 @@ run_draft() {
     printf '  explicit_files:\n'
     local f
     for f in "${abs_files[@]}"; do
-      printf '    - "%s"\n' "$f"
+      printf '    - "%s"\n' "$(yaml_escape "$f")"
     done
-    printf 'output:\n  formats: [pdf]\n  dir: "%s"\n  file_prefix: "%s"\n  keep_merged_markdown: false\n' "$out_dir" "$slug"
+    printf 'output:\n  formats: [pdf]\n  dir: "%s"\n  file_prefix: "%s"\n  suffix: ""\n  keep_merged_markdown: false\n' "$(yaml_escape "$out_dir")" "$(yaml_escape "$slug")"
     printf 'pandoc:\n  pdf_engine: xelatex\n  toc: false\n  number_sections: false\n  resource_path:\n    - "."\n'
   } >"$tmpcfg"
 

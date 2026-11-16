@@ -33,6 +33,7 @@ main() {
   run_draft_rejects_repeated_options_test
   run_draft_rejects_unknown_option_test
   run_draft_synthesized_config_shape_test
+  run_draft_correction_regressions_test
   run_rename_contract_tests
   run_rename_symlink_root_test
   run_help_test

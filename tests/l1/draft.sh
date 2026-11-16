@@ -95,3 +95,40 @@ run_draft_synthesized_config_shape_test() {
   fi
   rm -rf "$out" "$tmp"
 }
+
+run_draft_correction_regressions_test() {
+  # Regression pins for review findings R3-001, R3-002, R4-001:
+  # -o must drive the declared file_prefix; title/path YAML quoting must be
+  # escaped; the default slug must carry a second+random collision guard.
+  local tmp
+  tmp="$(mktemp -d)"
+  printf '# Hello\n' >"$tmp/a.md"
+
+  local esc
+  esc="$(mktemp)"
+  SKELEPRESS_DEBUG_DRAFT_CONFIG=1 /bin/bash "$CLI" draft -t 'Title with "quotes" and \backslash' "$tmp/a.md" >"$esc" 2>&1
+  assert_contains "$esc" 'title: "Title with \\"quotes\\" and \\\\backslash"' "synthesized config escapes YAML double quotes and backslashes"
+  rm -f "$esc"
+
+  local oname
+  oname="$(mktemp)"
+  SKELEPRESS_DEBUG_DRAFT_CONFIG=1 /bin/bash "$CLI" draft -o "$tmp/custom-name.pdf" "$tmp/a.md" >"$oname" 2>&1
+  assert_contains "$oname" 'file_prefix: "custom-name"' "explicit -o filename drives the declared prefix"
+  assert_contains "$oname" 'suffix: ""' "explicit -o keeps the renderer from appending a date suffix"
+  rm -f "$oname"
+
+  local s1 s2 n1 n2
+  s1="$(mktemp)"
+  s2="$(mktemp)"
+  SKELEPRESS_DEBUG_DRAFT_CONFIG=1 /bin/bash "$CLI" draft "$tmp/a.md" >"$s1" 2>&1
+  SKELEPRESS_DEBUG_DRAFT_CONFIG=1 /bin/bash "$CLI" draft "$tmp/a.md" >"$s2" 2>&1
+  n1="$(grep -oE 'skeledraft-[0-9]{8}-[0-9]{6}-[0-9]+' "$s1" | head -1)"
+  n2="$(grep -oE 'skeledraft-[0-9]{8}-[0-9]{6}-[0-9]+' "$s2" | head -1)"
+  if [[ -n "$n1" && -n "$n2" && "$n1" != "$n2" ]]; then
+    pass "default draft slugs never collide across quick successive runs"
+  else
+    fail "default draft slug collision guard (got: $n1 / $n2)"
+  fi
+  rm -f "$s1" "$s2" "$tmp/a.md"
+  rmdir "$tmp"
+}
