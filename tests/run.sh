@@ -28,6 +28,11 @@ main() {
   run_suite_registration_test
   run_test_temp_explicit_root_test
   run_test_temp_native_defaults_test
+  run_draft_requires_at_least_one_file_test
+  run_draft_rejects_missing_file_test
+  run_draft_rejects_repeated_options_test
+  run_draft_rejects_unknown_option_test
+  run_draft_synthesized_config_shape_test
   run_rename_contract_tests
   run_rename_symlink_root_test
   run_help_test

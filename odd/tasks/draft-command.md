@@ -38,3 +38,5 @@ L1 (user, verbatim): "me interesa darle prioridad al draft es posible? y lanzar 
 L2 (user, verbatim): "me parece bien, pero dejamos opción de ponerlo a mano también? o mejor dejarlo ya así total es un borrador podría ser incluso draft-xxxxxxx o algo así no?"
 L3 (user, verbatim): "o skeledraft-xxxxx incluso" — S2 resolved: prefix skeledraft-.
 L4: Issue #195 updated with skeledraft- prefix, timestamp example, -t/-o.
+
+L5: Docs slice done. docs/usage.md gained "Quick drafts without a configuration" under CLI commands: usage examples (skeledraft-YYYYMMDD-HHMM default, -t slug naming, -o explicit path), draft-vs-book defaults (no TOC/title page/numbered sections), input resolution, mandatory preflight, additive guarantee. check-docs 83 files OK. CLI help shows the localized draft line in en/es (gl/pt via catalogs). Full suite 789/0 after docs; check-i18n OK; bash -n + ShellCheck (draft.sh clean) OK.

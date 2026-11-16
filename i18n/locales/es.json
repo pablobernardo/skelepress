@@ -198,5 +198,14 @@
   ,"check_i18n.ok": "✅ i18n OK: {locales} locales, {keys} claves verificadas"
   ,"prepare_emojis.error.prefix": "⚠️ [prepare-emojis] {msg}"
   ,"prepare_emojis.error.usage": "Uso: prepare-emojis.py <merged.md> <target_dir> <bundled_emoji_dir>"
-  ,"prepare_emojis.error.merged_md_missing": "No existe markdown combinado: {path}"
+  ,"prepare_emojis.error.merged_md_missing": "No existe markdown combinado: {path}",
+  "cli.help.command.draft": "Renderizar ficheros Markdown sueltos como borrador PDF rápido (sin configuración, sin índice).",
+  "cli.help.note.draft": "draft genera una configuración mínima (skeledraft-YYYYMMDD-HHMM.pdf por defecto; -t título, -o salida) y ejecuta el flujo de renderizado estándar.",
+  "draft.error.no_files": "draft necesita al menos un fichero Markdown.",
+  "draft.error.file_not_found": "Fichero no encontrado: {path}",
+  "draft.error.repeated_option": "Opción repetida: {option}",
+  "draft.error.title_required": "-t necesita un título.",
+  "draft.error.output_required": "-o necesita una ruta de salida.",
+  "draft.info.synthesized": "Configuración de borrador sintetizada escrita en {path}",
+  "draft.info.rendering": "Renderizando borrador: {output}"
 }
