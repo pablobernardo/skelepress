@@ -22,6 +22,7 @@
       "--lua-filter=<REPO>/filters/emoji.lua",
       "--lua-filter=<REPO>/filters/mermaid.lua",
       "--lua-filter=<REPO>/filters/inline-code-breaks.lua",
+      "--lua-filter=<REPO>/filters/heading-page-break.lua",
       "--lua-filter=<CASES>/assets/identity.lua",
       "--toc",
       "--toc-depth=2",
@@ -58,6 +59,7 @@
         "<REPO>/filters/emoji"
       ]
     },
+    "heading_break_level": 1,
     "keep_merged_markdown": true,
     "mermaid": {
       "background": "white",

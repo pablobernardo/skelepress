@@ -20,6 +20,7 @@
       "--pdf-engine=xelatex",
       "--template=<REPO>/templates/default.tex",
       "--lua-filter=<REPO>/filters/inline-code-breaks.lua",
+      "--lua-filter=<REPO>/filters/heading-page-break.lua",
       "-V",
       "fig-pos=!htbp",
       "--resource-path=<CASES>/chapters:<CASES>",
@@ -47,6 +48,7 @@
       "missing_svg": "<CASES>/output/emoji/_missing.svg",
       "prepare_argv": null
     },
+    "heading_break_level": 1,
     "keep_merged_markdown": true,
     "mermaid": {
       "background": "transparent",

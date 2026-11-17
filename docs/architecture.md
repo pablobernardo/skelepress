@@ -91,7 +91,13 @@ compat:
 
 The schema requires `version`, `project`, `document`, `input`, `output`,
 `pandoc`, `filters` and `runtime`. The `compat` section is optional; when absent,
-`legacy_clearpage_between_h1` defaults to `true`.
+`legacy_clearpage_between_h1` defaults to `true`, and
+`clearpage_between_heading_level` defaults to `1` (the same H1 rule). The
+optional level widens the chapter boundary to any heading level from 1 to 6,
+and the always-on `filters/heading-page-break.lua` filter honours a
+`{.page-break}` heading class: `\clearpage` in LaTeX, a `break-before: page`
+CSS hook kept as a class in HTML and EPUB. Both keep LaTeX out of the sources
+and out of every EPUB plan.
 
 ### Contract rules
 

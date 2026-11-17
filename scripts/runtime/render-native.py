@@ -275,7 +275,23 @@ def build_single_plan(cfg_user: dict, cfg_path: Path, root_dir: Path, format_nam
     # \clearpage is a LaTeX command: an EPUB has no TeX to interpret it, and an EPUB
     # plan carries no LaTeX-only markup. The compatibility switch is a typesetting
     # decision, so it only ever applies to the PDF.
-    insert_clearpage = format_name == FORMAT_PDF and bool(compat.get("legacy_clearpage_between_h1", True))
+    #
+    # compat.clearpage_between_heading_level, when set, subsumes the legacy H1
+    # rule: it selects the deepest heading level that starts a page (1..6) and
+    # keeps the format gate, while the legacy flag keeps governing renders that
+    # do not name the level. Configs that only set the flag are unchanged.
+    heading_break_level = compat.get("clearpage_between_heading_level", 1)
+    if isinstance(heading_break_level, bool) or not isinstance(heading_break_level, int) or not 1 <= heading_break_level <= 6:
+        die(
+            t(
+                "render.error.heading_break_level_invalid",
+                "'compat.clearpage_between_heading_level' must be an integer between 1 and 6",
+            )
+        )
+    if "clearpage_between_heading_level" in compat:
+        insert_clearpage = format_name == FORMAT_PDF
+    else:
+        insert_clearpage = format_name == FORMAT_PDF and bool(compat.get("legacy_clearpage_between_h1", True))
 
     raw_user_pandoc = cfg_user.get("pandoc")
     user_pandoc_cfg = raw_user_pandoc if isinstance(raw_user_pandoc, dict) else {}
@@ -376,6 +392,10 @@ def build_single_plan(cfg_user: dict, cfg_path: Path, root_dir: Path, format_nam
     # Always on: inline code cannot break in LaTeX, and a long path running past
     # the margin is not something a consumer should have to configure away.
     cmd.append(f"--lua-filter={root_dir / 'filters/inline-code-breaks.lua'}")
+
+    # Always on: a {.page-break} heading class becomes \clearpage in LaTeX and
+    # keeps the class elsewhere, where the EPUB stylesheet exposes the CSS hook.
+    cmd.append(f"--lua-filter={root_dir / 'filters/heading-page-break.lua'}")
 
     for extra in filters.get("extra_lua_filters", []):
         extra_path = Path(str(extra))
@@ -495,6 +515,7 @@ def build_single_plan(cfg_user: dict, cfg_path: Path, root_dir: Path, format_nam
         "side_effects": {
             "keep_merged_markdown": keep_merged_markdown,
             "clearpage_between_h1": insert_clearpage,
+            "heading_break_level": heading_break_level,
             "emoji": {
                 "enabled": emoji_enabled,
                 "dir": str(emoji_dir),
@@ -573,7 +594,7 @@ def with_marker(text: str, marker: str) -> str:
     return "[]{#" + marker + "}\n\n" + text
 
 
-def merged_markdown(chapters: list[str], insert_clearpage: bool) -> str:
+def merged_markdown(chapters: list[str], insert_clearpage: bool, heading_break_level: int = 1) -> str:
     texts = [Path(raw_path).read_text(encoding="utf-8", errors="ignore") for raw_path in chapters]
     # Chapters become sections of one document, so a link to a sibling file would
     # point at a file the publication does not contain. Anchors are injected only
@@ -605,7 +626,9 @@ def merged_markdown(chapters: list[str], insert_clearpage: bool) -> str:
                 if line.strip():
                     first_nonempty = line
                     break
-            if first_nonempty.startswith("# "):
+            # A heading at heading_break_level or shallower starts a page. With
+            # the default level 1 this is exactly the legacy "# " check.
+            if re.match(r"#{1," + str(heading_break_level) + r"} ", first_nonempty):
                 parts.append("\n\n\\clearpage\n\n")
         marker = markers.get(Path(raw_path).name)
         if marker:
@@ -667,7 +690,11 @@ def execute_single_plan(plan: dict) -> int:
 
     md_out.parent.mkdir(parents=True, exist_ok=True)
     md_out.write_text(
-        merged_markdown(plan["chapters"], bool(side_effects["clearpage_between_h1"])),
+        merged_markdown(
+            plan["chapters"],
+            bool(side_effects["clearpage_between_h1"]),
+            int(side_effects.get("heading_break_level", 1)),
+        ),
         encoding="utf-8",
     )
 

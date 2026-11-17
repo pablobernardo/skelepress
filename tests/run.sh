@@ -87,6 +87,10 @@ main() {
   run_render_keep_merged_markdown_test
   run_render_document_vars_test
   run_render_ballot_icons_test
+  run_render_heading_page_break_level_test
+  run_render_heading_page_break_plan_test
+  run_heading_page_break_filter_test
+  run_heading_page_break_validate_test
   run_doctor_strict_semantics_test
   run_doctor_python_minimum_test
   run_scripts_python_minimum_guard_test
