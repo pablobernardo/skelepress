@@ -53,6 +53,7 @@ usage() {
   note_render_native="$(t "cli.help.note.render_native" "render uses native implementation.")"
   note_yaml_parsing="$(t "cli.help.note.yaml_parsing" "Config parsing supports Python+PyYAML or Ruby stdlib YAML.")"
   note_book="$(t "cli.help.note.book" "book forwards to the shipped bookkit tool (scripts/tools/bookkit/build.py).")"
+  note_draft="$(t "cli.help.note.draft" "draft synthesizes a minimal configuration (skeledraft-YYYYMMDD-HHMMSS-NNNN.pdf by default; -t title, -o output) and runs the standard render pipeline.")"
   note_update_resolution="$(t "cli.help.note.update_resolution" "update honours SKELEPRESS_UPDATE_HOME or SKELEPRESS_INSTALL_HOME for the managed root and --install-dir or SKELEPRESS_INSTALL_DIR for the binary; a declared install dir beats the skelepress found on PATH.")"
 
   cat <<EOF
@@ -70,10 +71,12 @@ ${usage_title}
   skelepress doctor [-c <skelepress.config.yaml>]
   skelepress validate-config -c <skelepress.config.yaml>
   skelepress render -c <skelepress.config.yaml> [--dry-run] [--json]
+  skelepress draft <file.md> [more.md...] [-t <title>] [-o <output.pdf>]
   skelepress book [args...]
 
 ${notes_title}
   - ${note_render_native}
+  - ${note_draft}
   - ${note_yaml_parsing}
   - ${note_book}
   - ${note_update_resolution}
@@ -85,7 +88,7 @@ show_help() {
   usage
   printf '\n%s\n' "$(t "cli.help.commands" "cli.help.commands")"
   local command
-  for command in version info locale update doctor validate-config render book help; do
+  for command in version info locale update doctor validate-config render book draft help; do
     printf '  %-18s %s\n' "$command" "$(t "cli.help.command.${command}" "cli.help.command.${command}")"
   done
   printf '\n%s\n' "$(t "cli.help.details" "cli.help.details")"
@@ -990,6 +993,162 @@ run_render_plan() {
   SKELEPRESS_LANG="$CLI_LANG" python3 "$ROOT_DIR/scripts/runtime/render-native.py" "$config_path" "$ROOT_DIR" "$plan_flag"
 }
 
+run_draft() {
+  # Synthesize the minimal valid draft configuration, validate it against the
+  # schema, then run the same single renderer the render command uses. The
+  # generated config carries absolute file paths and a skeledraft- prefixed
+  # output, and never requests formats the draft flow does not promise.
+  local title=""
+  local output=""
+  local -a files=()
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -t|--title)
+        [[ -z "${2:-}" ]] && { echo "❌ $(t "draft.error.title_required" "-t requires a title.")" >&2; exit 1; }
+        [[ -n "$title" ]] && { echo "❌ $(interp "$(t "draft.error.repeated_option" "Repeated option: {option}")" "option" "-t")" >&2; exit 1; }
+        title="$2"
+        shift 2
+        ;;
+      -o|--output)
+        [[ -z "${2:-}" ]] && { echo "❌ $(t "draft.error.output_required" "-o requires an output path.")" >&2; exit 1; }
+        [[ -n "$output" ]] && { echo "❌ $(interp "$(t "draft.error.repeated_option" "Repeated option: {option}")" "option" "-o")" >&2; exit 1; }
+        output="$2"
+        shift 2
+        ;;
+      -h|--help)
+        usage
+        exit 0
+        ;;
+      -*)
+        echo "❌ $(interp "$(t "cli.error.unknown_arg" "Unknown argument: {arg}")" "arg" "$1")" >&2
+        usage >&2
+        exit 1
+        ;;
+      *)
+        files+=("$1")
+        shift
+        ;;
+    esac
+  done
+
+  if [[ "${#files[@]}" -eq 0 ]]; then
+    echo "❌ $(t "draft.error.no_files" "draft requires at least one Markdown file.")" >&2
+    usage >&2
+    exit 1
+  fi
+
+  local path
+  for path in "${files[@]}"; do
+    if [[ ! -f "$path" ]]; then
+      echo "❌ $(interp "$(t "draft.error.file_not_found" "File not found: {path}")" "path" "$path")" >&2
+      exit 1
+    fi
+  done
+
+  local -a abs_files=()
+  for path in "${files[@]}"; do
+    abs_files+=("$(cd "$(dirname "$path")" && pwd)/$(basename "$path")")
+  done
+
+  # YAML double-quote escaping: a backslash or double quote in user text must
+  # stay literal inside the synthesized double-quoted scalars.
+  yaml_escape() {
+    printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g'
+  }
+
+  # The renderer names artifacts "<file_prefix>-<suffix>.pdf" and the schema
+  # requires a non-empty suffix, so the final name is assembled from both.
+  local file_prefix=""
+  local suffix_val=""
+  local out_dir
+  out_dir="$(pwd)"
+  local out_name=""
+  # The random zero-padded tail always rides the suffix, so every rendered
+  # intermediate artifact is unique and never clobbers unrelated files; the
+  # final name is assembled from it (or renamed for -o).
+  suffix_val="$(printf '%04d' "$((RANDOM % 10000))")"
+  if [[ -n "$output" ]]; then
+    out_dir="$(cd "$(dirname "$output")" && pwd)"
+    out_name="$(basename "$output")"
+    file_prefix="$(basename "$output")"
+    file_prefix="${file_prefix%.*}"
+    [[ -z "$file_prefix" ]] && file_prefix="draft"
+  else
+    if [[ -n "$title" ]]; then
+      # Deterministic title-slug name as documented; the fixed suffix keeps
+      # the renderer's non-empty-suffix contract while repeated same-title
+      # drafts intentionally replace the previous one.
+      file_prefix="$(printf '%s' "$title" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^[:alnum:]]+/-/g; s/^-+//; s/-+$//')"
+      [[ -z "$file_prefix" ]] && file_prefix="draft"
+      suffix_val="draft"
+    else
+      # Second-resolution timestamp: successive drafts sort by date.
+      file_prefix="skeledraft-$(date +%Y%m%d-%H%M%S)"
+    fi
+    out_name="${file_prefix}-${suffix_val}.pdf"
+  fi
+
+  local tmpcfg
+  tmpcfg="$(mktemp)"
+  {
+    printf 'version: 1\n'
+    printf 'project:\n  name: draft\n  base_dir: "%s"\n' "$(yaml_escape "$out_dir")"
+    printf 'document:\n'
+    if [[ -n "$title" ]]; then
+      printf '  title: "%s"\n' "$(yaml_escape "$title")"
+    else
+      printf '  title: "%s"\n' "$(yaml_escape "$file_prefix")"
+    fi
+    printf '  titlepage: false\n'
+    printf '  language: en\n'
+    printf 'input:\n'
+    printf '  chapters_dir: "."\n'
+    printf '  glob: "*.md"\n'
+    printf '  order: natural\n'
+    printf '  explicit_files:\n'
+    local f
+    for f in "${abs_files[@]}"; do
+      printf '    - "%s"\n' "$(yaml_escape "$f")"
+    done
+    printf 'output:\n  formats: [pdf]\n  dir: "%s"\n  file_prefix: "%s"\n  suffix: "%s"\n  keep_merged_markdown: false\n' "$(yaml_escape "$out_dir")" "$(yaml_escape "$file_prefix")" "$(yaml_escape "$suffix_val")"
+    printf 'pandoc:\n  pdf_engine: xelatex\n  toc: false\n  toc_depth: 2\n  number_sections: false\n  resource_path:\n    - "."\n'
+    printf 'filters:\n  emoji:\n    enabled: false\n  mermaid:\n    enabled: false\n  extra_lua_filters: []\n'
+    printf 'runtime:\n  required_commands:\n    - pandoc\n    - xelatex\n    - python3\n  strict: true\n'
+  } >"$tmpcfg"
+
+  if [[ "${SKELEPRESS_DEBUG_DRAFT_CONFIG:-}" == "1" ]]; then
+    cat "$tmpcfg"
+    rm -f "$tmpcfg"
+    exit 0
+  fi
+
+  # SC2005 avoided deliberately: interp output goes to stderr with a prefix.
+  printf '%s\n' "$(interp "$(t "draft.info.rendering" "Rendering draft: {output}")" "output" "$out_dir/$out_name")" >&2
+
+  if ! validate_config_file "$tmpcfg"; then
+    rm -f "$tmpcfg"
+    exit 1
+  fi
+
+  ensure_yaml_parser_available
+  local render_exit=0
+  SKELEPRESS_LANG="$CLI_LANG" python3 "$ROOT_DIR/scripts/runtime/render-native.py" "$tmpcfg" "$ROOT_DIR" || render_exit=$?
+  rm -f "$tmpcfg"
+  if [[ "$render_exit" -eq 0 && -n "$output" ]]; then
+    # Honor the exact requested filename: move the unique intermediate
+    # artifact to the -o name once it exists (replacing a file the user
+    # explicitly targeted, like cp).
+    local produced="$out_dir/${file_prefix}-${suffix_val}.pdf"
+    if [[ -f "$produced" ]]; then
+      mv -f "$produced" "$out_dir/$out_name" || render_exit=1
+    else
+      echo "❌ $(t "draft.error.output_missing" "Draft rendered but the output file is missing.")" >&2
+      render_exit=1
+    fi
+  fi
+  return "$render_exit"
+}
+
 main() {
   local command="${1:-}"
   if [[ -z "$command" ]]; then
@@ -1117,9 +1276,12 @@ main() {
         run_render "$config"
       fi
       ;;
+    draft)
+      run_draft "$@"
+      ;;
     book)
       # Transparent front door to the shipped bookkit tool: every argument is
-      # forwarded unchanged, the environment is inherited untouched, and
+
       # stdout, stderr and the exit code are exactly what invoking the tool
       # directly produces. The tool re-enters the CLI itself (bin/skelepress
       # render), so there is no recursion here.

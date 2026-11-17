@@ -198,5 +198,15 @@
   "check_i18n.ok": "✅ i18n OK: {locales} locales, {keys} chaves verificadas",
   "prepare_emojis.error.prefix": "⚠️ [prepare-emojis] {msg}",
   "prepare_emojis.error.usage": "Uso: prepare-emojis.py <merged.md> <target_dir> <bundled_emoji_dir>",
-  "prepare_emojis.error.merged_md_missing": "Arquivo markdown combinado não existe: {path}"
+  "prepare_emojis.error.merged_md_missing": "Arquivo markdown combinado não existe: {path}",
+  "cli.help.command.draft": "Renderizar ficheiros markdown soltos como rascunho PDF rápido (sem configuração, sem índice).",
+  "cli.help.note.draft": "draft gera uma configuração mínima (skeledraft-YYYYMMDD-HHMMSS-NNNN.pdf por defeito; -t título, -o saída) e executa o fluxo de renderização padrão.",
+  "draft.error.no_files": "draft precisa de pelo menos um ficheiro Markdown.",
+  "draft.error.file_not_found": "Ficheiro não encontrado: {path}",
+  "draft.error.repeated_option": "Opção repetida: {option}",
+  "draft.error.title_required": "-t precisa de um título.",
+  "draft.error.output_required": "-o precisa de um caminho de saída.",
+  "draft.info.synthesized": "Configuração de rascunho sintetizada escrita em {path}",
+  "draft.info.rendering": "A renderizar rascunho: {output}",
+  "draft.error.output_missing": "O rascunho foi renderizado mas falta o ficheiro de saída."
 }
