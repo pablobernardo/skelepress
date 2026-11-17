@@ -332,8 +332,9 @@ compat:
 
    The break is inserted by the merge step, exactly like the legacy H1 break,
    so no raw `\clearpage` reaches the Markdown sources and no EPUB plan ever
-   carries one. Setting the key subsumes the legacy H1 rule: level `1` is the
-   same contract as the flag alone, and `2` starts a page at `#` **and** `#`
+   carries one. Setting the key subsumes the legacy H1 rule: the flag no
+   longer gates the decision, level `1` keeps the H1-only contract of the flag
+   alone while the flag stays `true`, and `2` starts a page at `#` **and** `##`
    chapters. An out-of-range value is rejected by `validate-config` naming the
    key. Renders that do not name the key keep the `legacy_clearpage_between_h1`
    behaviour unchanged.
