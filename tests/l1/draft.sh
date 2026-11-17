@@ -114,6 +114,7 @@ run_draft_correction_regressions_test() {
   oname="$(mktemp)"
   SKELEPRESS_DEBUG_DRAFT_CONFIG=1 /bin/bash "$CLI" draft -o "$tmp/custom-name.pdf" "$tmp/a.md" >"$oname" 2>&1
   assert_contains "$oname" 'file_prefix: "custom-name"' "explicit -o filename drives the declared prefix"
+  assert_contains "$oname" 'suffix: "[0-9]{4}"' "explicit -o keeps a unique random suffix for the intermediate"
   rm -f "$oname"
 
   local -a slugs=()

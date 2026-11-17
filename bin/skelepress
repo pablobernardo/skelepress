@@ -1063,23 +1063,28 @@ run_draft() {
   local out_dir
   out_dir="$(pwd)"
   local out_name=""
+  # The random zero-padded tail always rides the suffix, so every rendered
+  # intermediate artifact is unique and never clobbers unrelated files; the
+  # final name is assembled from it (or renamed for -o).
+  suffix_val="$(printf '%04d' "$((RANDOM % 10000))")"
   if [[ -n "$output" ]]; then
     out_dir="$(cd "$(dirname "$output")" && pwd)"
     out_name="$(basename "$output")"
     file_prefix="$(basename "$output")"
     file_prefix="${file_prefix%.*}"
     [[ -z "$file_prefix" ]] && file_prefix="draft"
-    suffix_val="draft"
   else
     if [[ -n "$title" ]]; then
+      # Deterministic title-slug name as documented; the fixed suffix keeps
+      # the renderer's non-empty-suffix contract while repeated same-title
+      # drafts intentionally replace the previous one.
       file_prefix="$(printf '%s' "$title" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^[:alnum:]]+/-/g; s/^-+//; s/-+$//')"
       [[ -z "$file_prefix" ]] && file_prefix="draft"
+      suffix_val="draft"
     else
       # Second-resolution timestamp: successive drafts sort by date.
       file_prefix="skeledraft-$(date +%Y%m%d-%H%M%S)"
     fi
-    # Short random tail, zero-padded: two drafts never share a target path.
-    suffix_val="$(printf '%04d' "$((RANDOM % 10000))")"
     out_name="${file_prefix}-${suffix_val}.pdf"
   fi
 
@@ -1130,8 +1135,9 @@ run_draft() {
   SKELEPRESS_LANG="$CLI_LANG" python3 "$ROOT_DIR/scripts/runtime/render-native.py" "$tmpcfg" "$ROOT_DIR" || render_exit=$?
   rm -f "$tmpcfg"
   if [[ "$render_exit" -eq 0 && -n "$output" ]]; then
-    # Honor the exact requested filename: the renderer appends "-draft", so
-    # move the produced artifact to the -o name once it exists.
+    # Honor the exact requested filename: move the unique intermediate
+    # artifact to the -o name once it exists (replacing a file the user
+    # explicitly targeted, like cp).
     local produced="$out_dir/${file_prefix}-${suffix_val}.pdf"
     if [[ -f "$produced" ]]; then
       mv -f "$produced" "$out_dir/$out_name" || render_exit=1

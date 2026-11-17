@@ -427,7 +427,7 @@ skelepress draft -t "Contract" doc.md       # manual title, slug-named output
 skelepress draft -o /tmp/out.pdf doc.md     # explicit output path
 ```
 
-Defaults are draft defaults, not book defaults: no table of contents, no title page, no numbered sections — just pagination with the toolkit's default template. Without `-t`, the output is named `skeledraft-YYYYMMDD-HHMMSS-NNNN.pdf` (local second-resolution timestamp plus a short random tail), so successive drafts sort by date and never collide — not even two drafts started within the same minute; `-t` names the output from the title slug instead. `-o` places the PDF wherever you point it.
+Defaults are draft defaults, not book defaults: no table of contents, no title page, no numbered sections — just pagination with the toolkit's default template. Without `-t`, the output is named `skeledraft-YYYYMMDD-HHMMSS-NNNN.pdf` (local second-resolution timestamp plus a short random tail), so successive drafts sort by date and never collide — not even two drafts started within the same minute; `-t` names the output from the title slug (`<slug>-draft.pdf`, deterministic: a new draft with the same title replaces the previous one). `-o` places the PDF at the exact path you point it, replacing an existing file there.
 
 All inputs must be existing Markdown files; relative paths are resolved from the directory you run the command from. The synthesized configuration is validated against the same schema contract as any configuration, and the mandatory preflight applies — so a missing `pandoc` or TeX engine fails with the same diagnostics as `render`. The command is fully additive: config-driven `render` behavior is unchanged.
 
