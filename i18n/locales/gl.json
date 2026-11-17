@@ -207,5 +207,6 @@
   "draft.error.title_required": "-t necesita un título.",
   "draft.error.output_required": "-o precisa unha ruta de saída.",
   "draft.info.synthesized": "Configuración de borrador sintetizada escrita en {path}",
-  "draft.info.rendering": "Renderizando borrador: {output}"
+  "draft.info.rendering": "Renderizando borrador: {output}",
+  "draft.error.output_missing": "O borrador renderizouse pero falta o ficheiro de saída."
 }

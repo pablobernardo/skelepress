@@ -114,17 +114,17 @@ run_draft_correction_regressions_test() {
   oname="$(mktemp)"
   SKELEPRESS_DEBUG_DRAFT_CONFIG=1 /bin/bash "$CLI" draft -o "$tmp/custom-name.pdf" "$tmp/a.md" >"$oname" 2>&1
   assert_contains "$oname" 'file_prefix: "custom-name"' "explicit -o filename drives the declared prefix"
-  assert_contains "$oname" 'suffix: ""' "explicit -o keeps the renderer from appending a date suffix"
   rm -f "$oname"
 
   local -a slugs=()
-  local s n
+  local s prefix tail
   for _ in 1 2 3 4 5; do
     s="$(mktemp)"
     SKELEPRESS_DEBUG_DRAFT_CONFIG=1 /bin/bash "$CLI" draft "$tmp/a.md" >"$s" 2>&1
-    n="$(grep -oE 'skeledraft-[0-9]{8}-[0-9]{6}-[0-9]{4}' "$s" | head -1)"
+    prefix="$(grep -oE 'file_prefix: "skeledraft-[0-9]{8}-[0-9]{6}"' "$s" | head -1 | sed 's/^[^"]*"//; s/"$//')"
+    tail="$(grep -oE 'suffix: "[0-9]{4}"' "$s" | head -1 | sed 's/^[^"]*"//; s/"$//')"
     rm -f "$s"
-    slugs+=("$n")
+    slugs+=("${prefix}-${tail}")
   done
   if [[ -n "${slugs[0]}" && "$(printf '%s\n' "${slugs[@]}" | sort -u | wc -l | tr -d ' ')" -eq 5 ]]; then
     pass "default draft slugs never collide across five quick successive runs"
@@ -133,4 +133,34 @@ run_draft_correction_regressions_test() {
   fi
   rm -f "$tmp/a.md"
   rmdir "$tmp"
+}
+
+run_draft_synthesized_config_validates_test() {
+  # The debug hook prints the exact config the render path would validate;
+  # pin that it passes the real schema (root cause of the first user error).
+  local tmp
+  tmp="$(mktemp -d)"
+  printf '# Hello\n' >"$tmp/a.md"
+  local cfgfile
+  cfgfile="$(mktemp)"
+  if SKELEPRESS_DEBUG_DRAFT_CONFIG=1 /bin/bash "$CLI" draft "$tmp/a.md" >"$cfgfile" 2>&1 \
+    && "$REAL_PYTHON3" "$ROOT_DIR/scripts/runtime/validate-config.py" "$cfgfile" "$ROOT_DIR/schemas/skelepress-config.schema.json" >/dev/null 2>&1; then
+    pass "synthesized config validates against the schema (default timestamp shape)"
+  else
+    fail "synthesized config must validate against the schema (default timestamp shape)"
+  fi
+  if SKELEPRESS_DEBUG_DRAFT_CONFIG=1 /bin/bash "$CLI" draft -t "My Draft" "$tmp/a.md" >"$cfgfile" 2>&1 \
+    && "$REAL_PYTHON3" "$ROOT_DIR/scripts/runtime/validate-config.py" "$cfgfile" "$ROOT_DIR/schemas/skelepress-config.schema.json" >/dev/null 2>&1; then
+    pass "synthesized config validates against the schema (-t shape)"
+  else
+    fail "synthesized config must validate against the schema (-t shape)"
+  fi
+  if SKELEPRESS_DEBUG_DRAFT_CONFIG=1 /bin/bash "$CLI" draft -o "$tmp/out.pdf" "$tmp/a.md" >"$cfgfile" 2>&1 \
+    && "$REAL_PYTHON3" "$ROOT_DIR/scripts/runtime/validate-config.py" "$cfgfile" "$ROOT_DIR/schemas/skelepress-config.schema.json" >/dev/null 2>&1; then
+    pass "synthesized config validates against the schema (-o shape)"
+  else
+    fail "synthesized config must validate against the schema (-o shape)"
+  fi
+  rm -f "$cfgfile" 
+  rm -rf "$tmp"
 }

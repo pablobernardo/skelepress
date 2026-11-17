@@ -1056,27 +1056,31 @@ run_draft() {
     printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g'
   }
 
-  local slug=""
-  if [[ -n "$title" ]]; then
-    slug="$(printf '%s' "$title" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^[:alnum:]]+/-/g; s/^-+//; s/-+$//')"
-    [[ -z "$slug" ]] && slug="draft"
-  else
-    # Second-resolution plus a short random tail: two drafts in the same minute
-    # (or even the same second) never share a target path.
-    slug="skeledraft-$(date +%Y%m%d-%H%M%S)-$(printf '%04d' "$((RANDOM % 10000))")"
-  fi
-
+  # The renderer names artifacts "<file_prefix>-<suffix>.pdf" and the schema
+  # requires a non-empty suffix, so the final name is assembled from both.
+  local file_prefix=""
+  local suffix_val=""
   local out_dir
   out_dir="$(pwd)"
-  local out_name="${slug}.pdf"
+  local out_name=""
   if [[ -n "$output" ]]; then
     out_dir="$(cd "$(dirname "$output")" && pwd)"
     out_name="$(basename "$output")"
-    # Honor the explicit filename: the renderer always appends "-<suffix>",
-    # so the declared prefix is the -o stem and the suffix is empty.
-    slug="$(basename "$output")"
-    slug="${slug%.*}"
-    [[ -z "$slug" ]] && slug="draft"
+    file_prefix="$(basename "$output")"
+    file_prefix="${file_prefix%.*}"
+    [[ -z "$file_prefix" ]] && file_prefix="draft"
+    suffix_val="draft"
+  else
+    if [[ -n "$title" ]]; then
+      file_prefix="$(printf '%s' "$title" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^[:alnum:]]+/-/g; s/^-+//; s/-+$//')"
+      [[ -z "$file_prefix" ]] && file_prefix="draft"
+    else
+      # Second-resolution timestamp: successive drafts sort by date.
+      file_prefix="skeledraft-$(date +%Y%m%d-%H%M%S)"
+    fi
+    # Short random tail, zero-padded: two drafts never share a target path.
+    suffix_val="$(printf '%04d' "$((RANDOM % 10000))")"
+    out_name="${file_prefix}-${suffix_val}.pdf"
   fi
 
   local tmpcfg
@@ -1085,7 +1089,11 @@ run_draft() {
     printf 'version: 1\n'
     printf 'project:\n  name: draft\n  base_dir: "%s"\n' "$(yaml_escape "$out_dir")"
     printf 'document:\n'
-    [[ -n "$title" ]] && printf '  title: "%s"\n' "$(yaml_escape "$title")"
+    if [[ -n "$title" ]]; then
+      printf '  title: "%s"\n' "$(yaml_escape "$title")"
+    else
+      printf '  title: "%s"\n' "$(yaml_escape "$file_prefix")"
+    fi
     printf '  titlepage: false\n'
     printf '  language: en\n'
     printf 'input:\n'
@@ -1097,8 +1105,10 @@ run_draft() {
     for f in "${abs_files[@]}"; do
       printf '    - "%s"\n' "$(yaml_escape "$f")"
     done
-    printf 'output:\n  formats: [pdf]\n  dir: "%s"\n  file_prefix: "%s"\n  suffix: ""\n  keep_merged_markdown: false\n' "$(yaml_escape "$out_dir")" "$(yaml_escape "$slug")"
-    printf 'pandoc:\n  pdf_engine: xelatex\n  toc: false\n  number_sections: false\n  resource_path:\n    - "."\n'
+    printf 'output:\n  formats: [pdf]\n  dir: "%s"\n  file_prefix: "%s"\n  suffix: "%s"\n  keep_merged_markdown: false\n' "$(yaml_escape "$out_dir")" "$(yaml_escape "$file_prefix")" "$(yaml_escape "$suffix_val")"
+    printf 'pandoc:\n  pdf_engine: xelatex\n  toc: false\n  toc_depth: 2\n  number_sections: false\n  resource_path:\n    - "."\n'
+    printf 'filters:\n  emoji:\n    enabled: false\n  mermaid:\n    enabled: false\n  extra_lua_filters: []\n'
+    printf 'runtime:\n  required_commands:\n    - pandoc\n    - xelatex\n    - python3\n  strict: true\n'
   } >"$tmpcfg"
 
   if [[ "${SKELEPRESS_DEBUG_DRAFT_CONFIG:-}" == "1" ]]; then
@@ -1119,6 +1129,17 @@ run_draft() {
   local render_exit=0
   SKELEPRESS_LANG="$CLI_LANG" python3 "$ROOT_DIR/scripts/runtime/render-native.py" "$tmpcfg" "$ROOT_DIR" || render_exit=$?
   rm -f "$tmpcfg"
+  if [[ "$render_exit" -eq 0 && -n "$output" ]]; then
+    # Honor the exact requested filename: the renderer appends "-draft", so
+    # move the produced artifact to the -o name once it exists.
+    local produced="$out_dir/${file_prefix}-${suffix_val}.pdf"
+    if [[ -f "$produced" ]]; then
+      mv -f "$produced" "$out_dir/$out_name" || render_exit=1
+    else
+      echo "❌ $(t "draft.error.output_missing" "Draft rendered but the output file is missing.")" >&2
+      render_exit=1
+    fi
+  fi
   return "$render_exit"
 }
 

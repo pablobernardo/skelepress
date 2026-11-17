@@ -207,5 +207,6 @@
   "draft.error.title_required": "-t requires a title.",
   "draft.error.output_required": "-o requires an output path.",
   "draft.info.synthesized": "Synthesized draft configuration written to {path}",
-  "draft.info.rendering": "Rendering draft: {output}"
+  "draft.info.rendering": "Rendering draft: {output}",
+  "draft.error.output_missing": "Draft rendered but the output file is missing."
 }

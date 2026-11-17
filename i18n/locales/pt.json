@@ -207,5 +207,6 @@
   "draft.error.title_required": "-t precisa de um título.",
   "draft.error.output_required": "-o precisa de um caminho de saída.",
   "draft.info.synthesized": "Configuração de rascunho sintetizada escrita em {path}",
-  "draft.info.rendering": "A renderizar rascunho: {output}"
+  "draft.info.rendering": "A renderizar rascunho: {output}",
+  "draft.error.output_missing": "O rascunho foi renderizado mas falta o ficheiro de saída."
 }
