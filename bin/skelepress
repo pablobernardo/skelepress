@@ -1060,7 +1060,7 @@ run_draft() {
   else
     # Second-resolution plus a short random tail: two drafts in the same minute
     # (or even the same second) never share a target path.
-    slug="skeledraft-$(date +%Y%m%d-%H%M%S)-$((RANDOM % 10000))"
+    slug="skeledraft-$(date +%Y%m%d-%H%M%S)-$(printf '%04d' "$((RANDOM % 10000))")"
   fi
 
   local out_dir
@@ -1080,7 +1080,7 @@ run_draft() {
   tmpcfg="$(mktemp)"
   {
     printf 'version: 1\n'
-    printf 'project:\n  name: draft\n  base_dir: "%s"\n' "$out_dir"
+    printf 'project:\n  name: draft\n  base_dir: "%s"\n' "$(yaml_escape "$out_dir")"
     printf 'document:\n'
     [[ -n "$title" ]] && printf '  title: "%s"\n' "$(yaml_escape "$title")"
     printf '  titlepage: false\n'

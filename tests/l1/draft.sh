@@ -117,18 +117,20 @@ run_draft_correction_regressions_test() {
   assert_contains "$oname" 'suffix: ""' "explicit -o keeps the renderer from appending a date suffix"
   rm -f "$oname"
 
-  local s1 s2 n1 n2
-  s1="$(mktemp)"
-  s2="$(mktemp)"
-  SKELEPRESS_DEBUG_DRAFT_CONFIG=1 /bin/bash "$CLI" draft "$tmp/a.md" >"$s1" 2>&1
-  SKELEPRESS_DEBUG_DRAFT_CONFIG=1 /bin/bash "$CLI" draft "$tmp/a.md" >"$s2" 2>&1
-  n1="$(grep -oE 'skeledraft-[0-9]{8}-[0-9]{6}-[0-9]+' "$s1" | head -1)"
-  n2="$(grep -oE 'skeledraft-[0-9]{8}-[0-9]{6}-[0-9]+' "$s2" | head -1)"
-  if [[ -n "$n1" && -n "$n2" && "$n1" != "$n2" ]]; then
-    pass "default draft slugs never collide across quick successive runs"
+  local -a slugs=()
+  local s n
+  for _ in 1 2 3 4 5; do
+    s="$(mktemp)"
+    SKELEPRESS_DEBUG_DRAFT_CONFIG=1 /bin/bash "$CLI" draft "$tmp/a.md" >"$s" 2>&1
+    n="$(grep -oE 'skeledraft-[0-9]{8}-[0-9]{6}-[0-9]{4}' "$s" | head -1)"
+    rm -f "$s"
+    slugs+=("$n")
+  done
+  if [[ -n "${slugs[0]}" && "$(printf '%s\n' "${slugs[@]}" | sort -u | wc -l | tr -d ' ')" -eq 5 ]]; then
+    pass "default draft slugs never collide across five quick successive runs"
   else
-    fail "default draft slug collision guard (got: $n1 / $n2)"
+    fail "default draft slug collision guard (got: ${slugs[*]})"
   fi
-  rm -f "$s1" "$s2" "$tmp/a.md"
+  rm -f "$tmp/a.md"
   rmdir "$tmp"
 }
