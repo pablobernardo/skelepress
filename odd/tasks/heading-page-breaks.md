@@ -18,10 +18,11 @@ PR #197 open against main; no merge until the human's own controls pass.
 - T2 (S2): `filters/heading-page-break.lua`, always-on argv entry, EPUB CSS hook — commit 5697928.
 - T3 (S1-S5): plan contract `heading_break_level`, conformance expectations regenerated, 30 L1 assertions, docs + 4 i18n locales — commit 5697928.
 - T4 (S5): docs wording corrections from native review advisories R2-001/R2-004/R3-004 — commit 0edd7c3.
-- T5 (S3): PR #197 opened; CI green check pending (background watch); merge remains the human's decision.
+- T5 (S3): PR #197 merged by the human as squash eac6a5e (#194 closed); post-merge CI 44133270648 success; hosted L2 render integration run 44129382449 success on the PR head.
 
 ## Log
 
 - L1 (2026-11-17, user request): "Continúa el trabajo en Skelepress para la release 3.2.0. […] 1. Implementa #194 test-first en un worktree nuevo sobre origin/main (pequeña, aditiva; misma mecánica que el draft: RED → implementación → GREEN → docs + i18n en los 4 catálogos → PR contra main sin fusionar hasta mis controles)."
 - L2: Native ordinary review `review-5ecb51a09e312bdf` (readability + reliability) APPROVED, acknowledged/burned. 8 advisory findings; the two factual docs ones corrected in 0edd7c3; the rest recorded as later work (plan key naming, regex assembly, EPUB CSS proof, later-H1 coverage, render-time guard test).
 - L3: Rediscovered EPUB nuance: `templates/epub-header.html` is inlined into every chapter, so a literal `\clearpage` in a CSS comment fails the EPUB purity test; wording avoids the token.
+- L4: Release preparation: CHANGELOG [3.2.0] section and VERSION 3.2.0 on branch chore/release-3.2.0 (PR #198); tag and GitHub release remain the human's explicit decisions.

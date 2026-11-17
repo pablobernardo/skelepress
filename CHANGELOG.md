@@ -7,10 +7,27 @@ The project follows semantic versioning and keeps two versioned contracts:
 - `VERSION` for the toolkit version
 - `skelepress.config.yaml -> version` for the configuration contract
 
-## [Unreleased]
+## [3.2.0] - 2026-11-17
 
 ### Added
 
+- `skelepress draft` renders loose Markdown files into a PDF without a
+  configuration file: point it at files or directories, and a synthesized,
+  schema-validated configuration drives the same single renderer. The default
+  output name is timestamped and collision-free (`skeledraft-YYYYMMDD-HHMMSS-NNNN`);
+  `-t` names the document and `-o` selects an explicit output. The existing
+  render flow, preflight and contract are unchanged.
+- Page breaks at heading boundaries. `compat.clearpage_between_heading_level`
+  (optional, integer 1-6) starts a new page at every chapter whose first
+  non-empty heading is at that level or shallower; naming the key subsumes the
+  legacy H1 rule, and renders that do not name it keep
+  `compat.legacy_clearpage_between_h1` unchanged, so existing publications are
+  byte-compatible. The `{.page-break}` heading class is honoured by an always-on
+  filter: `\clearpage` in LaTeX output, the class kept in HTML and EPUB where the
+  shipped EPUB stylesheet exposes `break-before: page`. No raw LaTeX reaches the
+  Markdown sources and no EPUB plan carries any.
+- The render plan records the effective chapter-boundary decision as
+  `side_effects.heading_break_level`, and the conformance expectations follow it.
 - `skelepress update` confirms that the artifact matched the published checksum
   before extraction, with localized output in English, Spanish, Galician and
   Portuguese. Verification mechanics and failure messages are unchanged.
@@ -20,6 +37,13 @@ The project follows semantic versioning and keeps two versioned contracts:
 - Default-off `run_example_acceptance` CI input retains manual and documentation
   PDFs and page PNGs for visual inspection, without release acceptance or a
   version change.
+
+### Compatibility
+
+- Configuration contract version `1`, existing CLI commands/options and default
+  rendering behavior remain unchanged: `compat.clearpage_between_heading_level`
+  is optional, defaults to `1` (the legacy H1 rule) and is validated to 1-6;
+  configurations without it behave exactly as before.
 
 ## [3.1.0] - 2026-11-07
 
