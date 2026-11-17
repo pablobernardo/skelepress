@@ -200,7 +200,7 @@
   "prepare_emojis.error.usage": "Uso: prepare-emojis.py <merged.md> <target_dir> <bundled_emoji_dir>",
   "prepare_emojis.error.merged_md_missing": "Arquivo markdown combinado não existe: {path}",
   "cli.help.command.draft": "Renderizar ficheiros markdown soltos como rascunho PDF rápido (sem configuração, sem índice).",
-  "cli.help.note.draft": "draft gera uma configuração mínima (skeledraft-YYYYMMDD-HHMM.pdf por defeito; -t título, -o saída) e executa o fluxo de renderização padrão.",
+  "cli.help.note.draft": "draft gera uma configuração mínima (skeledraft-YYYYMMDD-HHMMSS-NNNN.pdf por defeito; -t título, -o saída) e executa o fluxo de renderização padrão.",
   "draft.error.no_files": "draft precisa de pelo menos um ficheiro Markdown.",
   "draft.error.file_not_found": "Ficheiro não encontrado: {path}",
   "draft.error.repeated_option": "Opção repetida: {option}",

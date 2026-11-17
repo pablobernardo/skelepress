@@ -53,6 +53,7 @@ usage() {
   note_render_native="$(t "cli.help.note.render_native" "render uses native implementation.")"
   note_yaml_parsing="$(t "cli.help.note.yaml_parsing" "Config parsing supports Python+PyYAML or Ruby stdlib YAML.")"
   note_book="$(t "cli.help.note.book" "book forwards to the shipped bookkit tool (scripts/tools/bookkit/build.py).")"
+  note_draft="$(t "cli.help.note.draft" "draft synthesizes a minimal configuration (skeledraft-YYYYMMDD-HHMMSS-NNNN.pdf by default; -t title, -o output) and runs the standard render pipeline.")"
   note_update_resolution="$(t "cli.help.note.update_resolution" "update honours SKELEPRESS_UPDATE_HOME or SKELEPRESS_INSTALL_HOME for the managed root and --install-dir or SKELEPRESS_INSTALL_DIR for the binary; a declared install dir beats the skelepress found on PATH.")"
 
   cat <<EOF
@@ -70,10 +71,12 @@ ${usage_title}
   skelepress doctor [-c <skelepress.config.yaml>]
   skelepress validate-config -c <skelepress.config.yaml>
   skelepress render -c <skelepress.config.yaml> [--dry-run] [--json]
+  skelepress draft <file.md> [more.md...] [-t <title>] [-o <output.pdf>]
   skelepress book [args...]
 
 ${notes_title}
   - ${note_render_native}
+  - ${note_draft}
   - ${note_yaml_parsing}
   - ${note_book}
   - ${note_update_resolution}

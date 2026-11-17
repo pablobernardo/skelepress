@@ -200,7 +200,7 @@
   ,"prepare_emojis.error.usage": "Usage: prepare-emojis.py <merged.md> <target_dir> <bundled_emoji_dir>"
   ,"prepare_emojis.error.merged_md_missing": "Merged markdown file does not exist: {path}",
   "cli.help.command.draft": "Render loose Markdown files as a quick PDF draft (no configuration, no TOC).",
-  "cli.help.note.draft": "draft synthesizes a minimal configuration (skeledraft-YYYYMMDD-HHMM.pdf by default; -t title, -o output) and runs the standard render pipeline.",
+  "cli.help.note.draft": "draft synthesizes a minimal configuration (skeledraft-YYYYMMDD-HHMMSS-NNNN.pdf by default; -t title, -o output) and runs the standard render pipeline.",
   "draft.error.no_files": "draft requires at least one Markdown file.",
   "draft.error.file_not_found": "File not found: {path}",
   "draft.error.repeated_option": "Repeated option: {option}",
