@@ -155,6 +155,7 @@
   ,"render.error.order_invalid": "Invalid 'input.order' value: {value}. Supported values: {supported}"
   ,"render.error.format_invalid": "Invalid 'output.formats' value: {value}. Supported values: {supported}"
   ,"render.error.format_failed": "Export failed ({format}); successful outputs are kept."
+  ,"render.error.heading_break_level_invalid": "'compat.clearpage_between_heading_level' must be an integer between 1 and 6"
   ,"render.error.plan_target_missing": "Render plan declares no output artifact"
   ,"validate.error.yaml_invalid": "Invalid YAML: {error}"
   ,"validate.error.yaml_invalid_generic": "Invalid YAML"

@@ -8,6 +8,15 @@ body > nav:first-child > h1:first-child {
   break-before: auto;
 }
 
+/* A {.page-break} heading asks for its own page. The heading-page-break filter
+   emits a LaTeX page break for PDF output; readers honor this CSS hook
+   instead. The first-child rules above keep the very first heading on its own
+   page. */
+.page-break {
+  page-break-before: always;
+  break-before: page;
+}
+
 /* A reflowable internal title page, separate from any future image cover.
    Keep reader-selected fonts and colors; do not style chapter headings. */
 section.titlepage {

@@ -20,6 +20,7 @@
       "--pdf-engine=lualatex",
       "--template=<REPO>/templates/default.tex",
       "--lua-filter=<REPO>/filters/inline-code-breaks.lua",
+      "--lua-filter=<REPO>/filters/heading-page-break.lua",
       "--toc",
       "--toc-depth=3",
       "--number-sections",
@@ -49,6 +50,7 @@
       "missing_svg": "<CASES>/output/emoji/_missing.svg",
       "prepare_argv": null
     },
+    "heading_break_level": 1,
     "keep_merged_markdown": false,
     "mermaid": {
       "background": "transparent",

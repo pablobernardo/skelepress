@@ -160,6 +160,7 @@ output:
 - Ballot-box emojis come from the versioned `filters/emoji/` directory; other emojis are fetched once by the emoji preparation step.
 - A diagram is embedded with the configured `filters.mermaid.background`. The PNG is cached by diagram content, not by background, so changing that setting only affects diagrams that were not rendered before. With the default `transparent`, a diagram can be hard to read in a reader's dark mode.
 - No EPUB carries LaTeX-only markup: the `\clearpage` inserted between chapters for the PDF is never added to an EPUB, whatever `compat.legacy_clearpage_between_h1` says.
+- Page breaks at heading boundaries are controlled by `compat.clearpage_between_heading_level` and the `{.page-break}` heading class; see [Page breaks at heading boundaries](#page-breaks-at-heading-boundaries).
 
 `document.*` — metadata and cover page:
 
@@ -190,6 +191,7 @@ renderer applies the value in the middle column when they are absent:
 | Setting | Default | Matters when |
 | --- | --- | --- |
 | `compat` (whole section) | `legacy_clearpage_between_h1: true` | you want different page-break behaviour |
+| `compat.clearpage_between_heading_level` | `1` (the legacy H1 rule) | you want chapters that start at `##` or deeper on a fresh page |
 | `filters.emoji.emoji_dir` | `output/emoji` under `project.base_dir` | the emoji filter is enabled |
 | `filters.emoji.include_ballot_icons` | `true` | the emoji filter is enabled |
 | `filters.mermaid.output_dir` | `output/mermaid` under `project.base_dir` | the mermaid filter is enabled |
@@ -313,6 +315,44 @@ The validator implements an explicit subset of JSON Schema (`type`, `properties`
 
 Templates that expect chapters — the builtin `book` — pair with `top_level_division: chapter`; `templates/book.tex` relies on that and defines no heading commands of its own. The valid values, the error message and how a value becomes an argument live in one shared module (`scripts/runtime/top_level_division_runtime.py`), so `validate-config` and the renderer cannot disagree.
 
+### Page breaks at heading boundaries
+
+Two independent capabilities control where a page starts:
+
+1. **Chapter boundary level.** `compat.clearpage_between_heading_level` is an
+   optional integer between 1 and 6. Each chapter (except the first) whose
+   first non-empty line is a heading at that level or shallower starts a new
+   page in the PDF:
+
+```yaml
+compat:
+  legacy_clearpage_between_h1: true
+  clearpage_between_heading_level: 2
+```
+
+   The break is inserted by the merge step, exactly like the legacy H1 break,
+   so no raw `\clearpage` reaches the Markdown sources and no EPUB plan ever
+   carries one. Setting the key subsumes the legacy H1 rule: level `1` is the
+   same contract as the flag alone, and `2` starts a page at `#` **and** `#`
+   chapters. An out-of-range value is rejected by `validate-config` naming the
+   key. Renders that do not name the key keep the `legacy_clearpage_between_h1`
+   behaviour unchanged.
+
+2. **The `{.page-break}` heading class.** Mark any heading for its own page,
+   whatever the chapter boundaries say:
+
+```markdown
+## Clientes {.page-break}
+```
+
+   The always-on `filters/heading-page-break.lua` filter emits `\clearpage`
+   before the heading in LaTeX output and removes the marker class there; in
+   HTML and EPUB the heading keeps the class, and the shipped EPUB stylesheet
+   exposes it as `break-before: page`, so readers honour it. The class travels
+   with the chapter across formats and reordering, unlike raw `\clearpage`,
+   which is invisible in HTML/EPUB. A heading marked for a break after another
+   break never ships a blank page.
+
 ### PDF running headers
 
 `pandoc.running_headers` is an optional boolean in configuration version 1:
@@ -409,6 +449,7 @@ skelepress render -c skelepress.config.yaml --dry-run --json
   "side_effects": {
     "keep_merged_markdown": true,
     "clearpage_between_h1": true,
+    "heading_break_level": 1,
     "emoji": { "enabled": true, "dir": "...", "missing_svg": "...", "prepare_argv": ["python3", "..."] },
     "mermaid": { "enabled": true, "dir": "...", "background": "transparent" }
   }

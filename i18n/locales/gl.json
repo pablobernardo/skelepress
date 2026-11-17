@@ -155,6 +155,7 @@
   "render.error.order_invalid": "Valor non válido en 'input.order': {value}. Valores admitidos: {supported}",
   "render.error.format_invalid": "Valor non válido en 'output.formats': {value}. Valores admitidos: {supported}",
   "render.error.format_failed": "Fallou a exportación ({format}); consérvanse os ficheiros xerados correctamente.",
+  "render.error.heading_break_level_invalid": "'compat.clearpage_between_heading_level' debe ser un enteiro entre 1 e 6",
   "render.error.plan_target_missing": "O plan de renderizado non declara ningún artefacto de saída",
   "validate.error.yaml_invalid": "YAML inválido: {error}",
   "validate.error.yaml_invalid_generic": "YAML inválido",

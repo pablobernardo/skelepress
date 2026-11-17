@@ -153,7 +153,11 @@
       "additionalProperties": false,
       "required": ["legacy_clearpage_between_h1"],
       "properties": {
-        "legacy_clearpage_between_h1": { "type": "boolean" }
+        "legacy_clearpage_between_h1": { "type": "boolean" },
+        "clearpage_between_heading_level": {
+          "type": "integer",
+          "enum": [1, 2, 3, 4, 5, 6]
+        }
       }
     }
   }
