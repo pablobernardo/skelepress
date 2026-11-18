@@ -121,6 +121,8 @@ $endif$
 % ---- Tables: longtable + booktabs ----
 \usepackage{longtable,booktabs,array}
 \usepackage{calc}
+% Pandoc uses this counter for captionless tables instead of stepping table.
+\ifcsname c@none\endcsname\else\newcounter{none}\fi
 
 % ---- Pandoc compatibility helpers ----
 \providecommand{\tightlist}{%
