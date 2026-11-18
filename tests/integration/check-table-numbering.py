@@ -11,7 +11,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 ROOT = Path(__file__).resolve().parents[2]
-BUILTINS = ("default", "book", "book-novel")
+BUILTINS = ("default", "book", "book-novel", "book-manual")
 CHAPTER = """# Table checks
 
 | Column | Value |
@@ -87,7 +87,7 @@ def main():
     parser.add_argument("--engine", action="append", choices=("xelatex", "lualatex", "pdflatex"),
                         help="TeX engine; repeat to check more than one (default: xelatex)")
     parser.add_argument("--template", action="append",
-                        help="shipped style; repeat to check more than one (default: default, book, book-novel)")
+                        help=f"shipped style; repeat to check more than one (default: {', '.join(BUILTINS)})")
     args = parser.parse_args()
     artifacts = ROOT / "examples/.output"
     artifacts.mkdir(parents=True, exist_ok=True)

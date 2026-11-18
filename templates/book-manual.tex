@@ -1,0 +1,249 @@
+% templates/book-manual.tex
+%
+% Builtin book style "book-manual" (skelepress book --template book-manual or
+% pandoc.template: book-manual). Dense nonfiction/manual typography on A4:
+% sans-serif headings, compact chapter openings, tighter margins and block
+% paragraphs, so tables, code and screenshots fit more per page. Select it by
+% bare name; the shipped `book` style and consumer-owned templates are
+% unaffected.
+%
+% Self-contained on purpose: the TeX engine runs in the render directory with
+% no TEXINPUTS setup, so builtin templates cannot reliably \input a shared
+% file. Shared behavior lives in the repeated blocks below (engine detection,
+% pandoc compatibility, the bookkit BookChapters* hooks and the opt-in
+% running-headers section), mirroring templates/book.tex.
+%
+% Supported contract variables mirror book.tex: document.* title page fields,
+% toc, babel-lang, cover-image, titlepage, running-headers, highlighting-macros.
+
+\documentclass[11pt,openany]{book}
+
+% ---- Engine detection (mirrors templates/book.tex) ----
+\newif\ifxetexorlua
+\ifdefined\luatexversion
+    \xetexorluatrue
+\else
+    \ifdefined\XeTeXversion
+        \xetexorluatrue
+    \else
+        \xetexorluafalse
+    \fi
+\fi
+
+\ifxetexorlua
+    \usepackage{fontspec}
+    % Serif body; sans for headings through the headings formats below.
+    \IfFontExistsTF{TeX Gyre Pagella}{
+        \setmainfont{TeX Gyre Pagella}
+    }{
+        \IfFontExistsTF{Times New Roman}{
+            \setmainfont{Times New Roman}
+        }{
+            \setmainfont{Latin Modern Roman}
+        }
+    }
+    \IfFontExistsTF{TeX Gyre Heros}{
+        \setsansfont{TeX Gyre Heros}
+    }{
+        \IfFontExistsTF{DejaVu Sans}{
+            \setsansfont{DejaVu Sans}
+        }{
+            \IfFontExistsTF{Latin Modern Sans}{
+                \setsansfont{Latin Modern Sans}
+            }{
+                % Unset: the NFSS default sans (Latin Modern) still applies.
+            }
+        }
+    }
+\else
+    \usepackage[T1]{fontenc}
+    \usepackage[utf8]{inputenc}
+    \usepackage{lmodern}
+    \renewcommand{\sfdefault}{qhv} % TeX Gyre Heros on pdfLaTeX
+\fi
+
+% ---- Language ----
+\usepackage[$if(babel-lang)$$babel-lang$$else$english$endif$]{babel}
+
+% ---- Page geometry: dense, print-friendly A4 ----
+\usepackage[a4paper,top=2.2cm,bottom=2.2cm,inner=2.2cm,outer=1.8cm]{geometry}
+\setlength{\emergencystretch}{3em}
+\usepackage{parskip}
+\setlength{\parskip}{0.45em}
+
+% ---- Headers/footers ----
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\chaptermark}[1]{\markboth{#1}{}}
+\renewcommand{\sectionmark}[1]{\markright{#1}}
+\fancyhead[LE]{\small\sffamily\nouppercase{\leftmark}}
+\fancyhead[RO]{\small\sffamily\nouppercase{\rightmark}}
+\fancyfoot[LE,RO]{\small\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+\renewcommand{\headrule}{\colorlet{headrulegray}{black!40}\hrule width\headwidth height\headrulewidth}
+
+% ---- Graphics ----
+\usepackage{graphicx}
+\usepackage{etoolbox}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth 0.96\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>0.80\textheight 0.80\textheight\else\Gin@nat@height\fi}
+\makeatother
+\setkeys{Gin}{width=\maxwidth, height=\maxheight, keepaspectratio}
+
+% ---- Code blocks: toolkit look (same machinery as book.tex) ----
+\usepackage{fancyvrb}
+\usepackage{fvextra}
+\RecustomVerbatimEnvironment{verbatim}{Verbatim}{}
+\usepackage{framed}
+\fvset{fontsize=\small}
+\usepackage{mdframed}
+\usepackage{xcolor}
+\definecolor{codegray}{gray}{0.95}
+\BeforeBeginEnvironment{Highlighting}{%
+    \begin{mdframed}[
+    backgroundcolor=codegray,
+    roundcorner=2pt,
+    leftmargin=0pt,
+    rightmargin=0pt,
+    innerleftmargin=6pt,
+    innerrightmargin=6pt,
+    innertopmargin=4pt,
+    innerbottommargin=4pt,
+    linewidth=0pt
+    ]}
+\AfterEndEnvironment{Highlighting}{\end{mdframed}}
+$if(highlighting-macros)$
+$highlighting-macros$
+$endif$
+\makeatletter
+\@ifundefined{Shaded}{
+    \definecolor{shadecolor}{gray}{0.94}
+    \newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+}{}
+\@ifundefined{Highlighting}{
+    \DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+}{}
+\makeatother
+\fvset{breaklines=true,breakanywhere=false,breakafter={/.,=}}
+
+% ---- Tables ----
+\usepackage{longtable,booktabs,array}
+\usepackage{calc}
+% Pandoc uses this counter for captionless tables instead of stepping table.
+\ifcsname c@none\endcsname\else\newcounter{none}\fi
+
+% ---- Pandoc compatibility helpers ----
+\providecommand{\tightlist}{%
+    \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\providecommand{\pandocbounded}[1]{%
+    \begin{minipage}{\linewidth}#1\end{minipage}}
+
+% ---- Headings: sans, compact, functional ----
+\usepackage{titlesec}
+\titleformat{\chapter}[block]
+    {\normalfont\sffamily\bfseries\Large}
+    {\thechapter.}
+    {0.6em}
+    {\MakeUppercase}
+\titlespacing*{\chapter}{0pt}{0pt}{1.4em}
+\titleformat{\section}
+    {\normalfont\sffamily\bfseries\large}{\thesection}{0.8em}{}
+\titlespacing*{\section}{0pt}{1.6em}{0.6em}
+\titleformat{\subsection}
+    {\normalfont\sffamily\bfseries}{\thesubsection}{0.8em}{}
+\titlespacing*{\subsection}{0pt}{1.2em}{0.4em}
+
+% ---- Links ----
+\usepackage[hidelinks]{hyperref}
+
+% ---- Contents entries the adapter can hide (mirrors templates/book.tex) ----
+\makeatletter
+\newif\ifBookChapterListed
+\BookChapterListedtrue
+\let\BookAddContentsLine\addcontentsline
+\renewcommand\addcontentsline[3]{%
+  \ifBookChapterListed\BookAddContentsLine{#1}{#2}{#3}\fi}
+\newcommand\BookChaptersListed{\BookChapterListedtrue}
+\newcommand\BookChaptersUnlisted{\BookChapterListedfalse}
+\makeatother
+
+% ---- Title page: functional layout ----
+\newcommand{\doTitlePage}{%
+\begin{titlepage}
+\raggedright
+\vspace*{2.5cm}
+{\noindent\sffamily\bfseries\Huge $if(title)$$title$$endif$\par}
+$if(subtitle)$
+    \vspace{0.5cm}{\noindent\sffamily\Large $subtitle$\par}
+$endif$
+\vspace{0.8cm}
+{\noindent\color{black!40}\rule{\textwidth}{1.2pt}\par}
+\vfill
+$if(author)$
+    {\noindent\large $author$\par}
+$endif$
+$if(publisher)$
+    \vspace{0.6cm}{\noindent\small\sffamily $publisher$\par}
+$endif$
+$if(date)$
+    \vspace{0.2cm}{\noindent\small\sffamily $date$\par}
+$endif$
+$if(rights)$
+    \vspace{0.6cm}{\noindent\footnotesize $rights$\par}
+$endif$
+\end{titlepage}
+\pagenumbering{gobble}
+\clearpage
+\pagenumbering{arabic}
+}
+
+% ---- Book-level mode commands (mirrors templates/book.tex) ----
+\makeatletter
+\renewcommand\frontmatter{\clearpage\@mainmatterfalse\pagenumbering{roman}}
+\renewcommand\mainmatter{\clearpage\@mainmattertrue\pagenumbering{arabic}}
+\makeatother
+
+$if(running-headers)$
+% ---- Opt-in running headers (mirrors templates/book.tex, sans style) ----
+\usepackage[breakall,fit]{truncate}
+\fancyhead{}
+\fancyhead[L]{\fontsize{8}{10}\selectfont\sffamily\truncate{0.46\textwidth}{$if(title)$$title$$endif$}}
+\fancyhead[R]{\fontsize{8}{10}\selectfont\sffamily\truncate{0.46\textwidth}{\nouppercase{\leftmark}}}
+\renewcommand{\sectionmark}[1]{}
+\let\RunningHeaderChapter\chapter
+\RenewDocumentCommand{\chapter}{s o m}{%
+  \IfBooleanTF{#1}{\RunningHeaderChapter*{#3}}{%
+    \IfNoValueTF{#2}{\RunningHeaderChapter{#3}}{\RunningHeaderChapter[#2]{#3}}}%
+  \IfNoValueTF{#2}{\markboth{#3}{}}{\markboth{#2}{}}}
+\patchcmd{\cleardoublepage}{\hbox{}}{\hbox{}\thispagestyle{empty}}{}{}
+$endif$
+
+% ---- Document ----
+\begin{document}
+
+$if(cover-image)$
+\newgeometry{margin=0pt}
+\thispagestyle{empty}
+\noindent\includegraphics[width=\paperwidth,height=\paperheight,keepaspectratio]{$cover-image$}
+\restoregeometry
+$endif$
+
+$if(titlepage)$
+    \doTitlePage
+$endif$
+
+\frontmatter
+
+$if(toc)$
+\tableofcontents
+\clearpage
+$if(running-headers)$
+\markboth{}{}
+$endif$
+$endif$
+
+$body$
+
+\end{document}
