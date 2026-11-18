@@ -26,6 +26,7 @@ DEFAULT_TEMPLATE = "templates/default.tex"
 BUILTIN_TEMPLATES = {
     "book": "templates/book.tex",
     "book-kdp-5x8": "templates/book-kdp-5x8.tex",
+    "book-kdp-digest": "templates/book-kdp-digest.tex",
     "book-manual": "templates/book-manual.tex",
     "book-novel": "templates/book-novel.tex",
 }
