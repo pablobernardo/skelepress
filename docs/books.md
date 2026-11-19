@@ -27,6 +27,7 @@ infer the division and does not guarantee one.
 | --- | --- | --- |
 | `book` | A4 | General-purpose books with a serif layout. |
 | `book-novel` | A4 | Fiction with generous margins, centered chapter openings, and EB Garamond when installed. |
+| `book-manual` | A4 | Technical manuals with sans-serif headings and compact spacing for tables, code, and screenshots. |
 
 Set `pandoc.template: book-novel` in a configuration, or run
 `skelepress book --template book-novel my-book` for a bookkit project.
