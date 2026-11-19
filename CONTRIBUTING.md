@@ -163,6 +163,13 @@ Notes:
   captionless tables with the shipped PDF templates and checks that caption
   numbers stay consecutive. It needs Pandoc, XeLaTeX and `pdftotext`. Use
   `--engine` or `--template` to check another supported engine or shipped style.
+- `python3 tests/integration/check-book-styles.py --work /absolute/path/to/evidence`
+  renders all seven book styles with the public CLI. It needs Python 3, Pandoc,
+  a working XeLaTeX installation with the book templates' packages, and Poppler's
+  `pdftotext`. Use a fresh evidence directory outside the checkout: the runner
+  recreates the case directories under `--work`'s `book-styles/` subdirectory.
+  It checks page counts, chapter text, paper size (within 0.01 pt per dimension),
+  and distinct PDF hashes, and retains the PDFs, command logs, and JSON evidence.
 
 The assertions under `tests/l1/` are the source of truth for suite coverage.
 The suite runs automatically in GitHub Actions on Linux for every pull request
