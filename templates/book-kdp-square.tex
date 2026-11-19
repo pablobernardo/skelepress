@@ -143,6 +143,11 @@ $endif$
 \ifcsname c@none\endcsname\else\newcounter{none}\fi
 
 % ---- Pandoc compatibility helpers ----
+$if(strikeout)$
+% Older Pandoc writers emit \sout; newer ones emit \st.
+\usepackage[normalem]{ulem}
+\let\st\sout
+$endif$
 \providecommand{\tightlist}{%
     \setlength{\itemsep}{0.4em}\setlength{\parskip}{0.4em}}
 \providecommand{\pandocbounded}[1]{%

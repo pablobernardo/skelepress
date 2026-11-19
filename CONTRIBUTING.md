@@ -163,6 +163,14 @@ Notes:
   captionless tables with the shipped PDF templates and checks that caption
   numbers stay consecutive. It needs Pandoc, XeLaTeX and `pdftotext`. Use
   `--engine` or `--template` to check another supported engine or shipped style.
+- `python3 -Bu tests/integration/check-book-strikethrough.py` verifies visible
+  Markdown strikethrough through the public CLI: all eight shipped book
+  templates with pdfLaTeX, plus `book-novel` with XeLaTeX and LuaLaTeX.
+  It needs Pandoc, those TeX engines with the book templates' packages, and
+  Poppler's `pdftotext` (word positions) and `pdftoppm` (raster checks). It also
+  checks the legacy LaTeX macro, default article, a custom template, and plain
+  text without strikeout. Run it with a working LuaLaTeX font cache. Temporary
+  projects and PDFs are cleaned up on exit.
 - `python3 tests/integration/check-book-styles.py --work /absolute/path/to/evidence`
   renders all seven book styles with the public CLI. It needs Python 3, Pandoc,
   a working XeLaTeX installation with the book templates' packages, and Poppler's
