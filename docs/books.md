@@ -32,6 +32,7 @@ infer the division and does not guarantee one.
 | `book-kdp-digest` | 5.5 × 8.5 in (13.97 × 21.59 cm) | Digest paperbacks with more room for text than 5 × 8. |
 | `book-kdp-6x9` | 6 × 9 in (15.24 × 22.86 cm) | Trade paperbacks with a literary serif layout. |
 | `book-kdp-7x10` | 7 × 10 in (17.78 × 25.4 cm) | Larger paperbacks with room for illustrations and tables. |
+| `book-kdp-square` | 8.5 × 8.5 in (21.59 × 21.59 cm) | Illustrated square paperbacks without running headers by default. |
 
 Set `pandoc.template: book-novel` in a configuration, or run
 `skelepress book --template book-novel my-book` for a bookkit project.
@@ -127,7 +128,8 @@ chapter on the right, on both odd and even body pages. Headers use discreet 8pt
 italic text and abbreviate long titles within fixed regions. Chapter openings,
 title/cover pages and intentionally blank pages are exceptions; sections do not
 replace the current chapter. Numbered and unnumbered chapters update the header
-alike. Omitted or `false` preserves the previous book layout.
+alike. Omitted or `false` preserves the previous book layout. The square KDP
+style also supports this opt-in; its default pages have no running headers.
 
 This optional typesetting choice is an explicit exception to the manifest's
 content-first model, not a place to configure engines or renderer paths. The

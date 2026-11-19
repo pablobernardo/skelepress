@@ -1,0 +1,253 @@
+% templates/book-kdp-square.tex
+%
+% Builtin book style "book-kdp-square" (skelepress book --template
+% book-kdp-square or pandoc.template: book-kdp-square). Amazon KDP interior on
+% the 8.5x8.5in square trim (215.9 x 215.9 mm): large friendly type, short
+% lines, airy spacing, image-centered pages and no running headers by design
+% (picture books do not use them). Select it by bare name; the shipped `book`
+% style and consumer-owned templates are unaffected.
+% KDP inner margin (gutter) minimums by page count -- adjust `inner=` below:
+%   24-150 pages: 0.375in | 151-300: 0.5in | 301-500: 0.625in
+%   501-700 pages: 0.75in | 701-828: 0.875in
+% This template defaults to 0.75in on every edge, safe up to 700 pages and
+% above the 0.25in (no-bleed) / 0.375in (bleed) outside-margin minimums.
+% Bleed: only if artwork must reach the page edge. Then set paperwidth to
+% trim width + 0.125in (8.625in) and paperheight to trim height + 0.25in
+% (8.75in), and keep content 0.375in from the trim line.
+%
+% Self-contained on purpose: the TeX engine runs in the render directory with
+% no TEXINPUTS setup, so builtin templates cannot reliably \input a shared
+% file. Shared behavior lives in the repeated blocks below (engine detection,
+% pandoc compatibility, the bookkit BookChapters* hooks), mirroring
+% templates/book.tex.
+%
+% Supported contract variables mirror book.tex: document.* title page fields,
+% toc, babel-lang, cover-image, titlepage, highlighting-macros, and the opt-in
+% running-headers switch: clean pages by default, headers only when enabled.
+
+\documentclass[12pt,openany]{book}
+
+% ---- Engine detection (mirrors templates/book.tex) ----
+\newif\ifxetexorlua
+\ifdefined\luatexversion
+    \xetexorluatrue
+\else
+    \ifdefined\XeTeXversion
+        \xetexorluatrue
+    \else
+        \xetexorluafalse
+    \fi
+\fi
+
+\ifxetexorlua
+    \usepackage{fontspec}
+    % Rounded, friendly text faces first, then the toolkit's fallback chain.
+    \IfFontExistsTF{Comic Neue}{
+        \setmainfont{Comic Neue}
+    }{
+        \IfFontExistsTF{Andika}{
+            \setmainfont{Andika}
+        }{
+            \IfFontExistsTF{TeX Gyre Pagella}{
+                \setmainfont{TeX Gyre Pagella}
+            }{
+                \IfFontExistsTF{Times New Roman}{
+                    \setmainfont{Times New Roman}
+                }{
+                    \setmainfont{Latin Modern Roman}
+                }
+            }
+        }
+    }
+\else
+    \usepackage[T1]{fontenc}
+    \usepackage[utf8]{inputenc}
+    \usepackage{lmodern}
+\fi
+
+% ---- Language ----
+\usepackage[$if(babel-lang)$$babel-lang$$else$english$endif$]{babel}
+
+% ---- Page geometry: KDP square trim, generous safe margins ----
+% 8.5in paper, 0.75in text margins (KDP requires >= 0.25in; picture books
+% read better with more). Wide outer margin so illustrations can bleed toward
+% the fore-edge without covering the text block.
+\usepackage[
+    paperwidth=8.5in,paperheight=8.5in,
+    top=0.75in,bottom=0.75in,inner=0.75in,outer=0.75in
+]{geometry}
+\setlength{\emergencystretch}{3em}
+\linespread{1.25}
+% Picture books set short lines ragged right; justified text with few words
+% per line produces rivers.
+\raggedright
+
+% ---- No running headers, no rules: picture books keep pages clean ----
+% The book class's `plain` style already prints the page number centered at
+% the bottom, which is exactly the picture-book convention; nothing to load.
+\pagestyle{plain}
+
+% ---- Graphics: full text-block images, centered ----
+\usepackage{graphicx}
+\usepackage{etoolbox}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth \linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>0.85\textheight 0.85\textheight\else\Gin@nat@height\fi}
+\makeatother
+\setkeys{Gin}{width=\maxwidth, height=\maxheight, keepaspectratio}
+\usepackage{float}
+\floatplacement{figure}{H}
+
+% ---- Code blocks: toolkit look, though picture books rarely use them ----
+% The contract supports fenced code everywhere, so the style keeps the same
+% highlighting machinery as the other builtin styles.
+\usepackage{fancyvrb}
+\usepackage{fvextra}
+\RecustomVerbatimEnvironment{verbatim}{Verbatim}{}
+\usepackage{framed}
+\fvset{fontsize=\small}
+\usepackage{mdframed}
+\usepackage{xcolor}
+\definecolor{codegray}{gray}{0.96}
+\BeforeBeginEnvironment{Highlighting}{%
+    \begin{mdframed}[
+    backgroundcolor=codegray,
+    roundcorner=3pt,
+    leftmargin=0pt,
+    rightmargin=0pt,
+    innerleftmargin=6pt,
+    innerrightmargin=6pt,
+    innertopmargin=4pt,
+    innerbottommargin=4pt,
+    linewidth=0pt
+    ]}
+\AfterEndEnvironment{Highlighting}{\end{mdframed}}
+$if(highlighting-macros)$
+$highlighting-macros$
+$endif$
+\makeatletter
+\@ifundefined{Shaded}{
+    \definecolor{shadecolor}{gray}{0.95}
+    \newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+}{}
+\@ifundefined{Highlighting}{
+    \DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+}{}
+\makeatother
+\fvset{breaklines=true,breakanywhere=false,breakafter={/.,=}}
+
+% ---- Tables ----
+\usepackage{longtable,booktabs,array}
+\usepackage{calc}
+% Pandoc uses this counter for captionless tables instead of stepping table.
+\ifcsname c@none\endcsname\else\newcounter{none}\fi
+
+% ---- Pandoc compatibility helpers ----
+\providecommand{\tightlist}{%
+    \setlength{\itemsep}{0.4em}\setlength{\parskip}{0.4em}}
+\providecommand{\pandocbounded}[1]{%
+    \begin{minipage}{\linewidth}#1\end{minipage}}
+
+% ---- Headings: large, rounded, centered chapter openings ----
+\usepackage{titlesec}
+\titleformat{\chapter}[display]
+    {\centering\normalfont}
+    {\Large\chaptername~\thechapter}
+    {8pt}
+    {\normalfont\huge\bfseries}
+    []
+\titlespacing*{\chapter}{0pt}{0pt}{2em}
+\titleformat{\section}
+    {\normalfont\Large\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}
+    {\normalfont\large\bfseries}{\thesubsection}{1em}{}
+
+% ---- Links ----
+\usepackage[hidelinks]{hyperref}
+
+% ---- Contents entries the adapter can hide (mirrors templates/book.tex) ----
+\makeatletter
+\newif\ifBookChapterListed
+\BookChapterListedtrue
+\let\BookAddContentsLine\addcontentsline
+\renewcommand\addcontentsline[3]{%
+  \ifBookChapterListed\BookAddContentsLine{#1}{#2}{#3}\fi}
+\newcommand\BookChaptersListed{\BookChapterListedtrue}
+\newcommand\BookChaptersUnlisted{\BookChapterListedfalse}
+\makeatother
+
+% ---- Title page: big and centered, few words ----
+\newcommand{\doTitlePage}{%
+\begin{titlepage}
+\centering
+\vspace*{0.15\textheight}
+{\fontsize{32}{38}\selectfont\bfseries $if(title)$$title$$endif$\par}
+$if(subtitle)$
+    \vspace{0.8cm}{\LARGE $subtitle$\par}
+$endif$
+\vspace{1.2cm}
+{\normalsize\itshape $if(author)$$author$$endif$\par}
+\vfill
+$if(publisher)$
+    {\large $publisher$\par}
+$endif$
+$if(date)$
+    \vspace{0.2cm}{\normalsize $date$\par}
+$endif$
+$if(rights)$
+    \vspace{0.4cm}{\small $rights$\par}
+$endif$
+\end{titlepage}
+\pagenumbering{gobble}
+\clearpage
+\pagenumbering{arabic}
+}
+
+% ---- Book-level mode commands (mirrors templates/book.tex) ----
+\makeatletter
+\renewcommand\frontmatter{\clearpage\@mainmatterfalse\pagenumbering{roman}}
+\renewcommand\mainmatter{\clearpage\@mainmattertrue\pagenumbering{arabic}}
+\makeatother
+
+$if(running-headers)$
+% ---- Opt-in running headers (mirrors templates/book-kdp-6x9.tex) ----
+\usepackage{fancyhdr}
+\usepackage[breakall,fit]{truncate}
+\fancyhf{}
+\fancyhead[L]{\fontsize{8}{10}\selectfont\itshape\truncate{0.46\textwidth}{$if(title)$$title$$endif$}}
+\fancyhead[R]{\fontsize{8}{10}\selectfont\itshape\truncate{0.46\textwidth}{\nouppercase{\leftmark}}}
+\renewcommand{\sectionmark}[1]{}
+\let\RunningHeaderChapter\chapter
+\RenewDocumentCommand{\chapter}{s o m}{%
+  \IfBooleanTF{#1}{\RunningHeaderChapter*{#3}}{%
+    \IfNoValueTF{#2}{\RunningHeaderChapter{#3}}{\RunningHeaderChapter[#2]{#3}}}%
+  \IfNoValueTF{#2}{\markboth{#3}{}}{\markboth{#2}{}}}
+\patchcmd{\cleardoublepage}{\hbox{}}{\hbox{}\thispagestyle{empty}}{}{}
+\fancyfoot[C]{\small\thepage}
+\pagestyle{fancy}
+$endif$
+
+% ---- Document ----
+\begin{document}
+
+$if(cover-image)$
+\newgeometry{margin=0pt}
+\thispagestyle{empty}
+\noindent\includegraphics[width=\paperwidth,height=\paperheight,keepaspectratio]{$cover-image$}
+\restoregeometry
+$endif$
+
+$if(titlepage)$
+    \doTitlePage
+$endif$
+
+\frontmatter
+
+$if(toc)$
+\tableofcontents
+\clearpage
+$endif$
+
+$body$
+
+\end{document}

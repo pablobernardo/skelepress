@@ -29,6 +29,7 @@ BUILTIN_TEMPLATES = {
     "book-kdp-6x9": "templates/book-kdp-6x9.tex",
     "book-kdp-7x10": "templates/book-kdp-7x10.tex",
     "book-kdp-digest": "templates/book-kdp-digest.tex",
+    "book-kdp-square": "templates/book-kdp-square.tex",
     "book-manual": "templates/book-manual.tex",
     "book-novel": "templates/book-novel.tex",
 }

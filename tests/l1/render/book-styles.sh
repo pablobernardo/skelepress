@@ -3,7 +3,7 @@
 
 run_book_styles_selection_test() {
   local sandbox cfg style code out err
-  local styles=(book book-novel book-manual book-kdp-5x8 book-kdp-digest book-kdp-6x9 book-kdp-7x10)
+  local styles=(book book-novel book-manual book-kdp-5x8 book-kdp-digest book-kdp-6x9 book-kdp-7x10 book-kdp-square)
   sandbox="$(new_contract_sandbox)"
   cfg="${sandbox}/skelepress.config.yaml"
   out="$(new_test_tmpfile)"
