@@ -29,6 +29,7 @@ infer the division and does not guarantee one.
 | `book-novel` | A4 | Fiction with generous margins, centered chapter openings, and EB Garamond when installed. |
 | `book-manual` | A4 | Technical manuals with sans-serif headings and compact spacing for tables, code, and screenshots. |
 | `book-kdp-5x8` | 5 × 8 in (12.7 × 20.32 cm) | Compact books with a literary serif layout. |
+| `book-kdp-digest` | 5.5 × 8.5 in (13.97 × 21.59 cm) | Digest paperbacks with more room for text than 5 × 8. |
 
 Set `pandoc.template: book-novel` in a configuration, or run
 `skelepress book --template book-novel my-book` for a bookkit project.
