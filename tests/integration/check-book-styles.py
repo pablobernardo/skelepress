@@ -48,6 +48,11 @@ def page_sizes(pdf: Path, work: Path) -> set[tuple[Decimal, Decimal]]:
     }
 
 
+def chapter_body_marker(chapter: int) -> str:
+    # A unique plain-text token that survives layout and cannot appear in the TOC.
+    return f"735021{chapter}490586"
+
+
 def check_style(work: Path, cli: Path, style: str, expected: str, promise: str) -> dict:
     case = work / style
     case.mkdir(parents=True)
@@ -62,7 +67,8 @@ def check_style(work: Path, cli: Path, style: str, expected: str, promise: str) 
             for j in range(40)
         )
         (chapters / f"{i:02d}-chapter.md").write_text(
-            f"# Chapter {i}\n\n{body}\n\n## Section {i}.1\n\n{textwrap_body(body)}\n",
+            f"# Chapter {i}\n\n{chapter_body_marker(i)}\n\n{body}"
+            f"\n\n## Section {i}.1\n\n{textwrap_body(body)}\n",
             encoding="utf-8",
         )
     config = case / "skelepress.config.yaml"
@@ -100,6 +106,8 @@ def check_style(work: Path, cli: Path, style: str, expected: str, promise: str) 
     assert pages >= CHAPTERS, f"{style}: expected at least {CHAPTERS} pages, got {pages}"
     for i in range(1, CHAPTERS + 1):
         assert f"Chapter {i}" in layout, f"{style}: chapter {i} missing from the output"
+        if chapter_body_marker(i) not in layout.split():
+            raise SystemExit(f"{style}: body text for chapter {i} missing from the output")
 
     sizes = page_sizes(pdf, case)
     expected_width, expected_height = map(Decimal, expected.split())
@@ -107,11 +115,13 @@ def check_style(work: Path, cli: Path, style: str, expected: str, promise: str) 
     reported_sizes = sorted({
         f"{float(width):g} {float(height):g}" for width, height in sizes
     })
-    assert any(
+    if not sizes or not all(
         abs(width - expected_width) <= PAPER_TOLERANCE_PT
         and abs(height - expected_height) <= PAPER_TOLERANCE_PT
         for width, height in sizes
-    ), f"{style}: paper {expected}pt not found within {PAPER_TOLERANCE_PT}pt, got {reported_sizes}"
+    ):
+        raise SystemExit(f"{style}: expected all pages within {PAPER_TOLERANCE_PT}pt "
+                         f"of {expected}pt, got {reported_sizes}")
 
     digest = hashlib.sha256(pdf.read_bytes()).hexdigest()
     (case / "evidence.json").write_text(

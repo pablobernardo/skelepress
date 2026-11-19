@@ -169,10 +169,10 @@ Notes:
   `pdftotext`. Choose an evidence root outside the checkout whose `book-styles/`
   subdirectory does not exist. The runner creates that subdirectory for its
   output and refuses to run if it already exists, leaving its contents untouched.
-  It checks page counts, chapter text, paper size (within 0.01 pt per dimension),
-  and distinct PDF hashes, and retains the PDFs, command logs, and JSON evidence.
-  Run `python3 tests/integration/test-check-book-styles.py` to check that refusal
-  with Python alone.
+  It checks page counts, each chapter's body text, paper size on every page
+  (within 0.01 pt per dimension), and distinct PDF hashes. It retains the PDFs,
+  command logs, and JSON evidence. Run `python3 tests/integration/test-check-book-styles.py`
+  to check rejection cases without TeX.
 
 The assertions under `tests/l1/` are the source of truth for suite coverage.
 The suite runs automatically in GitHub Actions on Linux for every pull request
