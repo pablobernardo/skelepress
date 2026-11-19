@@ -25,6 +25,7 @@ DEFAULT_TEMPLATE = "templates/default.tex"
 # and both the renderer and the validator pick it up.
 BUILTIN_TEMPLATES = {
     "book": "templates/book.tex",
+    "book-kdp-5x8": "templates/book-kdp-5x8.tex",
     "book-manual": "templates/book-manual.tex",
     "book-novel": "templates/book-novel.tex",
 }

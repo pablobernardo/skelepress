@@ -28,10 +28,15 @@ infer the division and does not guarantee one.
 | `book` | A4 | General-purpose books with a serif layout. |
 | `book-novel` | A4 | Fiction with generous margins, centered chapter openings, and EB Garamond when installed. |
 | `book-manual` | A4 | Technical manuals with sans-serif headings and compact spacing for tables, code, and screenshots. |
+| `book-kdp-5x8` | 5 × 8 in (12.7 × 20.32 cm) | Compact books with a literary serif layout. |
 
 Set `pandoc.template: book-novel` in a configuration, or run
 `skelepress book --template book-novel my-book` for a bookkit project.
 A template path still selects your own file instead of a built-in style.
+
+The KDP styles are editable trim-size starting points, not automatic print
+approval. Their template comments document gutter minimums by page count,
+outside margins, and how to size the page when artwork requires bleed.
 
 ## 2. From manifests
 

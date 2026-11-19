@@ -11,7 +11,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 ROOT = Path(__file__).resolve().parents[2]
-BUILTINS = ("default", "book", "book-novel", "book-manual")
+BUILTINS = ("default", "book", "book-novel", "book-manual", "book-kdp-5x8")
 CHAPTER = """# Table checks
 
 | Column | Value |
