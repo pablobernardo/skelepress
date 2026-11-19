@@ -130,16 +130,17 @@ def textwrap_body(body: str) -> str:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--work", required=True, type=Path)
+    parser.add_argument(
+        "--work", required=True, type=Path,
+        help="evidence root (its book-styles/ subdirectory must not exist)",
+    )
     args = parser.parse_args()
 
     work = args.work / "book-styles"
-    work.mkdir(parents=True, exist_ok=True)
-    for child in work.glob("*"):
-        if child.is_dir():
-            import shutil
-
-            shutil.rmtree(child)
+    try:
+        work.mkdir(parents=True)
+    except FileExistsError:
+        parser.exit(2, f"evidence directory already exists: {work}; choose a fresh --work directory\n")
     results = [
         check_style(work, ROOT / "bin/skelepress", style, expected, promise)
         for style, (expected, promise) in STYLES.items()
