@@ -7,6 +7,30 @@ The project follows semantic versioning and keeps two versioned contracts:
 - `VERSION` for the toolkit version
 - `skelepress.config.yaml -> version` for the configuration contract
 
+## [3.3.0] - 2026-11-19
+
+### Added
+
+- Seven selectable PDF book templates: A4 `book-novel` and `book-manual`,
+  plus `book-kdp-5x8`, `book-kdp-digest` (5.5 × 8.5 in), `book-kdp-6x9`,
+  `book-kdp-7x10`, and `book-kdp-square` (8.5 × 8.5 in). Select them with
+  `pandoc.template` or `skelepress book --template`. The square style leaves
+  running headers off unless explicitly enabled with `pandoc.running_headers`.
+- A contributor acceptance check renders all seven styles and verifies page
+  sizes and chapter body text. The KDP templates supply editable trim-size
+  starting points, not certification for a print platform.
+
+### Fixed
+
+- Captionless Pandoc longtables render in the shipped book templates on TeX
+  installations that expect the dummy `none` counter, without advancing the
+  numbered captions.
+
+### Compatibility
+
+- The new styles are opt-in. Configuration contract version `1` and existing
+  default template selection are unchanged.
+
 ## [3.2.0] - 2026-11-17
 
 ### Added
