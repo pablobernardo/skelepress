@@ -159,6 +159,10 @@ bash tests/l3-local.sh
 Notes:
 - `l2-local.sh` runs semi-real integration (without the full Mermaid stack).
 - `l3-local.sh` requires `mmdc` and Chromium (`PUPPETEER_EXECUTABLE_PATH` if it is not auto-detected).
+- `python3 tests/integration/check-table-numbering.py` renders captioned and
+  captionless tables with the shipped PDF templates and checks that caption
+  numbers stay consecutive. It needs Pandoc, XeLaTeX and `pdftotext`. Use
+  `--engine` or `--template` to check another supported engine or shipped style.
 
 The assertions under `tests/l1/` are the source of truth for suite coverage.
 The suite runs automatically in GitHub Actions on Linux for every pull request
