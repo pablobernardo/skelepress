@@ -31,6 +31,7 @@ infer the division and does not guarantee one.
 | `book-kdp-5x8` | 5 × 8 in (12.7 × 20.32 cm) | Compact books with a literary serif layout. |
 | `book-kdp-digest` | 5.5 × 8.5 in (13.97 × 21.59 cm) | Digest paperbacks with more room for text than 5 × 8. |
 | `book-kdp-6x9` | 6 × 9 in (15.24 × 22.86 cm) | Trade paperbacks with a literary serif layout. |
+| `book-kdp-7x10` | 7 × 10 in (17.78 × 25.4 cm) | Larger paperbacks with room for illustrations and tables. |
 
 Set `pandoc.template: book-novel` in a configuration, or run
 `skelepress book --template book-novel my-book` for a bookkit project.
