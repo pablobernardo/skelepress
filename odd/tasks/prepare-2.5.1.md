@@ -23,7 +23,7 @@ Scope: metadata plus candidate acceptance. Patch, not minor: three corrections, 
 
 ## Log
 
-- L1 — Maintainer, verbatim: "Release 2.5.1 y empiezo la preparación"
+- L1 — Begin preparation for patch release 2.5.1; tagging requires a separate publication decision.
 - L2 — Number chosen deliberately between 2.5.1 and 2.6.0: the alternative read "now understands two documented variables" as an added feature, which would make the changelog describe an addition rather than a fix and change what a consumer expects. The patch reading follows the repository policy, which reserves a major bump for breaking the CLI, the contract or default behaviour; the default path is unchanged.
 - L3 — Acceptance ran on a clean clone at `da469657af9bcf60936e1a5093cb3dd7c11dd37f`, not on the working tree. The node this release adds is observable as a differential: the installed 2.5.0, given `PANDOC_PDF_INSTALL_HOME` and `PANDOC_PDF_INSTALL_DIR`, planned `$HOME/.local/bin/pandoc-pdf`; the candidate plans the declared paths and never creates `$HOME/.local`.
 - L4 — Acceptance surfaced a pre-existing defect that is not this release's: `render-native.py:579` uses `zip(..., strict=True)`, which needs Python 3.10+, and macOS ships 3.9.6 as `python3`. The render crashes while `doctor` approves the environment, and no document states the minimum. Filed as #156; deliberately not fixed here, because it would widen the candidate and it predates 2.5.1.

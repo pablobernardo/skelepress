@@ -4,8 +4,8 @@ Why it is one slice over the review budget: splitting a 1288-line file into elev
 
 ## Specs
 
-- S1: "el punto 1 crees que puede ser todavia mas organizado por contexto? y no en 2 archivos solos?" — split by subject, not by output format.
-- S2: "no recomiendas incluso crear subcarpetas dentro de render y epub? o es overkill al tratarse de tests?" — two levels only: a directory per artifact type, a file per subject. No folder per subject, because each file lands around 100–200 lines.
+- S1: Organize render and EPUB tests by subject rather than leaving each area in one file.
+- S2: Keep two levels: one directory per artifact type and one file per subject, approximately 100–200 lines per file.
 - S3: A pure move: every function body stays byte-identical, and the number of assertions does not change.
 - S4: The structural contracts of a test tree must be updated in the same change: what the orchestrator sources, what the registration guard scans, and every document that names the old paths.
 
@@ -18,6 +18,6 @@ Why it is one slice over the review budget: splitting a 1288-line file into elev
 
 ## Log
 
-L1 — Maintainer decisions, verbatim: "el punto 1 crees que puede ser todavia mas organizado por contexto? y no en 2 archivos solos? que propones?" and "no recomiendas incluso crear subcarpetas dentro de render y epub? o es overkill al tratarse de tests?", then "dale con tu propuesta de mejora".
+L1 — Approved the two-level, subject-based split with no test behavior change.
 
 L2 — Delivery evidence. Gate 473/0 with 174 keys, 67 markdown files and 4 conforming plans — **the same assertion count as before the split**, which is the signal that the move lost nothing: the functions moved, so the number cannot move with them. Three wiring failures were found and fixed, each caught by a different guard: the suite aborted at 13 seconds because `run.sh` never sourced the nested files; the registration guard would have gone blind on them because it only globbed one level; and `check-docs` failed on two backticked references in `docs/dependency-policy.md` that named the removed files. The first two are exactly the failure modes the guard exists to prevent, which is why widening its glob was the first change rather than the last.

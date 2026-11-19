@@ -4,15 +4,15 @@ Objective: one-shot PDF drafts from loose Markdown files, additive to the existi
 
 ## Specs
 
-S1: New subcommand `skelepress draft` accepts one or more Markdown files and renders a single PDF without any configuration file. (Human: "mi idea era igual hacer un comando para borradores o impresiones rápidas de documentos md, sin indice ni nada, solo con paginación e igual un titulo que le pases por ejemplo o algo así muy simple".)
+S1: `skelepress draft` accepts one or more Markdown files and renders one quick PDF without a configuration file.
 
-S2: Default output name is `skeledraft-YYYYMMDD-HHMM.pdf` (timestamp). (Human: "podría ser incluso draft-xxxxxxx"; later: "o skeledraft-xxxxx incluso" — resolved to skeledraft- prefix + timestamp.)
+S2: Default output: `skeledraft-YYYYMMDD-HHMM.pdf`.
 
-S3: `-t "Title"` sets the title manually; the output is then named from the title slug. (Human: "igual un titulo que le pases por ejemplo".)
+S3: `-t "Title"` sets the title; the default output name then uses the title slug.
 
 S4: `-o /path/out.pdf` sets an explicit output path. (Issue #195 design.)
 
-S5: No TOC, no book title page; pagination with a simple footer. (Human: "sin indice ni nada, solo con paginación".)
+S5: Omit the TOC and book title page, and use a simple pagination footer.
 
 S6: Same single renderer underneath: the command synthesizes a minimal valid config in memory (`toc: false`, `titlepage: false`, `explicit_files`), validates it, and runs the existing `render-native.py` pipeline. No second renderer.
 
@@ -34,9 +34,9 @@ T5 [S1-S10] Open PR against main WITHOUT merging; CI hosted validates (PDF gener
 
 ## Log
 
-L1 (user, verbatim): "me interesa darle prioridad al draft es posible? y lanzar ya una pr contra main antes de sacar la release para ya irlo probando en dev"
-L2 (user, verbatim): "me parece bien, pero dejamos opción de ponerlo a mano también? o mejor dejarlo ya así total es un borrador podría ser incluso draft-xxxxxxx o algo así no?"
-L3 (user, verbatim): "o skeledraft-xxxxx incluso" — S2 resolved: prefix skeledraft-.
+L1 — Prioritize the draft command in a separate PR against `main` so it can be tried in development before the release.
+L2 — Keep the ability to set a title and an explicit output path alongside a useful generated name.
+L3 — The generated name uses the `skeledraft-` prefix and a timestamp.
 L4: Issue #195 updated with skeledraft- prefix, timestamp example, -t/-o.
 
 L5: Docs slice done. docs/usage.md gained "Quick drafts without a configuration" under CLI commands: usage examples (skeledraft-YYYYMMDD-HHMM default, -t slug naming, -o explicit path), draft-vs-book defaults (no TOC/title page/numbered sections), input resolution, mandatory preflight, additive guarantee. check-docs 83 files OK. CLI help shows the localized draft line in en/es (gl/pt via catalogs). Full suite 789/0 after docs; check-i18n OK; bash -n + ShellCheck (draft.sh clean) OK.

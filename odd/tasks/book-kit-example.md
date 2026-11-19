@@ -4,7 +4,7 @@ Why it is one slice over the review budget: the example only proves the pattern 
 
 ## Specs
 
-- S1: "vamos a hacer tu propuesta creo que es lo mejor que creemos el ejemplo perfecto uno de un libro normal y otro para generar una serie o adaptarlo para que acepte las dos opciones? como lo ves?" The maintainer approved building the second example as a pair: one normal book and one series, adapted so one implementation accepts both options.
+- S1: Provide one single-volume book and one multi-volume series using the same adapter.
 - S2: A book project is a directory with an optional `series.yaml` and one or more volumes. `series.yaml` holds shared facts (`collection`, `author`, `publisher`, `rights`, `language`) and an ordered `volumes` list of volume directory names. When it is absent the project is a single volume: the project directory itself, with its own `manifest.yaml`.
 - S3: `manifest.yaml` per volume: `title`, `subtitle`, `isbn`, `date`, `chapter_start` (optional integer; the first chapter of the volume gets that number), `front_matter` and `back_matter` as ordered maps of logical name to an entry, `chapters` as an ordered list or `ordered: true`, and `language`/`author`/`publisher`/`rights` overrides. The adapter merges series defaults under the volume overrides.
 - S4: An entry is either a path string or a map with `file`, `print` (default true) and `optional` (default false). A declared entry whose printable file is missing FAILS with the volume, the logical name and the path in the message; `optional: true` skips it with a warning instead; `print: false` excludes it from the PDF silently.
@@ -25,6 +25,6 @@ Why it is one slice over the review budget: the example only proves the pattern 
 
 ## Log
 
-L1 — Maintainer request, verbatim: "vamos a hacer tu propuesta creo que es lo mejor que creemos el ejemplo perfecto uno de un libro normal y otro para generar una serie o adaptarlo para que acepte las dos opciones? como lo ves?".
+L1 — The single-volume and series examples were approved as one deliverable with one shared adapter.
 
 L2 — Implementation evidence (delegated worker). Renders through the public CLI with `xelatex`, PyYAML absent on this machine so the Ruby `-ryaml -rjson` fallback path is the one exercised: `single` renders 8 pages (contents folio i, front matter i-ii, chapters 1-3 on folios 1-3, `Appendix A` and `Appendix B`), `series/volume-1` renders 8 pages (contents i, front matter i-iii, chapters 1-3 on folios 1-4, `Appendix A`), `series/volume-2` renders 6 pages (contents i, front matter i-ii, `Chapter 4` and `Chapter 5` on folios 1-3, `Appendix A`). Zero `Missing character` warnings in every render log; all three generated `pdf.config.yaml` pass `validate-config`; `python3 -m py_compile examples/book-kit/build.py` clean; `check-docs.py` clean; no shell file added so `shellcheck` has no target. The `optional: true` entry in volume-2 prints `volume 'volume-2': back_matter entry 'excerpt' is optional and its file was not found, skipped: content/back/99-excerpt.md` and the volume still renders; the `print: false` review-request page produces zero text hits in volume-1's PDF.

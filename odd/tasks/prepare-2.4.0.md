@@ -27,7 +27,7 @@ Scope: metadata plus candidate acceptance. Nothing breaks: the configuration con
 
 ## Log
 
-- L1 — Maintainer request, verbatim: "que nos queda ahora para poder sacar la 2.4.0 ?" and, after the checklist was presented: "me parece bien entonces ya podemos lanzar pr con estos cambios y release o todavía no?"
+- L1 — Assess 2.4.0 readiness and verify the candidate before opening the release PR.
 - L2 — Correction recorded before it could mislead: there were no pending changes to open a pull request with. The working tree was clean at `150b755` and every unit was already merged, so the release pull request is the candidate this document describes; the tag remains a separate, later decision.
 - L3 — Candidate acceptance, recorded above in T3–T5. The evidence was produced from a clean clone of the merged commit and from the installed artifact, never from the working tree, and the one gap (PyYAML absent) is stated rather than glossed over.
-- L4 — Maintainer decision on publication, verbatim: "hazlo", in response to the question of whether the 2.4.0 publication was authorized.
+- L4 — Publication of the verified 2.4.0 candidate was authorized.

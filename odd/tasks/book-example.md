@@ -4,7 +4,7 @@ Why it is one slice over the review budget: the example only proves anything if 
 
 ## Specs
 
-- S1: "recuerda que teniamos intención de poder maquetar libros un ejemplo de plantilla de libro que tenemos agnostica de generador de pdf". The reference manifest the maintainer supplied:
+- S1: Provide a neutral book example independent of a specific PDF generator. The example uses this content-only manifest:
   ```text
   title, author, language, audience, description
   volumes: volume-1 (chapters 1-22), volume-2 (chapters 23-43)
@@ -13,9 +13,9 @@ Why it is one slice over the review budget: the example only proves anything if 
   back_matter: about-the-author, review-request, collection-page, activities
   ```
   It is explicitly a content manifest: "Content only: no tool, engine, or layout settings belong here."
-- S2: "me parece bien lo que planteas en el punto 2 para ir probando como quedaría e ir construyendo desde ahí y a partir de ahí decidimos, pero igual era bueno crear una plantilla .tex para libro no crees?" The example and a book-class template are authorized; the contract decision waits for the evidence.
-- S3: "no codifiques nada todavía estamos solo estudiando la opción" applied until S2. Nothing in `schemas/`, `scripts/` or `templates/default.tex` may change.
-- S4: "`templates/book.tex` es un archivo local sin versionar: no lo añadas, sobrescribas, borres ni incluyas en revisiones." The example template is new and lives under `examples/book/templates/`.
+- S2: Add the example and a book-class template. Defer changes to the toolkit contract until there is evidence from the example.
+- S3: Preserve `schemas/`, `scripts/`, and `templates/default.tex`.
+- S4: Preserve the existing untracked `templates/book.tex`; the example template is new and lives under `examples/book/templates/`.
 - S5: The manifest stays content-only, and the manifest-to-config glue belongs to the consuming repository, so a change in the book format never becomes a toolkit contract change.
 - S6: No client data, no real ISBN, English artifacts, and no absolute paths (`scripts/check-docs.py` rejects home paths).
 
@@ -30,7 +30,7 @@ Why it is one slice over the review budget: the example only proves anything if 
 
 ## Log
 
-L1 — Maintainer request, verbatim excerpt: "que toca ahora? recuerda que teniamos intención de poder maquetar libros un ejemplo de plantilla de libro que tenemos agnostica de generador de pdf por ahora tenemos algo como así:" followed by the content manifest quoted in S1, and "no se si recomiendas añadir algo a pdf.config.yaml para dar soporte a lo que se quiere hacer ahí. No codifiques nada todavía estamos solo estudiando la opción".
+L1 — Start with a read-only evaluation of a content-only book manifest. Proceed with the standalone example and book-class template without changing the toolkit configuration contract.
 
 L2 — Parent recommendation, accepted by the maintainer in S2: keep the manifest in the consumer repository, generate `pdf.config.yaml` with a small glue step, and ship a book-class template as an example. Rationale recorded: teaching the toolkit to read a book manifest would turn every book-format change into a toolkit contract change, and the three real gaps are ordered groups before and after the body, a real book template, and typographic numbering — the last one being PDF-only.
 

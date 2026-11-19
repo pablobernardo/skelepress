@@ -19,6 +19,14 @@ Track pending work in issues and verification evidence in pull requests.
 Architecture decisions live in `docs/architecture.md`; release history lives in
 `CHANGELOG.md`. Do not duplicate that changing state in a separate summary.
 
+Write repository task notes, including `odd/tasks/`, as technical summaries in
+English. Record requirements, decisions, scope limits, and verified outcomes.
+Do not paste or quote conversations, prompts, approval replies, or transcripts,
+even in ignored task files. Summarize what was authorized and its limits instead.
+Keep exact product strings, command examples, and error messages only when they
+are needed to define behavior or document reproducible evidence. Check task notes
+for conversational or private material before staging or publishing them.
+
 ## Language policy
 
 - **The repository is written in English**: code, comments, commit messages,
