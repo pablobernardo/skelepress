@@ -13,7 +13,7 @@ renderer, with configuration contract 1 and unchanged PDF behavior.
   - Include focused tests and the documentation for this behavior in the same PR."
 - S2 — Same phase, exit criterion: "generate a minimal valid EPUB through the public CLI while preserving existing PDF behavior and normalized PDF plans. Do not land schema acceptance for EPUB while the renderer still silently produces PDF."
 - S3 — Issue #94 delivery rules: "Keep tests and documentation with each phase, not postponed to the last PR." "Do not introduce unsupported conditional-schema keywords, numbering hacks or new CLI flags."
-- S4 — Maintainer deferral and resume, verbatim: "hazlo y lo empezamos a implentar otro dia", then "continua". Implementation starts only now; the plan came from #94, not from free scope.
+- S4 — Implement only the previously approved phase 1 of #94. The earlier decision to defer implementation is superseded; later phases remain separate.
 
 ## Tasks
 
@@ -27,7 +27,7 @@ renderer, with configuration contract 1 and unchanged PDF behavior.
 
 ## Log
 
-- L1 — "continua": resume the agreed plan after the recorded deferral. Source of requirements is issue #94, whose three phases the maintainer accepted ("me parece bien el plan") and asked to record.
+- L1 — Resume the previously deferred phase-1 implementation. Issue #94 remains the requirements source.
 - L2 — Exploration before writing: `schemas/pdf-config.schema.json` (validator supports `enum`), `scripts/render-native.py` (`build_plan`, `merged_markdown`, `execute_plan`, `print_plan`), `scripts/preflight.py` (implicit TeX requirement in `missing_engine`), `bin/pandoc-pdf` (render/doctor wiring, no per-format flags), `tests/run.sh`, `tests/l1/render.sh`, `tests/l1/conformance.sh` and `tests/conformance/expected`. Pandoc 3.13 and `unzip` are available locally; `epubcheck` is not, and PyYAML is genuinely absent (Ruby stdlib fallback is the real local path).
 - L3 — Measured Pandoc baseline: a bare `pandoc a.md -o a.epub` produces `mimetype`, `META-INF/container.xml`, `EPUB/content.opf` (version 3.0), `nav.xhtml`, `toc.ncx`, stylesheet, title page and chapter XHTML, with generated identifier/date/language but **no `dc:title`**. A minimal valid EPUB3 therefore needs title and language from the configuration; everything beyond that (metadata-file precedence, cover, resources) stays in phase 2.
 - L4 — RED before implementation: `examples/.output/review/epub-phase1/red.log`, 8 pass / 21 fail, all for the intended reasons (`In 'output' there are disallowed fields: format`, no `.epub` target, doctor demanding a TeX engine for EPUB). GREEN after implementation: `green.log`, 46 pass / 0 fail, including the archive checks (mimetype stored and first, container rootfile, EPUB 3.0 package, `dc:title`/`dc:language`/identifier, single nav document, resolvable spine).

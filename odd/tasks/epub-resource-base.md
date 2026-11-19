@@ -6,10 +6,10 @@ No push, PR, merge, version change, tag or release is authorized by this work.
 
 ## Specs
 
-- S1 — "Corregir EPUB y PDF", chosen for path resolution: a relative cover image and relative content images must resolve from `project.base_dir` in both formats, not from the directory the command is invoked from.
-- S2 — "Dejarlo como está ahora": with `cover-image`, the EPUB keeps the image cover followed by the typographic title page that Pandoc emits. No spine filtering, no title-page redesign.
-- S3 — "que recomiendas'" about Mermaid's transparent background in dark-mode readers; accepted recommendation: document the limitation, do not change the filter. Evidence: `filters/mermaid.lua` keys its PNG cache on the diagram content only, so a per-format background silently reuses whichever format rendered first.
-- S4 — "Preserva templates/book.tex, que es un archivo local sin versionar: no lo añadas, sobrescribas, borres ni incluyas en revisiones." and "No hagas commits, push, PR, merge, cambios de versión, tags ni release sin la autorización correspondiente." Commits are authorized by "Rama nueva, dos commits, pruebas y documentación incluidas, sin push ni PR."
+- S1 — Resolve relative cover and content image paths from `project.base_dir` for both EPUB and PDF, independent of the invocation directory.
+- S2 — Preserve Pandoc’s existing EPUB cover order: image cover followed by the typographic title page. No spine filtering or title-page redesign.
+- S3 — Document Mermaid’s transparent-background limitation in dark-mode readers without changing the filter. Its cache is keyed by diagram content, so per-format backgrounds would reuse the first output.
+- S4 — Preserve the local untracked `templates/book.tex`. Work on a new branch with two reviewable commits, tests, and documentation. Push, PR, merge, version changes, tags, and release require separate authorization.
 
 ## Tasks
 
@@ -20,7 +20,7 @@ No push, PR, merge, version change, tag or release is authorized by this work.
 
 ## Log
 
-- L1 — Original request, verbatim: "seguimos con esto cuando yo te diga: … Continuamos preparando la versión 2.1.0 de pandoc-toolkit. … Objetivo de esta sesión: Preparar el siguiente bloque de fidelidad EPUB de #94: 1. Imagen de portada existente mediante cover-image en metadatos. 2. Imágenes de contenido y recursos incluidos correctamente. 3. Comportamiento de los filtros de emojis y Mermaid en EPUB. 4. Exclusión del marcado automático específico de LaTeX, como \clearpage. Empieza con una investigación acotada de solo lectura … No implementes ni edites la issue hasta que acordemos ese alcance." Constraints: preserve unversioned `templates/book.tex`; Spanish conversation, English code/tests/docs; no dependency installs; automatic cover generation out of scope; no commits, push, PR, merge, version change, tags or release without authorization; published 2.0.1 and its assets are immutable.
+- L1 — Resume the #94 fidelity slice when authorized. Scope: project-relative cover and content resources, preservation of the existing cover/title-page structure, and documentation of filter behavior and limitations.
 - L2 — Read-only investigation (probe in `/tmp`, repository untouched, `templates/book.tex` hash `2411ee07…` unchanged). Already provided by Pandoc 3.13: cover via `cover-image` in a metadata file **or** `document.metadata`, content images, emoji SVGs (ballot boxes come from the versioned `filters/emoji/`), Mermaid PNGs, and silent dropping of `\clearpage`/`\vspace` raw LaTeX. Baseline EPUB area: 63 assertions, 0 failures, 8.5 s, no TeX required.
 - L3 — The real defect is path resolution: `execute_single_plan` runs pandoc with no `cwd`, so resources resolve against the invocation directory. Same `argv` from another directory: exit 1, no EPUB (`Could not fetch resource` plus `openBinaryFile: does not exist`); with the project base as working directory: exit 0. `--resource-path` alone fixes content images but never the cover.
 - L4 — Design constraint discovered after the scope was agreed: `docs/architecture.md` D6 freezes `cwd: null` in the plan and requires `plan_version: 2` for any shape change. Setting `cwd` would bump the plan version for every consumer, so the fix respects D6: the plan keeps `cwd: null` and `plan_version: 1`.

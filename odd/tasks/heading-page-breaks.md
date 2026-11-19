@@ -22,7 +22,7 @@ PR #197 open against main; no merge until the human's own controls pass.
 
 ## Log
 
-- L1 (2026-11-17, user request): "Continúa el trabajo en Skelepress para la release 3.2.0. […] 1. Implementa #194 test-first en un worktree nuevo sobre origin/main (pequeña, aditiva; misma mecánica que el draft: RED → implementación → GREEN → docs + i18n en los 4 catálogos → PR contra main sin fusionar hasta mis controles)."
+- L1 (2026-11-17) — Implement #194 test-first in a fresh worktree on `origin/main`; keep docs and all four catalogs aligned, open a PR to `main`, and defer merging.
 - L2: Native ordinary review `review-5ecb51a09e312bdf` (readability + reliability) APPROVED, acknowledged/burned. 8 advisory findings; the two factual docs ones corrected in 0edd7c3; the rest recorded as later work (plan key naming, regex assembly, EPUB CSS proof, later-H1 coverage, render-time guard test).
 - L3: Rediscovered EPUB nuance: `templates/epub-header.html` is inlined into every chapter, so a literal `\clearpage` in a CSS comment fails the EPUB purity test; wording avoids the token.
 - L4: Release preparation: CHANGELOG [3.2.0] section and VERSION 3.2.0 on branch chore/release-3.2.0 (PR #198); tag and GitHub release remain the human's explicit decisions.

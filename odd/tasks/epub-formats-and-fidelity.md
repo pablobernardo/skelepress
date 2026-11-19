@@ -5,11 +5,11 @@ Preserve published PDF behavior and the user's four local EPUB example selection
 
 ## Specs
 
-- S1 — "lo que veo es que sale autor desconocido en todos los epub, generandolos desde examples/"; accepted scope: "autor y precedencia de metadatos".
-- S2 — "pagina 1 en blanco, entre indice y capitulo 1 tambien, entre capitulo 1 y 2, entre 2 y 3, entre capitulo 3 y 4, entre 4 y 5 y entre 5 y 6 en el epub generado en pandoc pdf toolkit. Vamos que parece que antes de cada capítulo sale una página en blanco si o si. Es lo habitual?" Reader: "en libros de apple". Constraint: "pero corregirlo no puede tener daños colaterales sobre la generación de pdf?".
-- S3 — "me parece bien entonces lanzamos esa mejora y ves demasiado incluir también la posibilidad de exportar varios formatos desde su pdf.config.yaml?"; "crees que tiene sentido tener format y formats? no sería más limpio solo una clave?". Accepted proposal: only `output.formats: [pdf]`, `[epub]` or `[pdf, epub]`; omission means PDF. Replace the unreleased `format` key, not a published contract.
-- S4 — "aplicalo", accepting: "si falla un formato, ¿conservamos los archivos generados correctamente y devolvemos error indicando la entrega parcial?". Preserve successful artifacts and report unsuccessful formats with nonzero exit.
-- S5 — Accepted: "También adaptaré tus cuatro configuraciones locales a `formats: [epub]`, manteniendo tu selección." Do not erase unrelated edits or change the published VERSION.
+- S1 — Fix unknown-author EPUB output from the examples by resolving author metadata and precedence.
+- S2 — Investigate blank pages before the index and chapters in Apple Books. Leave reader-dependent behavior unverified until real reader evidence is available.
+- S3 — Use only `output.formats` for PDF, EPUB, or combined export. Omitting it preserves PDF output and the existing configuration contract.
+- S4 — On a partial render failure, keep successful artifacts and identify failed formats with a nonzero exit.
+- S5 — Adapt the four local configurations to `formats: [epub]` without changing their selections, unrelated edits, or published VERSION.
 
 ## Tasks
 
@@ -21,7 +21,7 @@ Preserve published PDF behavior and the user's four local EPUB example selection
 
 ## Log
 
-- L1 — Original authorization: "aplicalo". Earlier user messages are quoted in S1–S5; reader and pagination evidence precede this feature.
+- L1 — The implementation scope covers metadata, reader-specific pagination investigation, and multi-format export; preserve prior reader evidence separately.
 - L2 — Baseline: main and github/main both `1cee946a8f9e4e4cbcd68bd41d874b10559d75c5`; local example YAMLs each add `format: epub`. Preserve these changes until migration in T3. All four existing EPUB archives lack dc:creator; documentation EPUB has no empty spine files, but global h1 page-break-before:always applies to title, navigation and all six split chapters.
 - L3 — Implementation gate: optional config selection changes from unpublished `format` to `formats` without changing contract 1 or VERSION 2.0.1. Default PDF single-plan shape and significant argv remain unchanged. Multi-output needs an explicit ordered job list; each job retains single-plan semantics. Runtime requirements are the union of requested formats. Tests must pin omission, each single format, dual output and partial failures in both orders.
 - L4 — Workload forecast: metadata ~150 lines, pagination ~100, multi-output ~350–500 including tests/docs. Keep three work-unit commits with tests/docs alongside behavior; report any overage, do not compress code to fit. Delivery shape: reviewable local work-unit chain; public PRs/merge remain separate authorization.
