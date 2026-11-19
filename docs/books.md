@@ -21,6 +21,17 @@ configuration builds from a checkout and from an installed CLI. `chapter` is
 what makes Pandoc emit `\chapter` for a top-level heading; `default` lets Pandoc
 infer the division and does not guarantee one.
 
+### Built-in book styles
+
+| Style | Paper | Use it for |
+| --- | --- | --- |
+| `book` | A4 | General-purpose books with a serif layout. |
+| `book-novel` | A4 | Fiction with generous margins, centered chapter openings, and EB Garamond when installed. |
+
+Set `pandoc.template: book-novel` in a configuration, or run
+`skelepress book --template book-novel my-book` for a bookkit project.
+A template path still selects your own file instead of a built-in style.
+
 ## 2. From manifests
 
 A **book project** is a directory with an optional `series.yaml` and one or more

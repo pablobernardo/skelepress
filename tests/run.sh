@@ -99,6 +99,7 @@ main() {
   run_template_modern_pandoc_guard_test
   run_template_wrapping_test
   run_template_unicode_symbol_fallback_test
+  run_book_styles_selection_test
   run_builtin_template_test
   run_book_template_top_level_division_test
   run_render_filter_defaults_test
