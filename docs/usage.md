@@ -25,7 +25,7 @@ together they cover it instead of repeating it:
 | `examples/ohmyfake/` | Defaults: `glob` plus `order: natural`, `toc_depth: 2`, a cover built from `document.*`, merged Markdown kept, the name as a slug of the title |
 | `examples/manual/` | Explicit reading order, an original SVG from `media/` resolved through `pandoc.resource_path`, and a consumer-owned Lua filter with a visible **CHECK:** instruction marker; also `toc_depth: 3`, `keep_merged_markdown: false`, an explicit `file_prefix` and `document.metadata` |
 | `examples/no-titlepage/` | The smallest valid configuration, rendered in both formats, with `titlepage: false`: the document opens on the table of contents instead of a typeset title page |
-| `examples/documentation/` | The toolkit's own documentation: an explicit reading order over the six top-level guides in `docs/` (excluding the navigation README), with `base_dir` at the repository root, no filters and a numbered table of contents |
+| `examples/documentation/` | The toolkit's own documentation: an explicit reading order over every top-level guide in `docs/` (the navigation `README.md` and `brand/README.md` are deliberately excluded), with `base_dir` at the repository root, no filters and a numbered table of contents |
 | `examples/book-kit/` | One tool, two book shapes: a single-volume project without `series.yaml` and a two-volume series with it, sharing series defaults with per-volume overrides, a `chapter_start` that continues the chapter numbering across volumes, and generated mode files (`\mainmatter`, `\appendix`) so the content files carry no LaTeX markers. Built by the shipped tool `scripts/tools/bookkit/build.py` through the `skelepress book` subcommand |
 
 `examples/render-all.sh` renders every example: the four configuration-driven ones
@@ -195,7 +195,7 @@ renderer applies the value in the middle column when they are absent:
 | `filters.emoji.emoji_dir` | `output/emoji` under `project.base_dir` | the emoji filter is enabled |
 | `filters.emoji.include_ballot_icons` | `true` | the emoji filter is enabled |
 | `filters.mermaid.output_dir` | `output/mermaid` under `project.base_dir` | the mermaid filter is enabled |
-| `filters.mermaid.background` | `transparent` | the mermaid filter is enabled |
+| `filters.mermaid.background` | `transparent` | the emoji filter is enabled. With `transparent`, EPUB and HTML renders bake a white background into the generated diagram PNGs, for dark-mode readers; an explicit background is honoured in every format ([details](#semantics-of-the-declarative-fields)) |
 | `pandoc.metadata_file` | absent: `document.*` reaches the template | always |
 | `pandoc.top_level_division` | absent: Pandoc's own choice | the template typesets top-level headings differently from Pandoc's default |
 | `pandoc.running_headers` | `false` (no argument emitted) | a PDF template opts into book/chapter running headers |
@@ -307,7 +307,7 @@ skelepress validate-config -c skelepress.config.yaml
 
 The validator implements an explicit subset of JSON Schema (`type`, `properties`, `required`, `additionalProperties`, `items`, `minItems`, `minLength`, `minimum`, `enum`, `anyOf`), shared with the bookkit tool through `scripts/runtime/schema_runtime.py`. A test fails if the schema starts using any other keyword, so one can never be silently ignored.
 
-`pandoc.template` is optional. Omitted, the render uses the toolkit's `templates/default.tex`. A **bare name — no path separator and no dot — selects a template that ships with the toolkit**: `book` resolves to `templates/book.tex`, which travels in the artifact, so the same configuration works in a checkout and in an installation. An unknown bare name fails naming the valid ones instead of being read as a path; anything else is a path resolved against `project.base_dir`.
+`pandoc.template` is optional. Omitted, the render uses the toolkit's `templates/default.tex`. A **bare name — no path separator and no dot — selects a template that ships with the toolkit**: `book` resolves to `templates/book.tex`, which travels in the artifact, so the same configuration works in a checkout and in an installation. An unknown bare name fails naming the valid ones instead of being read as a path; anything else is a path resolved against `project.base_dir`. The full list of built-in names — eight book styles — is in [the built-in book styles](books.md#built-in-book-styles).
 
 `pandoc.top_level_division` is optional and **PDF-only**. It maps one to one to Pandoc's own `--top-level-division` flag, so a top-level Markdown heading becomes the LaTeX command you name: `section` (Pandoc's default), `chapter` or `part`. `default` and an absent field pass no flag at all, so existing configurations keep Pandoc's behaviour. Any other value is rejected by `validate-config` naming the four valid ones.
 
@@ -460,14 +460,14 @@ skelepress render -c skelepress.config.yaml --dry-run --json
 
 The renderer exports `PANDOC_MERMAID_BACKGROUND_EXPLICIT` as `1` only when the configuration declares `filters.mermaid.background`; conformance fixtures that declare it record `1` with the same `transparent` value this default example records as `0`.
 
-The plan is the verifiable contract of the render: it is what makes it possible to compare render implementations without reading code, and it is the foundation for a future conformance suite.
+The plan is the verifiable contract of the render: it is what makes it possible to compare render implementations without reading code, and the shipped conformance suite enforces it. Four recorded cases in `tests/conformance/` are compared by `python3 scripts/dev/check-plan-conformance.py` over normalized plans; [the architecture guide](architecture.md) documents what is normalized and how to add a case.
 
 ### Quick drafts without a configuration
 
 For loose Markdown files that just need a quick printed PDF — a draft, meeting notes, a single document — `skelepress draft` synthesizes the minimal configuration in memory and runs the same render pipeline:
 
 ```bash
-skelepress draft notas.md agenda.md          # -> skeledraft-20261116-1745.pdf
+skelepress draft notas.md agenda.md          # -> skeledraft-20261116-174500-0427.pdf
 skelepress draft -t "Contract" doc.md       # manual title, slug-named output
 skelepress draft -o /tmp/out.pdf doc.md     # explicit output path
 ```

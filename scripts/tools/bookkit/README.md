@@ -190,6 +190,9 @@ python3 scripts/tools/bookkit/build.py path/to/single path/to/series
 # Override the output directory (default: ./.skelepress):
 python3 scripts/tools/bookkit/build.py --out path/to/out path/to/project
 
+# A builtin book style by name:
+python3 scripts/tools/bookkit/build.py --template book-novel path/to/project
+
 # A book-class LaTeX template of your own:
 python3 scripts/tools/bookkit/build.py --template path/to/book.tex path/to/project
 ```
@@ -203,9 +206,22 @@ rendered PDFs share that layout. `--out` replaces only the root; existing
 
 Without `--template`, the generated configurations carry the builtin name
 `book`: the toolkit ships `templates/book.tex` inside the artifact, so the
-same project builds from a checkout and from an installation. Pass
-`--template` with a book-class LaTeX template of your own — a path relative
-to the working directory, or absolute — when your book needs its own design.
+same project builds from a checkout and from an installation.
+
+`--template` accepts either of the two forms the CLI help names — a builtin
+template name or a template path:
+
+- a **builtin style name** with no path separator and no dot (`book`,
+  `book-novel`, `book-manual`, `book-kdp-5x8`, `book-kdp-digest`,
+  `book-kdp-6x9`, `book-kdp-7x10`, `book-kdp-square`) is written to the
+  generated configurations as-is, and the validator and the renderer resolve
+  it inside the installation. The eight styles, their paper sizes and what each
+  is for are tabulated in
+  [the built-in book styles](../../../docs/books.md#built-in-book-styles).
+- anything else is a **path to a book-class LaTeX template of your own** —
+  relative to the working directory, or absolute — and the tool fails before
+  building anything when the file does not exist. Use this form when your book
+  needs its own design.
 
 ## Requirements
 
