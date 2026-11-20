@@ -30,9 +30,11 @@ This installs into the managed layout:
 - `~/.local/bin/skelepress`
 
 An installed version carries only what it runs: the CLI, `scripts/runtime`, the
-shipped templates, the schemas and catalogs, and the `bookkit` tool. The
-repository's own tooling (`scripts/dev` for the documentation and catalog
-checks, `scripts/delivery` for building and installing) is not installed.
+shipped templates and `filters/`, the schemas and catalogs, the `bookkit` tool,
+plus `VERSION`, `README.md` and `LICENSE`. The repository's own tooling
+(`scripts/dev` for the documentation and catalog checks, `scripts/delivery` for
+building and installing) is not installed. `scripts/delivery/payload.sh` holds
+that list.
 
 ## Optional agent skill
 

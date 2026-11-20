@@ -170,13 +170,17 @@ the question is "is this publication conformant", not "is this diff correct".
 
 ### Current state
 
-For the published 2.1.0 candidate (`6b45317`), the four shipped examples —
-`documentation`, `manual`, `test` and `ohmyfake` — passed EPUBCheck 5.4.0 with no
-errors and no warnings in [CI run 41308070176](https://github.com/pablobernardo/skelepress/actions/runs/41308070176). The inter-chapter link defect
-that `documentation` used to report no longer occurs: links between selected
-chapters are rewritten to internal anchors that resolve inside the merged
-publication (#94). EPUBCheck remains acceptance, not a gate: it runs only
-through the manual `run_epub_acceptance` job described above.
+The five shipped examples — `book-kit`, `documentation`, `manual`,
+`no-titlepage` and `ohmyfake` — are the acceptance corpus, and it is kept true to
+the tree: an example that is renamed or added changes this list in the same
+change. The four that declare EPUB output (`documentation`, `manual`,
+`no-titlepage`, `ohmyfake`) must pass EPUBCheck 5.4.0 with no errors and no
+warnings on the manual `run_epub_acceptance` job; `book-kit` renders through
+manifests into PDF-only configurations, so that job skips it. The inter-chapter
+link defect that `documentation` used to report no longer occurs: links between
+selected chapters are rewritten to internal anchors that resolve inside the
+merged publication (#94). EPUBCheck remains acceptance, not a gate: it runs only
+through the job described above.
 
 ## YAML: two parsers, one tested at a time
 

@@ -9,7 +9,14 @@
 
 [![CI](https://github.com/pablobernardo/skelepress/actions/workflows/ci.yml/badge.svg)](https://github.com/pablobernardo/skelepress/actions/workflows/ci.yml)
 
-Agnostic toolkit for generating PDFs with Pandoc via a CLI (`skelepress`) using declarative configuration per consumer repository (`skelepress.config.yaml`).
+Agnostic toolkit for generating PDFs and EPUBs with Pandoc via a CLI (`skelepress`) using declarative configuration per consumer repository (`skelepress.config.yaml`).
+
+## What it does
+
+- **PDF and EPUB from one configuration.** Declare the chapters once and render a typeset PDF, a reflowable EPUB3, or both in a single invocation — see the [usage guide](docs/usage.md).
+- **Books with built-in styles.** `skelepress book` turns a manifest — one volume or a multi-volume series — into a book, with eight shipped styles from A4 to KDP trim sizes — see the [books guide](docs/books.md#built-in-book-styles).
+- **Quick drafts without a configuration.** `skelepress draft notas.md` renders loose Markdown through the same pipeline, so a throwaway PDF needs no `skelepress.config.yaml`.
+- **Checked before it renders.** `skelepress doctor` verifies the toolchain and `skelepress validate-config` applies the schema, so a bad configuration never reaches Pandoc.
 
 ## Install
 

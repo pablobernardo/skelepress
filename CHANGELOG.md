@@ -58,11 +58,12 @@ The project follows semantic versioning and keeps two versioned contracts:
 ### Added
 
 - `skelepress draft` renders loose Markdown files into a PDF without a
-  configuration file: point it at files or directories, and a synthesized,
+  configuration file: point it at files, and a synthesized,
   schema-validated configuration drives the same single renderer. The default
   output name is timestamped and collision-free (`skeledraft-YYYYMMDD-HHMMSS-NNNN`);
   `-t` names the document and `-o` selects an explicit output. The existing
-  render flow, preflight and contract are unchanged.
+  render flow, preflight and contract are unchanged. [Corrected 2026-11-20:
+  draft has only ever accepted files; this entry overstated it.]
 - Page breaks at heading boundaries. `compat.clearpage_between_heading_level`
   (optional, integer 1-6) starts a new page at every chapter whose first
   non-empty heading is at that level or shallower; naming the key subsumes the

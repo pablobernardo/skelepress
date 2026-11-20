@@ -63,7 +63,8 @@ perform for the release, not claims that a future candidate has passed:
   2.5.2 upgrade, migration path, alias or duplicate release artifact; do not add
   any to make the check pass. The maintainer removes the old installation
   manually. Repeat this rejection and clean-install check against the actual
-  release assets after publication.
+  release assets after publication. (Historical: the one-time 3.0.0 check; not
+  applicable to later releases.)
 - [ ] **Smoke rendering**: render representative examples, including highlighted
   and untagged code, inline code and heading pagination. Inspect the PDFs, not
   just the exit status. H6 remains plain text, arbitrary unbreakable content may
@@ -122,6 +123,7 @@ an existing tag. A pull request does not exercise this tag/manual workflow.
    nonzero exit and leave its managed root, binary directory and `current`
    pointer unchanged; then clean-install Skelepress and confirm its version and
    a smoke render. No aliases or duplicate artifacts are an acceptable workaround.
+   (Historical: the one-time 3.0.0 check; not applicable to later releases.)
 3. Preserve published tags and assets. If a correction is needed, document it
    and publish a new patch release through the same checks and approval.
 
