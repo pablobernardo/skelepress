@@ -128,12 +128,23 @@ and out of every EPUB plan.
 skelepress/
   bin/
     skelepress               # main CLI
-  templates/
-    default.tex
+  templates/                 # the shipped styles: nine .tex files, one EPUB header
+    default.tex              # article class, the PDF default
+    book.tex                 # book class, A4
+    book-novel.tex           # A4 fiction layout
+    book-manual.tex          # A4 technical-manual layout
+    book-kdp-5x8.tex         # KDP trim-size starting points
+    book-kdp-digest.tex
+    book-kdp-6x9.tex
+    book-kdp-7x10.tex
+    book-kdp-square.tex
+    epub-header.html
   filters/
     emoji.lua
     emoji/
     mermaid.lua
+    heading-page-break.lua   # always on: honours the {.page-break} heading class
+    inline-code-breaks.lua
   scripts/
     runtime/                 # ships: what the CLI executes
       preflight.sh
@@ -152,36 +163,49 @@ skelepress/
       check-i18n.py
       check-docs.py
       check-plan-conformance.py
+      check-release-candidate.py
       enforce-security-thresholds.py
     delivery/                # repository only, never shipped
       bootstrap.sh
       install.sh
       install-local.sh
       package-release.sh
+      payload.sh             # the one list of what an installation carries
   schemas/
     skelepress-config.schema.json
   i18n/
     locales/                 # en.json, es.json, gl.json, pt.json
     schema/
   examples/
+    book-kit/                # config + series + single: the bookkit fixtures
     documentation/skelepress.config.yaml
     manual/                  # config + chapters
+    no-titlepage/            # config + chapters
     ohmyfake/                # config + chapters
-    test/                    # config + chapters
     render-all.sh
   docs/
     README.md                # navigation index
     install.md
     usage.md
     architecture.md
-    releasing.md
+    books.md
+    dependencies.md
     dependency-policy.md
     i18n.md
+    migration.md
+    releasing.md
+    brand/                   # logo, symbol, icons and their usage rules
   tests/
     run.sh
     l1/
     integration/
 ```
+
+The nine templates are eight selectable book styles plus the article
+`default.tex`; `docs/books.md#built-in-book-styles` says what each style is for
+and what paper it targets. A style name (`book-kdp-6x9`) selects the shipped
+file, a path selects a consumer-owned one; `template_runtime.py` owns both
+rules.
 
 ### Principles
 
@@ -327,6 +351,10 @@ and configuration compatibility rules in `AGENTS.md`.
 | D12 | `pandoc.metadata_file` is optional: the legacy side file stays supported and wins when present, but a configuration can now carry the cover through `document.*`, plus `document.language`, `document.titlepage` and a free-form `document.metadata` map. The file name still comes from `document.title`, so no consumer's output is renamed. |
 | D13 | Relative assets resolve from `project.base_dir`, never from the directory the command was invoked in. Every job appends `base_dir` **last** to the pandoc resource path, so a declared `pandoc.resource_path` keeps its priority and existing resolution is only widened. A relative `cover-image` is resolved against `base_dir` before Pandoc sees it, because neither the EPUB writer nor LaTeX's `\includegraphics` reads the resource path; both branches share the same resolver. The plan keeps `cwd: null` as D6 requires: this is a resolution rule, not a plan shape change. No EPUB plan carries the generated `\clearpage`, which is LaTeX-only markup. |
 | D14 | Missing Unicode symbols in PDFs are fixed as a glyph-only, template-level fallback. In the XeLaTeX/LuaLaTeX branch, exactly the six symbols of #83 (`☐ ☑ ☒ ✅ ❌ ⚠`) are mapped to GNU FreeSerif when it exists, looked up by standard file name first (`FreeSerif.ttf`, TeX Live) and then by family name (`FreeSerif`, fontconfig/luaotfload, e.g. Debian's `fonts-freefont-ttf`). The mapping applies in prose, inline code, untagged fenced code and highlighted fenced code. The prose and code font selections, the pdfLaTeX branch and the emoji filter are untouched: code stays textual and the symbols render as monochrome FreeSerif text glyphs, not as color-emoji images, so the fallback does not depend on the emoji filter; when the filter is enabled, it substitutes SVG in prose and leaves code alone (`Code`/`CodeBlock`), so in code contexts the fallback still applies. The mapping reaches fenced code because the six characters remain active inside fancyvrb's `Verbatim`/`Highlighting` environments, so their `newunicodechar` mappings execute there too; a consuming template that neutralizes those characters inside its verbatim environments loses the mapping; `tests/integration/unicode-symbols.sh` checks this, and it is optional and not part of `make gate`. The `newunicodechar` package is guarded together with the font: a TeX installation without either degrades instead of failing. The emoji presentation selector (U+FE0F), as in the issue's `⚠️`, is consumed only immediately after a mapped glyph, never globally. PDF text extraction keeps the base symbols but not the selector (`⚠️` extracts as `⚠`), so exact Unicode-sequence copy fidelity is not claimed. Without the font, rendering degrades to the previous behavior including the Missing-character diagnostics. No configuration contract or CLI change. |
+| D15 | `skelepress draft` (3.2.0) adds a configuration-free path without a second renderer: the command accepts loose Markdown files only (a directory argument is rejected), synthesizes a minimal configuration that passes the same schema and the same `validate-config` code, and hands it to `scripts/runtime/render-native.py`. Preflight, the plan shape and the contract are untouched, so a draft PDF is produced by exactly the pipeline a configured render uses. |
+| D16 | Page breaks became a compatibility decision instead of a hardcoded rule. The optional `compat.clearpage_between_heading_level` (integer 1-6) starts a new page at every chapter whose first non-empty heading is at that level or shallower, and naming the key subsumes the legacy H1 rule; a render that does not name it keeps `compat.legacy_clearpage_between_h1` and stays byte-compatible. The `{.page-break}` heading class is honoured by `filters/heading-page-break.lua`, which is always on: `\clearpage` in LaTeX, the class kept in HTML and EPUB, where the shipped stylesheet exposes `break-before: page`. No raw LaTeX reaches a Markdown source or an EPUB plan, and the effective decision is recorded in the plan as `side_effects.heading_break_level`. |
+| D17 | The seven selectable book styles (3.3.0) are opt-in templates, not a new contract. `book-novel`, `book-manual` and five KDP trim sizes are additional `.tex` files chosen by `pandoc.template` or `skelepress book --template`; the default template selection, `version: 1` and existing publications are unchanged, so the toolkit version moves and the contract version does not. The KDP styles are editable starting points, not print-platform certification. |
+| D18 | EPUB Mermaid diagrams get a legible background (3.3.1) inside the default path, not as a new option. For EPUB/HTML output with no explicit `filters.mermaid.background` in the configuration, `filters/mermaid.lua` renders the PNG with a light background baked in, because readers such as Apple Books override the document stylesheet in dark mode and a CSS card cannot be relied on. The effective background is part of the output file name, so the PDF path and the EPUB path never share a cached image. An explicit `filters.mermaid.background` is honoured in every format, and `transparent` remains the escape hatch. This is a visible, non-breaking behavior change with contract version `1` unchanged. |
 
 ## How we got here
 
