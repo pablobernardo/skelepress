@@ -448,9 +448,6 @@ skelepress render -c skelepress.config.yaml --dry-run --json
     "PANDOC_MERMAID_BACKGROUND": "transparent",
     "PANDOC_MERMAID_BACKGROUND_EXPLICIT": "0"
   },
-  ```
-
-  The renderer exports `PANDOC_MERMAID_BACKGROUND_EXPLICIT` as `1` only when the configuration declares `filters.mermaid.background`; conformance fixtures that declare it record `1` with the same `transparent` value this default example records as `0`.
   "side_effects": {
     "keep_merged_markdown": true,
     "clearpage_between_h1": true,
@@ -460,6 +457,8 @@ skelepress render -c skelepress.config.yaml --dry-run --json
   }
 }
 ```
+
+The renderer exports `PANDOC_MERMAID_BACKGROUND_EXPLICIT` as `1` only when the configuration declares `filters.mermaid.background`; conformance fixtures that declare it record `1` with the same `transparent` value this default example records as `0`.
 
 The plan is the verifiable contract of the render: it is what makes it possible to compare render implementations without reading code, and it is the foundation for a future conformance suite.
 
