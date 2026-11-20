@@ -40,12 +40,16 @@ local function simple_hash(s)
     -- dark mode, so a transparent PNG can leave dark strokes unreadable and a
     -- CSS card cannot be relied on. The effective background is part of the
     -- output file name, so the PDF path (bare content hash, configured
-    -- background) and the EPUB path never share a cached PNG. An explicit
-    -- filters.mermaid.background is honoured as configured in every format.
+    -- background) and the EPUB path never share a cached PNG. A background is
+    -- explicit when the renderer marker is 1 (filters.mermaid.background was
+    -- declared) or, on a direct filter invocation without the marker, when
+    -- PANDOC_MERMAID_BACKGROUND itself is set; explicit choices are honoured
+    -- as configured in every format.
+    local marker = os.getenv("PANDOC_MERMAID_BACKGROUND_EXPLICIT")
+    local explicit = marker == "1" or (marker == nil and os.getenv("PANDOC_MERMAID_BACKGROUND") ~= nil)
     local render_bg = mermaid_background
     local bake_suffix = ""
-    if (FORMAT == "epub" or FORMAT == "html" or FORMAT == "html5")
-        and os.getenv("PANDOC_MERMAID_BACKGROUND_EXPLICIT") ~= "1" then
+    if (FORMAT == "epub" or FORMAT == "html" or FORMAT == "html5") and not explicit then
         render_bg = "white"
         bake_suffix = "-white"
     end
