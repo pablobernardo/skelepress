@@ -72,14 +72,4 @@ table th, table td {
 table code {
   overflow-wrap: anywhere;
 }
-
-/* The mermaid filter wraps default-background diagrams in a div tagged
-   mermaid-diagram. The wrapped PNG keeps its transparency, and some readers
-   (Apple Books) ignore background-color on the img element itself, so the
-   light card that keeps dark strokes readable in a dark-mode reader is painted
-   on the block container instead. */
-div.mermaid-diagram {
-  background-color: #ffffff;
-  padding: 0.25em;
-}
 </style>

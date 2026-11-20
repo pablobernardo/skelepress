@@ -347,11 +347,13 @@ run_epub_mermaid_dark_mode_card_test() {
     return 0
   fi
 
-  local render_sandbox assert_card
-
-  # With the default transparent diagram background the EPUB stylesheet paints
-  # a light card behind mermaid images so dark strokes stay readable in a
-  # dark-mode reader.
+  # With the default transparent diagram background the EPUB bakes a white
+  # background into the diagram PNG: readers such as Apple Books override the
+  # document stylesheet in dark mode, so a CSS card cannot be relied on. An
+  # explicit consumer background is honoured as configured.
+  # render_sandbox renders one EPUB sandbox with the given background value
+  # (empty string keeps the default); assert_media prints the sha256 of the
+  # first embedded PNG.
   render_sandbox() {
     local sandbox out epub chapter diagram code=0
     sandbox="$(new_epub_sandbox)"
@@ -397,51 +399,44 @@ PY
     echo "$epub"
   }
 
-  assert_card() {
-    local epub="$1" expect_class="$2"
-    "${REAL_PYTHON3}" - "$epub" "$expect_class" <<'PY'
+  assert_media() {
+    local epub="$1"
+    "${REAL_PYTHON3}" - "$epub" <<'PY'
+import hashlib
 import sys
 import zipfile
 
-epub, expect_class = sys.argv[1], sys.argv[2] == "yes"
-archive = zipfile.ZipFile(epub)
-chapter = archive.read("EPUB/text/ch001.xhtml").decode("utf-8")
-styles = "\n".join(
-    e.text or ""
-    for name in archive.namelist()
-    if name.endswith(".xhtml")
-    for e in __import__("xml.etree.ElementTree", fromlist=["Element"]).fromstring(archive.read(name)).iter("{http://www.w3.org/1999/xhtml}style")
-)
-problems = []
-if "div.mermaid-diagram" not in styles:
-    problems.append("missing light-card stylesheet rule for div.mermaid-diagram")
-if expect_class and '<div class="mermaid-diagram">' not in chapter:
-    problems.append("transparent background must wrap the diagram in the card div")
-if not expect_class and '<div class="mermaid-diagram">' in chapter:
-    problems.append("explicit background must not wrap the diagram in the card div")
-print("CLEAN" if not problems else "DIRTY: " + "; ".join(problems))
+archive = zipfile.ZipFile(sys.argv[1])
+media = sorted(n for n in archive.namelist() if n.startswith("EPUB/media/") and n.endswith(".png"))
+if not media:
+    print("NO-MEDIA")
+else:
+    print(hashlib.sha256(archive.read(media[0])).hexdigest())
 PY
   }
 
-  local epub
+  local epub media_default media_white media_transparent
   epub="$(render_sandbox "")"
-  if [[ "$(assert_card "$epub" yes)" == CLEAN ]]; then
-    pass "the default transparent background paints a light card behind mermaid images"
+  media_default="$(assert_media "$epub")"
+  if [[ "$media_default" != NO-MEDIA && -n "$media_default" ]]; then
+    pass "the default transparent background bakes a diagram into the epub"
   else
-    fail "the default transparent background must paint a light card behind mermaid images: $(assert_card "$epub" yes)"
+    fail "the default transparent background must bake a diagram into the epub (media: $media_default)"
   fi
 
   epub="$(render_sandbox "white")"
-  if [[ "$(assert_card "$epub" no)" == CLEAN ]]; then
-    pass "an explicit consumer background is honoured without the card class"
+  media_white="$(assert_media "$epub")"
+  if [[ "$media_white" == "$media_default" ]]; then
+    pass "an explicit white background uses the same baked diagram as the default"
   else
-    fail "an explicit consumer background must be honoured without the card class: $(assert_card "$epub" no)"
+    fail "an explicit white background must use the same baked diagram as the default ($media_default vs $media_white)"
   fi
 
   epub="$(render_sandbox "transparent")"
-  if [[ "$(assert_card "$epub" no)" == CLEAN ]]; then
-    pass "an explicit transparent background is honoured without the card class"
+  media_transparent="$(assert_media "$epub")"
+  if [[ -n "$media_transparent" && "$media_transparent" != "$media_default" ]]; then
+    pass "an explicit transparent background keeps its own transparent diagram"
   else
-    fail "an explicit transparent background must be honoured without the card class: $(assert_card "$epub" no)"
+    fail "an explicit transparent background must keep its own transparent diagram ($media_default vs $media_transparent)"
   fi
 }

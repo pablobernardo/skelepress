@@ -33,7 +33,23 @@ local function simple_hash(s)
     local content = block.text
     local h = hash(content)
     local infile = output_dir .. "/mmd-" .. h .. ".mmd"
-    local outfile = output_dir .. "/mmd-" .. h .. ".png"
+
+    -- For HTML-based output (epub/html) without an explicit consumer
+    -- background, the diagram is rendered with a white background baked into
+    -- the PNG: readers such as Apple Books override the document stylesheet in
+    -- dark mode, so a transparent PNG can leave dark strokes unreadable and a
+    -- CSS card cannot be relied on. The effective background is part of the
+    -- output file name, so the PDF path (bare content hash, configured
+    -- background) and the EPUB path never share a cached PNG. An explicit
+    -- filters.mermaid.background is honoured as configured in every format.
+    local render_bg = mermaid_background
+    local bake_suffix = ""
+    if (FORMAT == "epub" or FORMAT == "html" or FORMAT == "html5")
+        and os.getenv("PANDOC_MERMAID_BACKGROUND_EXPLICIT") ~= "1" then
+        render_bg = "white"
+        bake_suffix = "-white"
+    end
+    local outfile = output_dir .. "/mmd-" .. h .. bake_suffix .. ".png"
 
     -- Render only if file doesn't exist yet
     local f = io.open(outfile, "rb")
@@ -43,7 +59,7 @@ local function simple_hash(s)
         src:write(content)
         src:close()
 
-        local cmd = string.format('mmdc -i "%s" -o "%s" -b "%s" -q', infile, outfile, mermaid_background)
+        local cmd = string.format('mmdc -i "%s" -o "%s" -b "%s" -q', infile, outfile, render_bg)
         local ok = os.execute(cmd)
         if not ok then
             -- Record the failure so the renderer cannot report success while a
@@ -63,22 +79,10 @@ local function simple_hash(s)
 
     -- return pandoc.Para({ pandoc.Image({}, outfile) })
     -- modified to add space above and below the generated image
-    -- The renderer exports PANDOC_MERMAID_BACKGROUND_EXPLICIT=1 only when the
-    -- configuration declares filters.mermaid.background. Without that flag the
-    -- diagram is wrapped in a Div tagged mermaid-diagram, for HTML-based output
-    -- only (epub/html), so the shipped EPUB stylesheet can paint a light card
-    -- behind it: some readers (Apple Books) ignore background-color on the img
-    -- element itself, so the card needs a block container. Other formats keep
-    -- the bare output. An explicit choice (including an explicit transparent)
-    -- produces its own colour and gets no wrapper.
     local img = pandoc.Image({}, outfile)
     local top_space = pandoc.RawBlock("latex", "\\vspace{1.2em}")
     local bottom_space = pandoc.RawBlock("latex", "\\vspace{1.2em}")
-    local inner = { top_space, pandoc.Para(img), bottom_space }
-    if (FORMAT == "epub" or FORMAT == "html" or FORMAT == "html5")
-        and os.getenv("PANDOC_MERMAID_BACKGROUND_EXPLICIT") ~= "1" then
-        return { pandoc.Div(inner, pandoc.Attr("", { "mermaid-diagram" }, {})) }
-    end
-    return inner
+
+    return { top_space, pandoc.Para(img), bottom_space }
 
 end
