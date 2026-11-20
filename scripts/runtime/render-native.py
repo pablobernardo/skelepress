@@ -511,6 +511,7 @@ def build_single_plan(cfg_user: dict, cfg_path: Path, root_dir: Path, format_nam
             "PANDOC_EMOJI_BALLOT_ICONS": "1" if bool(emoji_cfg.get("include_ballot_icons", True)) else "0",
             "PANDOC_MERMAID_OUTPUT_DIR": str(mermaid_output_dir),
             "PANDOC_MERMAID_BACKGROUND": str(mermaid_cfg.get("background", "transparent")),
+            "PANDOC_MERMAID_BACKGROUND_EXPLICIT": "1" if "background" in mermaid_cfg else "0",
         },
         "side_effects": {
             "keep_merged_markdown": keep_merged_markdown,

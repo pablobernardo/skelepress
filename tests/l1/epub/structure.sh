@@ -336,3 +336,107 @@ PY
     fail "a rendered document links outside the publication: $(printf '%s\n' "$output" | grep -E '^(ESCAPES|MISSING) ' | head -4 | tr '\n' ' ')"
   fi
 }
+
+run_epub_mermaid_dark_mode_card_test() {
+  if ! command -v pandoc >/dev/null 2>&1; then
+    echo "SKIP epub mermaid dark-mode card (pandoc not available)"
+    return 0
+  fi
+  if ! command -v mmdc >/dev/null 2>&1; then
+    echo "SKIP epub mermaid dark-mode card (mmdc not available)"
+    return 0
+  fi
+
+  # With the default transparent diagram background the EPUB bakes a white
+  # background into the diagram PNG: readers such as Apple Books override the
+  # document stylesheet in dark mode, so a CSS card cannot be relied on. An
+  # explicit consumer background is honoured as configured.
+  # render_sandbox renders one EPUB sandbox with the given background value
+  # (empty string keeps the default); assert_media prints the sha256 of the
+  # first embedded PNG.
+  render_sandbox() {
+    local sandbox out epub chapter diagram code=0
+    sandbox="$(new_epub_sandbox)"
+    out="$(mktemp)"
+    epub="${sandbox}/work/out/epub-guide-manual.epub"
+    diagram="$1"
+
+    cat >"${sandbox}/work/chapters/chapter-1.md" <<EOF
+# Diagram Chapter
+
+A flowchart follows.
+
+\`\`\`{.mermaid}
+flowchart LR
+    A[Client] --> B[API]
+\`\`\`
+EOF
+
+    write_epub_config "${sandbox}/skelepress.config.yaml" epub
+    "${REAL_PYTHON3}" - "${sandbox}/skelepress.config.yaml" "${diagram}" <<'PY'
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+text = path.read_text()
+text = text.replace('  mermaid:\n    enabled: false',
+                    '  mermaid:\n    enabled: true')
+if sys.argv[2] != "":
+    text = text.replace('  mermaid:\n    enabled: true',
+                        f'  mermaid:\n    enabled: true\n    background: "{sys.argv[2]}"')
+path.write_text(text)
+PY
+
+    (
+      cd "${sandbox}/work" && "${sandbox}/bin/skelepress" render -c "${sandbox}/skelepress.config.yaml"
+    ) >"$out" 2>&1 || code=$?
+    if [[ "$code" != "0" ]]; then
+      fail "EPUB render with mermaid must succeed ($(tail -3 "$out"))"
+      rm -rf "$sandbox"
+      rm -f "$out"
+      return 1
+    fi
+    echo "$epub"
+  }
+
+  assert_media() {
+    local epub="$1"
+    "${REAL_PYTHON3}" - "$epub" <<'PY'
+import hashlib
+import sys
+import zipfile
+
+archive = zipfile.ZipFile(sys.argv[1])
+media = sorted(n for n in archive.namelist() if n.startswith("EPUB/media/") and n.endswith(".png"))
+if not media:
+    print("NO-MEDIA")
+else:
+    print(hashlib.sha256(archive.read(media[0])).hexdigest())
+PY
+  }
+
+  local epub media_default media_white media_transparent
+  epub="$(render_sandbox "")"
+  media_default="$(assert_media "$epub")"
+  if [[ "$media_default" != NO-MEDIA && -n "$media_default" ]]; then
+    pass "the default transparent background bakes a diagram into the epub"
+  else
+    fail "the default transparent background must bake a diagram into the epub (media: $media_default)"
+  fi
+
+  epub="$(render_sandbox "white")"
+  media_white="$(assert_media "$epub")"
+  if [[ "$media_white" == "$media_default" ]]; then
+    pass "an explicit white background uses the same baked diagram as the default"
+  else
+    fail "an explicit white background must use the same baked diagram as the default ($media_default vs $media_white)"
+  fi
+
+  epub="$(render_sandbox "transparent")"
+  media_transparent="$(assert_media "$epub")"
+  if [[ -n "$media_transparent" && "$media_transparent" != "$media_default" ]]; then
+    pass "an explicit transparent background keeps its own transparent diagram"
+  else
+    fail "an explicit transparent background must keep its own transparent diagram ($media_default vs $media_transparent)"
+  fi
+}

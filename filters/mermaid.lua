@@ -4,8 +4,6 @@
 -- Alternative (macOS): brew install mermaid-cli
 -- Works with XeLaTeX / LuaLaTeX outputs.
 
-local system = require 'pandoc.system'
-
 -- Directory for generated diagrams
 local output_dir = os.getenv("PANDOC_MERMAID_OUTPUT_DIR") or "output/mermaid"
 local mermaid_background = os.getenv("PANDOC_MERMAID_BACKGROUND") or "transparent"
@@ -35,7 +33,27 @@ local function simple_hash(s)
     local content = block.text
     local h = hash(content)
     local infile = output_dir .. "/mmd-" .. h .. ".mmd"
-    local outfile = output_dir .. "/mmd-" .. h .. ".png"
+
+    -- For HTML-based output (epub/html) without an explicit consumer
+    -- background, the diagram is rendered with a white background baked into
+    -- the PNG: readers such as Apple Books override the document stylesheet in
+    -- dark mode, so a transparent PNG can leave dark strokes unreadable and a
+    -- CSS card cannot be relied on. The effective background is part of the
+    -- output file name, so the PDF path (bare content hash, configured
+    -- background) and the EPUB path never share a cached PNG. A background is
+    -- explicit when the renderer marker is 1 (filters.mermaid.background was
+    -- declared) or, on a direct filter invocation without the marker, when
+    -- PANDOC_MERMAID_BACKGROUND itself is set; explicit choices are honoured
+    -- as configured in every format.
+    local marker = os.getenv("PANDOC_MERMAID_BACKGROUND_EXPLICIT")
+    local explicit = marker == "1" or (marker == nil and os.getenv("PANDOC_MERMAID_BACKGROUND") ~= nil)
+    local render_bg = mermaid_background
+    local bake_suffix = ""
+    if (FORMAT == "epub" or FORMAT == "html" or FORMAT == "html5") and not explicit then
+        render_bg = "white"
+        bake_suffix = "-white"
+    end
+    local outfile = output_dir .. "/mmd-" .. h .. bake_suffix .. ".png"
 
     -- Render only if file doesn't exist yet
     local f = io.open(outfile, "rb")
@@ -45,7 +63,7 @@ local function simple_hash(s)
         src:write(content)
         src:close()
 
-        local cmd = string.format('mmdc -i "%s" -o "%s" -b "%s" -q', infile, outfile, mermaid_background)
+        local cmd = string.format('mmdc -i "%s" -o "%s" -b "%s" -q', infile, outfile, render_bg)
         local ok = os.execute(cmd)
         if not ok then
             -- Record the failure so the renderer cannot report success while a
@@ -66,7 +84,6 @@ local function simple_hash(s)
     -- return pandoc.Para({ pandoc.Image({}, outfile) })
     -- modified to add space above and below the generated image
     local img = pandoc.Image({}, outfile)
-
     local top_space = pandoc.RawBlock("latex", "\\vspace{1.2em}")
     local bottom_space = pandoc.RawBlock("latex", "\\vspace{1.2em}")
 

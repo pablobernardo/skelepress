@@ -158,7 +158,7 @@ output:
 - Relative assets resolve from `project.base_dir`, which every render appends **last** to the resource path: a declared `pandoc.resource_path` keeps its priority, and a project-relative image resolves no matter which directory you run the command from. A relative `cover-image` is resolved by the renderer against `base_dir` for **both** formats, because neither Pandoc's EPUB writer nor LaTeX's `\includegraphics` reads the pandoc resource path.
 - The emoji filter works in EPUB with one deliberate difference: an emoji inside a **heading** stays a character, while emoji in paragraph text still becomes an SVG image. The navigation document reuses headings, and EPUB requires a link to contain text, so an image there is invalid; Pandoc also writes its path relative to the text directory, which escapes the package from the navigation root. A reader renders emoji natively, so nothing is lost, and PDF output keeps its images. Mermaid diagrams are embedded as PNG resources either way.
 - Ballot-box emojis come from the versioned `filters/emoji/` directory; other emojis are fetched once by the emoji preparation step.
-- A diagram is embedded with the configured `filters.mermaid.background`. The PNG is cached by diagram content, not by background, so changing that setting only affects diagrams that were not rendered before. With the default `transparent`, a diagram can be hard to read in a reader's dark mode.
+- A diagram is embedded with the configured `filters.mermaid.background`. The PNG is cached by diagram content and effective background, not by the setting alone, so changing that setting only affects diagrams that were not rendered before. With the default `transparent`, EPUB and HTML output bakes a white background into the diagram PNG, because the transparent PNG alone can leave dark strokes hard to read in a reader's dark mode and readers such as Apple Books override the document stylesheet there; PDF output keeps the transparent PNG. A diagram whose Mermaid theme is designed for dark backgrounds needs `filters.mermaid.background` set explicitly, and the explicit choice is honoured in every format.
 - No EPUB carries LaTeX-only markup: the `\clearpage` inserted between chapters for the PDF is never added to an EPUB, whatever `compat.legacy_clearpage_between_h1` says.
 - Page breaks at heading boundaries are controlled by `compat.clearpage_between_heading_level` and the `{.page-break}` heading class; see [Page breaks at heading boundaries](#page-breaks-at-heading-boundaries).
 
@@ -445,7 +445,8 @@ skelepress render -c skelepress.config.yaml --dry-run --json
     "PANDOC_EMOJI_DIR": "...",
     "PANDOC_EMOJI_BALLOT_ICONS": "1",
     "PANDOC_MERMAID_OUTPUT_DIR": "...",
-    "PANDOC_MERMAID_BACKGROUND": "transparent"
+    "PANDOC_MERMAID_BACKGROUND": "transparent",
+    "PANDOC_MERMAID_BACKGROUND_EXPLICIT": "0"
   },
   "side_effects": {
     "keep_merged_markdown": true,
@@ -456,6 +457,8 @@ skelepress render -c skelepress.config.yaml --dry-run --json
   }
 }
 ```
+
+The renderer exports `PANDOC_MERMAID_BACKGROUND_EXPLICIT` as `1` only when the configuration declares `filters.mermaid.background`; conformance fixtures that declare it record `1` with the same `transparent` value this default example records as `0`.
 
 The plan is the verifiable contract of the render: it is what makes it possible to compare render implementations without reading code, and it is the foundation for a future conformance suite.
 
