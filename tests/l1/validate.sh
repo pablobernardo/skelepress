@@ -117,9 +117,11 @@ import json
 import sys
 
 # Keywords validate-config.py actually implements, plus pure annotations.
+# anyOf is implemented (the branch check selects the first satisfied shape),
+# used by schemas/skelepress-config.schema.json's explicit_files entries.
 SUPPORTED = {
     "type", "properties", "required", "additionalProperties",
-    "items", "minItems", "minLength", "minimum", "enum",
+    "items", "minItems", "minLength", "minimum", "enum", "anyOf",
 }
 ANNOTATIONS = {"$schema", "$id", "title", "description", "default", "examples"}
 

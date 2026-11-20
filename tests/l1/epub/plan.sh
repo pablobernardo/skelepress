@@ -77,6 +77,72 @@ PY
   rm -f "$with_format" "$without_format" "$out"
 }
 
+# One explicit_files entry can gate itself to formats: a PDF-only entry stays
+# out of an EPUB plan and an EPUB-only one stays out of a PDF plan, while plain
+# string entries land in every format exactly as before.
+run_epub_explicit_entry_formats_test() {
+  local bad plan sandbox out config code
+  sandbox="$(new_epub_sandbox)"
+  plan="$(mktemp)"
+  out="$(mktemp)"
+
+  printf '\\mainmatter\n' >"${sandbox}/work/chapters/00-mode.md"
+  printf 'Late content.\n' >"${sandbox}/work/chapters/late.md"
+  write_epub_config "${sandbox}/skelepress.config.yaml" epub
+  "${REAL_PYTHON3}" - "${sandbox}/skelepress.config.yaml" <<'PY'
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+text = path.read_text(encoding="utf-8")
+text = text.replace(
+    "  formats: [epub]\n",
+    "  formats: [pdf, epub]\n",
+).replace(
+    "  explicit_files: []\n",
+    "  explicit_files:\n"
+    "    - file: \"00-mode.md\"\n"
+    "      formats: [pdf]\n"
+    "    - \"chapter-1.md\"\n"
+    "    - file: \"chapter-2.md\"\n"
+    "      formats: [epub]\n"
+    "    - file: \"late.md\"\n"
+    "      formats: [pdf, epub]\n",
+)
+path.write_text(text, encoding="utf-8")
+PY
+
+  if "${sandbox}/bin/skelepress" validate-config -c "${sandbox}/skelepress.config.yaml" >"$out" 2>&1; then
+    pass "validate-config accepts an explicit_files entry with a formats gate"
+  else
+    fail "validate-config should accept an explicit_files entry with a formats gate ($(tail -2 "$out"))"
+  fi
+
+  if "${sandbox}/bin/skelepress" render -c "${sandbox}/skelepress.config.yaml" --dry-run --json >"$plan" 2>"$out"; then
+    pass "render --dry-run --json plans a gated explicit_files entry"
+  else
+    fail "render --dry-run --json should plan a gated explicit_files entry ($(tail -2 "$out"))"
+  fi
+
+  assert_json_expr "$plan" 'd["plan_version"] == 2' "a gated entry renders as the multi-format job list"
+  assert_json_expr "$plan" '[p.rsplit("/", 1)[-1] for p in d["jobs"][0]["chapters"]] == ["00-mode.md", "chapter-1.md", "late.md"]' "the pdf job keeps pdf-gated and ungated entries"
+  assert_json_expr "$plan" '[p.rsplit("/", 1)[-1] for p in d["jobs"][1]["chapters"]] == ["chapter-1.md", "chapter-2.md", "late.md"]' "the epub job keeps epub-gated and ungated entries"
+
+  # An unknown value inside an entry is a validation error, not a silent drop.
+  config="${sandbox}/skelepress-bad.config.yaml"
+  sed 's/formats: \[pdf\]/formats: [mobi]/' "${sandbox}/skelepress.config.yaml" >"$config"
+  code=0
+  "${sandbox}/bin/skelepress" validate-config -c "$config" >"$out" 2>&1 || code=$?
+  assert_exit_code "1" "$code" "validate-config rejects an explicit_files entry with an unknown format"
+  # The item shape is one anyOf: an entry whose formats value is unknown fails
+  # as a shape mismatch naming the entry, not as an inner enum report.
+  assert_contains "$out" "explicit_files\.\[0\]" "the rejection names the offending entry"
+  assert_contains "$out" "does not match any allowed shape" "the rejection reports the shape mismatch"
+
+  rm -rf "$sandbox"
+  rm -f "$plan" "$out"
+}
+
 run_epub_preflight_no_tex_test() {
   local sandbox tmpbin out code=0
   sandbox="$(new_epub_sandbox)"
