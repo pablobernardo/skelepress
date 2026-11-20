@@ -4,8 +4,6 @@
 -- Alternative (macOS): brew install mermaid-cli
 -- Works with XeLaTeX / LuaLaTeX outputs.
 
-local system = require 'pandoc.system'
-
 -- Directory for generated diagrams
 local output_dir = os.getenv("PANDOC_MERMAID_OUTPUT_DIR") or "output/mermaid"
 local mermaid_background = os.getenv("PANDOC_MERMAID_BACKGROUND") or "transparent"
@@ -67,18 +65,18 @@ local function simple_hash(s)
     -- modified to add space above and below the generated image
     -- The renderer exports PANDOC_MERMAID_BACKGROUND_EXPLICIT=1 only when the
     -- configuration declares filters.mermaid.background. Without that flag the
-    -- PNG keeps its transparent baseline and the shipped EPUB stylesheet paints
-    -- a light card behind images tagged mermaid-diagram; an explicit choice
-    -- (including an explicit transparent) produces its own colour and no tag.
-    local attrs = pandoc.Attr("", {}, {})
-    if os.getenv("PANDOC_MERMAID_BACKGROUND_EXPLICIT") ~= "1" then
-        attrs.classes:insert("mermaid-diagram")
-    end
-    local img = pandoc.Image({}, outfile, "", attrs)
-
+    -- diagram is wrapped in a Div tagged mermaid-diagram so the shipped EPUB
+    -- stylesheet can paint a light card behind it: some readers (Apple Books)
+    -- ignore background-color on the img element itself, so the card needs a
+    -- block container. An explicit choice (including an explicit transparent)
+    -- produces its own colour and gets no wrapper.
+    local img = pandoc.Image({}, outfile)
     local top_space = pandoc.RawBlock("latex", "\\vspace{1.2em}")
     local bottom_space = pandoc.RawBlock("latex", "\\vspace{1.2em}")
-
-    return { top_space, pandoc.Para(img), bottom_space }
+    local inner = { top_space, pandoc.Para(img), bottom_space }
+    if os.getenv("PANDOC_MERMAID_BACKGROUND_EXPLICIT") ~= "1" then
+        return { pandoc.Div(inner, pandoc.Attr("", { "mermaid-diagram" }, {})) }
+    end
+    return inner
 
 end

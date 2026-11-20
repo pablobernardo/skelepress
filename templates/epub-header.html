@@ -73,11 +73,12 @@ table code {
   overflow-wrap: anywhere;
 }
 
-/* The mermaid filter tags diagram images with mermaid-diagram only when the
-   configured background is transparent. The PNG keeps its transparency, so a
-   reader in dark mode would otherwise leave dark strokes unreadable; paint a
-   light card behind the image instead of changing the renderer's cache. */
-img.mermaid-diagram {
+/* The mermaid filter wraps default-background diagrams in a div tagged
+   mermaid-diagram. The wrapped PNG keeps its transparency, and some readers
+   (Apple Books) ignore background-color on the img element itself, so the
+   light card that keeps dark strokes readable in a dark-mode reader is painted
+   on the block container instead. */
+div.mermaid-diagram {
   background-color: #ffffff;
   padding: 0.25em;
 }

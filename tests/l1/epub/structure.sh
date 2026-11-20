@@ -413,12 +413,12 @@ styles = "\n".join(
     for e in __import__("xml.etree.ElementTree", fromlist=["Element"]).fromstring(archive.read(name)).iter("{http://www.w3.org/1999/xhtml}style")
 )
 problems = []
-if "img.mermaid-diagram" not in styles:
-    problems.append("missing light-card stylesheet rule for img.mermaid-diagram")
-if expect_class and 'class="mermaid-diagram"' not in chapter:
-    problems.append("transparent background must tag the diagram image")
-if not expect_class and 'class="mermaid-diagram"' in chapter:
-    problems.append("explicit background must not tag the diagram image")
+if "div.mermaid-diagram" not in styles:
+    problems.append("missing light-card stylesheet rule for div.mermaid-diagram")
+if expect_class and '<div class="mermaid-diagram">' not in chapter:
+    problems.append("transparent background must wrap the diagram in the card div")
+if not expect_class and '<div class="mermaid-diagram">' in chapter:
+    problems.append("explicit background must not wrap the diagram in the card div")
 print("CLEAN" if not problems else "DIRTY: " + "; ".join(problems))
 PY
   }
