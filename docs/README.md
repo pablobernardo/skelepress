@@ -28,6 +28,9 @@ marked with an arrow.
 | [`../README.md`](../README.md) | What the project is, and the shortest path to a first PDF. |
 | [`../AGENTS.md`](../AGENTS.md) | The stable rules: contract, compatibility, language policy, where to change what. |
 | [`../CHANGELOG.md`](../CHANGELOG.md) | What changed in each version. A record, not current documentation. |
+| [`brand/README.md`](brand/README.md) | Brand assets: logo, symbol and icons, with their palette and usage rules. |
+
+## Outside `docs/`
 | [`../CONTRIBUTING.md`](../CONTRIBUTING.md) | How to set up, test and submit a change. |
 | [`../.github/SECURITY.md`](../.github/SECURITY.md) | How to report a vulnerability. |
 
