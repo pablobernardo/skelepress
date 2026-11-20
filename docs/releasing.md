@@ -33,14 +33,15 @@ the actual release candidate still need to run and be recorded.
 Use isolated temporary output and installation directories. These are checks to
 perform for the release, not claims that a future candidate has passed:
 
-- [ ] **Package contents and checksums**: run `scripts/delivery/package-release.sh` and
-  verify all four tarballs against `checksums.txt`, then rebuild once more to
-  confirm the archive hash does not change, so a published checksum can be
-  compared with the approved candidate. Inspect the archive for the executable
-  CLI, matching `VERSION`, runtime scripts, schemas, templates, filters, catalogs
-  and license; exclude Python bytecode caches and any file that is not part of
-  the commit. The four platform names are aliases of one platform-independent
-  artifact, so identical hashes are intentional.
+- [ ] **Package contents and checksums**: run
+  `scripts/delivery/package-release.sh` and verify all four tarballs against
+  `checksums.txt`, then rebuild once more to confirm the archive hash does not
+  change, so a published checksum can be compared with the approved candidate.
+  Inspect the archive for the executable CLI, matching `VERSION`, runtime
+  scripts, schemas, templates, filters, catalogs and license; exclude Python
+  bytecode caches and any file that is not part of the commit. The four platform
+  names are aliases of one platform-independent artifact, so identical hashes
+  are intentional.
 
   The packager builds from committed content, not from the working tree: an
   untracked file inside a shipped directory cannot travel, and an uncommitted

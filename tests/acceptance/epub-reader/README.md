@@ -92,7 +92,7 @@ process limit plus five-second termination grace. Build/startup is separate.
 | Scenario | Actual native TOC targets and features |
 | --- | --- |
 | technical | Introduction/body; tables, figures and authored cross-references N/A |
-| documentation | Usage tables (both), Usage `books.md` link to Building a book, Architecture `migration` link to Migrating to 2.1.0 |
+| documentation | Usage tables (both), Usage `books.md` link to Building a book, Architecture `migration` link to Migration guides |
 | manual | Requirements table; Audit figure; Error codes table including long cells and subsequent figure; Glossary table |
 | ohmyfake | A Visible Compatibility Check 🔍 heading, paragraph/list/table SVG emoji and table, its Mermaid figure; What Counts as a Fake figure |
 
