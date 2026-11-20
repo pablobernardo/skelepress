@@ -7,6 +7,28 @@ The project follows semantic versioning and keeps two versioned contracts:
 - `VERSION` for the toolkit version
 - `skelepress.config.yaml -> version` for the configuration contract
 
+## [3.3.1] - 2026-11-20
+
+### Fixed
+
+- Markdown strikethrough renders in all shipped book templates with Pandoc
+  3.14, which emits `\st` while the templates expected `\sout`: the templates
+  now load `ulem` with the existing `normalem` handling only when strikeout
+  is detected (#210). The published 3.3.0 release does not include this fix.
+- Mermaid diagrams in EPUB render legibly in readers whose dark mode ignores
+  the document stylesheet (#112). The EPUB path bakes a light background into
+  the generated diagram images by default, with a separate image-cache
+  identity so nothing is reused from the transparent PDF artifacts; PDF and
+  LaTeX output are unchanged. An explicit `filters.mermaid.background` in the
+  configuration is honoured in every format.
+
+### Compatibility
+
+- The EPUB Mermaid background is default behavior of the shipped pipeline,
+  visible to consumers, and non-breaking; contract version `1` is unchanged.
+  Consumers who prefer transparent EPUB diagrams keep an escape hatch with
+  `filters.mermaid.background: transparent`.
+
 ## [3.3.0] - 2026-11-19
 
 ### Added
