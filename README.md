@@ -1,5 +1,12 @@
 # Skelepress
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/brand/logo/skelepress-logo-white.svg">
+  <img src="docs/brand/logo/skelepress-logo-dark.svg" alt="Skelepress" width="360">
+</picture>
+
+---
+
 [![CI](https://github.com/pablobernardo/skelepress/actions/workflows/ci.yml/badge.svg)](https://github.com/pablobernardo/skelepress/actions/workflows/ci.yml)
 
 Agnostic toolkit for generating PDFs with Pandoc via a CLI (`skelepress`) using declarative configuration per consumer repository (`skelepress.config.yaml`).
