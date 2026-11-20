@@ -65,7 +65,16 @@ local function simple_hash(s)
 
     -- return pandoc.Para({ pandoc.Image({}, outfile) })
     -- modified to add space above and below the generated image
-    local img = pandoc.Image({}, outfile)
+    -- The renderer exports PANDOC_MERMAID_BACKGROUND_EXPLICIT=1 only when the
+    -- configuration declares filters.mermaid.background. Without that flag the
+    -- PNG keeps its transparent baseline and the shipped EPUB stylesheet paints
+    -- a light card behind images tagged mermaid-diagram; an explicit choice
+    -- (including an explicit transparent) produces its own colour and no tag.
+    local attrs = pandoc.Attr("", {}, {})
+    if os.getenv("PANDOC_MERMAID_BACKGROUND_EXPLICIT") ~= "1" then
+        attrs.classes:insert("mermaid-diagram")
+    end
+    local img = pandoc.Image({}, outfile, "", attrs)
 
     local top_space = pandoc.RawBlock("latex", "\\vspace{1.2em}")
     local bottom_space = pandoc.RawBlock("latex", "\\vspace{1.2em}")

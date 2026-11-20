@@ -72,4 +72,13 @@ table th, table td {
 table code {
   overflow-wrap: anywhere;
 }
+
+/* The mermaid filter tags diagram images with mermaid-diagram only when the
+   configured background is transparent. The PNG keeps its transparency, so a
+   reader in dark mode would otherwise leave dark strokes unreadable; paint a
+   light card behind the image instead of changing the renderer's cache. */
+img.mermaid-diagram {
+  background-color: #ffffff;
+  padding: 0.25em;
+}
 </style>

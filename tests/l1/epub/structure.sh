@@ -336,3 +336,112 @@ PY
     fail "a rendered document links outside the publication: $(printf '%s\n' "$output" | grep -E '^(ESCAPES|MISSING) ' | head -4 | tr '\n' ' ')"
   fi
 }
+
+run_epub_mermaid_dark_mode_card_test() {
+  if ! command -v pandoc >/dev/null 2>&1; then
+    echo "SKIP epub mermaid dark-mode card (pandoc not available)"
+    return 0
+  fi
+  if ! command -v mmdc >/dev/null 2>&1; then
+    echo "SKIP epub mermaid dark-mode card (mmdc not available)"
+    return 0
+  fi
+
+  local render_sandbox assert_card
+
+  # With the default transparent diagram background the EPUB stylesheet paints
+  # a light card behind mermaid images so dark strokes stay readable in a
+  # dark-mode reader.
+  render_sandbox() {
+    local sandbox out epub chapter diagram code=0
+    sandbox="$(new_epub_sandbox)"
+    out="$(mktemp)"
+    epub="${sandbox}/work/out/epub-guide-manual.epub"
+    diagram="$1"
+
+    cat >"${sandbox}/work/chapters/chapter-1.md" <<EOF
+# Diagram Chapter
+
+A flowchart follows.
+
+\`\`\`{.mermaid}
+flowchart LR
+    A[Client] --> B[API]
+\`\`\`
+EOF
+
+    write_epub_config "${sandbox}/skelepress.config.yaml" epub
+    "${REAL_PYTHON3}" - "${sandbox}/skelepress.config.yaml" "${diagram}" <<'PY'
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+text = path.read_text()
+text = text.replace('  mermaid:\n    enabled: false',
+                    '  mermaid:\n    enabled: true')
+if sys.argv[2] != "":
+    text = text.replace('  mermaid:\n    enabled: true',
+                        f'  mermaid:\n    enabled: true\n    background: "{sys.argv[2]}"')
+path.write_text(text)
+PY
+
+    (
+      cd "${sandbox}/work" && "${sandbox}/bin/skelepress" render -c "${sandbox}/skelepress.config.yaml"
+    ) >"$out" 2>&1 || code=$?
+    if [[ "$code" != "0" ]]; then
+      fail "EPUB render with mermaid must succeed ($(tail -3 "$out"))"
+      rm -rf "$sandbox"
+      rm -f "$out"
+      return 1
+    fi
+    echo "$epub"
+  }
+
+  assert_card() {
+    local epub="$1" expect_class="$2"
+    "${REAL_PYTHON3}" - "$epub" "$expect_class" <<'PY'
+import sys
+import zipfile
+
+epub, expect_class = sys.argv[1], sys.argv[2] == "yes"
+archive = zipfile.ZipFile(epub)
+chapter = archive.read("EPUB/text/ch001.xhtml").decode("utf-8")
+styles = "\n".join(
+    e.text or ""
+    for name in archive.namelist()
+    if name.endswith(".xhtml")
+    for e in __import__("xml.etree.ElementTree", fromlist=["Element"]).fromstring(archive.read(name)).iter("{http://www.w3.org/1999/xhtml}style")
+)
+problems = []
+if "img.mermaid-diagram" not in styles:
+    problems.append("missing light-card stylesheet rule for img.mermaid-diagram")
+if expect_class and 'class="mermaid-diagram"' not in chapter:
+    problems.append("transparent background must tag the diagram image")
+if not expect_class and 'class="mermaid-diagram"' in chapter:
+    problems.append("explicit background must not tag the diagram image")
+print("CLEAN" if not problems else "DIRTY: " + "; ".join(problems))
+PY
+  }
+
+  local epub
+  epub="$(render_sandbox "")"
+  if [[ "$(assert_card "$epub" yes)" == CLEAN ]]; then
+    pass "the default transparent background paints a light card behind mermaid images"
+  else
+    fail "the default transparent background must paint a light card behind mermaid images: $(assert_card "$epub" yes)"
+  fi
+
+  epub="$(render_sandbox "white")"
+  if [[ "$(assert_card "$epub" no)" == CLEAN ]]; then
+    pass "an explicit consumer background is honoured without the card class"
+  else
+    fail "an explicit consumer background must be honoured without the card class: $(assert_card "$epub" no)"
+  fi
+
+  epub="$(render_sandbox "transparent")"
+  if [[ "$(assert_card "$epub" no)" == CLEAN ]]; then
+    pass "an explicit transparent background is honoured without the card class"
+  else
+    fail "an explicit transparent background must be honoured without the card class: $(assert_card "$epub" no)"
+  fi
+}
