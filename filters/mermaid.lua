@@ -65,16 +65,18 @@ local function simple_hash(s)
     -- modified to add space above and below the generated image
     -- The renderer exports PANDOC_MERMAID_BACKGROUND_EXPLICIT=1 only when the
     -- configuration declares filters.mermaid.background. Without that flag the
-    -- diagram is wrapped in a Div tagged mermaid-diagram so the shipped EPUB
-    -- stylesheet can paint a light card behind it: some readers (Apple Books)
-    -- ignore background-color on the img element itself, so the card needs a
-    -- block container. An explicit choice (including an explicit transparent)
+    -- diagram is wrapped in a Div tagged mermaid-diagram, for HTML-based output
+    -- only (epub/html), so the shipped EPUB stylesheet can paint a light card
+    -- behind it: some readers (Apple Books) ignore background-color on the img
+    -- element itself, so the card needs a block container. Other formats keep
+    -- the bare output. An explicit choice (including an explicit transparent)
     -- produces its own colour and gets no wrapper.
     local img = pandoc.Image({}, outfile)
     local top_space = pandoc.RawBlock("latex", "\\vspace{1.2em}")
     local bottom_space = pandoc.RawBlock("latex", "\\vspace{1.2em}")
     local inner = { top_space, pandoc.Para(img), bottom_space }
-    if os.getenv("PANDOC_MERMAID_BACKGROUND_EXPLICIT") ~= "1" then
+    if (FORMAT == "epub" or FORMAT == "html" or FORMAT == "html5")
+        and os.getenv("PANDOC_MERMAID_BACKGROUND_EXPLICIT") ~= "1" then
         return { pandoc.Div(inner, pandoc.Attr("", { "mermaid-diagram" }, {})) }
     end
     return inner
