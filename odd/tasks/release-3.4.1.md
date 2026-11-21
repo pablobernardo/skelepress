@@ -39,8 +39,8 @@ English; no conversation transcripts.
 
 | ID | Specs | Route | Commit |
 | --- | --- | --- | --- |
-| T1 | S1-S3 | Parent inline: RED test for absolute template rejection, fix `resolve_template`, docs sentence | (fill) |
-| T2 | S4, S8 | Parent inline: RED test for malformed dict entry, guard file field, catalog strings in i18n/locales/* | (fill) |
+| T1 | S1-S3 | Parent inline: RED test for absolute template rejection, fix `resolve_template`, docs sentence | 499cc1d |
+| T2 | S4, S8 | Parent inline: RED test for malformed dict entry, guard file field, catalog strings in i18n/locales/* | cafa31f |
 | T3 | S5 | Parent inline: build.py gating naming/structure clarification | (fill) |
 | T4 | S6 | Parent inline: test cleanup in tests/l1/bookkit.sh | (fill) |
 | T5 | S7 | Parent inline: feature-doc row fix in odd/tasks/release-3.4.0.md | (fill) |
@@ -73,3 +73,8 @@ English; no conversation transcripts.
   the `file` field check with a new catalog string
   (render.error.explicit_file_missing_field) in the four locales. The renderer
   endpoint runs before the validator, so naming the field is its own duty.
+- L5: T3 evidence — readability-only change, behavior verified unchanged
+  (focused bookkit suite 79/0): `modes_gated` renamed to
+  `latex_switches_gated`, the hardcoded ["pdf"] gate named as
+  LATEX_ONLY_FORMAT, and one comment block stating the three-point coupling
+  (gate, format_gated_entry, pdf_requested in emit_config).
