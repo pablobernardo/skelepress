@@ -67,7 +67,7 @@ then CLI/bookkit, then tests and docs.
 | T3 | S4, S12 | Parent inline: error surface (die messages naming field and accepted values; catalogs only if any help/user surface changes) | (fill) |
 | T4 | S6, S7, S8 | Parent inline: L1 tests in `tests/l1/bookkit.sh` (+ epub fixtures where applicable), sway/differential for declared-nothing path | (fill) |
 | T5 | S9, S14 | Writer or inline: docs — `docs/books.md`, `docs/usage.md`, `scripts/tools/bookkit/README.md` (PDF-only sentence at README 168-170 must not go stale) | (this change, uncommitted) |
-| T6 | S15 | Parent inline: release pre-p — `VERSION` 3.3.1 -> 3.4.0, `CHANGELOG.md` | (fill) |
+| T6 | S15 | Parent inline: release prep — `VERSION` 3.3.1 -> 3.4.0, `CHANGELOG.md` | (this change, release-prep commit) |
 | T7 | S15 | Parent inline: publication per `docs/releasing.md` (tag + release only on explicit maintainer order) | (fill) |
 
 ## Log
@@ -140,3 +140,10 @@ then CLI/bookkit, then tests and docs.
   what the generated configuration declares. Verification is grep-based: there
   is no docs runner, and the wording avoids any EPUBCheck claim, which stays
   with the separate S6 acceptance item and is not yet run.
+- L7 (S6 acceptance, evidence): EPUBCheck acceptance run against the shipped
+  examples rendered through the real bookkit flow. Copies of
+  examples/book-kit/single and examples/book-kit/series in a temp run
+  directory, each declaring formats: [pdf, epub] (manifest for single,
+  series.yaml default for the series); skelepress book rendered all 3 volumes
+  in one run, each producing a PDF and an EPUB. EPUBCheck (local binary) on
+  all 3 EPUBs: 0 fatal errors, 0 errors, 0 warnings, 0 hints. S6 covered.

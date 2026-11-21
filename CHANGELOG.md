@@ -7,6 +7,36 @@ The project follows semantic versioning and keeps two versioned contracts:
 - `VERSION` for the toolkit version
 - `skelepress.config.yaml -> version` for the configuration contract
 
+## [3.4.0] - 2026-11-20
+
+### Added
+
+- A volume can declare its output formats: `skelepress book` renders a PDF and
+  a valid EPUB per volume in one run when the manifest or the series default
+  asks for `formats: [pdf, epub]`. Values come from the formats the render
+  contract already allows (`pdf`, `epub`); `[pdf]` stays the default and a
+  manifest that declares nothing or only `pdf` produces exactly what it
+  produced before. An unknown value fails naming the field and the accepted
+  values (#163).
+- Per-volume and per-series template selection: an optional `template` field in
+  `manifest.yaml` and `series.yaml` picks the book template where the book
+  structure lives. A bare name selects a shipped builtin; any other value is a
+  path relative to the file that declares it. Precedence: `--template` flag >
+  volume manifest template > series.yaml template > builtin default (#216).
+- The generated configuration for a volume that renders an EPUB gates its
+  LaTeX switch files (`\mainmatter`, `\appendix`, contents guards) to the PDF
+  job through a new optional `{file, formats}` entry shape on
+  `input.explicit_files`, so the EPUB carries no raw LaTeX markup.
+
+### Compatibility
+
+- The bookkit manifest contract (`manifest_version: 1`) gains two optional
+  fields; the main configuration contract version stays `1`. Consumers that
+  declare neither field generate byte-identical configurations to 3.3.1.
+- A volume that asks only for EPUB omits `xelatex` from
+  `runtime.required_commands`, so preflight no longer demands a TeX engine for
+  it; `pandoc.pdf_engine` stays for PDF jobs.
+
 ## [3.3.1] - 2026-11-20
 
 ### Fixed
