@@ -1,11 +1,15 @@
 <style>
 /* A spine document already starts a new reader page. Keep Pandoc's default
-   stylesheet, but do not force another page before its initial heading. */
+   stylesheet, but do not force another page before its initial heading.
+   Neutralize the default `page-break-before: always` with `avoid` instead of
+   `auto`: Apple Books mis-positions internal-link jumps to anchors when an
+   explicit `auto` participates in the cascade (blank pages until repaginating);
+   `avoid` cancels the forced break without that defect. */
 body > h1:first-child,
 body > section:first-child > h1:first-child,
 body > nav:first-child > h1:first-child {
-  page-break-before: auto;
-  break-before: auto;
+  page-break-before: avoid;
+  break-before: avoid;
 }
 
 /* A {.page-break} heading asks for its own page. The heading-page-break filter
