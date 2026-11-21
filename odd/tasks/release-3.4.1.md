@@ -41,7 +41,7 @@ English; no conversation transcripts.
 | --- | --- | --- | --- |
 | T1 | S1-S3 | Parent inline: RED test for absolute template rejection, fix `resolve_template`, docs sentence | 499cc1d |
 | T2 | S4, S8 | Parent inline: RED test for malformed dict entry, guard file field, catalog strings in i18n/locales/* | cafa31f |
-| T3 | S5 | Parent inline: build.py gating naming/structure clarification | (fill) |
+| T3 | S5 | Parent inline: build.py gating naming/structure clarification | 4473313 |
 | T4 | S6 | Parent inline: test cleanup in tests/l1/bookkit.sh | (fill) |
 | T5 | S7 | Parent inline: feature-doc row fix in odd/tasks/release-3.4.0.md | (fill) |
 | T6 | S9 | Parent inline: VERSION + CHANGELOG, make gate, PR closes #219 and #220 | (fill) |
@@ -78,3 +78,6 @@ English; no conversation transcripts.
   `latex_switches_gated`, the hardcoded ["pdf"] gate named as
   LATEX_ONLY_FORMAT, and one comment block stating the three-point coupling
   (gate, format_gated_entry, pdf_requested in emit_config).
+- L6: T4/T5 evidence — R2-004 cleanup (dead `local tool=` and duplicated
+  `mkdir -p checkout` removed from the series test, 31/0 after), R2-005 fix
+  (the release-3.4.0.md T1 row now names the plural `formats` field).

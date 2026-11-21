@@ -62,7 +62,7 @@ then CLI/bookkit, then tests and docs.
 
 | ID | Specs | Route | Commit |
 | --- | --- | --- | --- |
-| T1 | S13, S10, S1-S2 | Parent inline: schema fields (`format`, `template`) in `series.schema.json` + `manifest.schema.json`; main schema `explicit_files` object form | (fill) |
+| T1 | S13, S10, S1-S2 | Parent inline: schema fields (`formats`, `template`) in `series.schema.json` + `manifest.schema.json`; main schema `explicit_files` object form | (fill) |
 | T2 | S3-S5, S8, S10-S12 | Parent inline: renderer `select_chapter_files` per-format gating; `build.py` plan construction (`merge_defaults` shared tuple gains `template`/`formats`), template resolution, format-aware `emit_config` (mode files gated to `pdf` when EPUB is requested) | (fill) |
 | T3 | S4, S12 | Parent inline: error surface (die messages naming field and accepted values; catalogs only if any help/user surface changes) | (fill) |
 | T4 | S6, S7, S8 | Parent inline: L1 tests in `tests/l1/bookkit.sh` (+ epub fixtures where applicable), sway/differential for declared-nothing path | (fill) |

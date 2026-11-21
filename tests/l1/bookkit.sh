@@ -95,7 +95,6 @@ PY
 # Series defaults and per-volume overrides for the 3.4.0 fields: formats and
 # template, resolved and emitted through the public --check interface.
 run_bookkit_series_formats_template_test() {
-  local tool="${ROOT_DIR}/scripts/tools/bookkit/build.py"
   local scratch code seriesdir config_a config_b
   scratch="$(mktemp -d)"
   seriesdir="$scratch/projects/series"
@@ -113,7 +112,6 @@ run_bookkit_series_formats_template_test() {
   printf '%s\n' 'manifest_version: 1' 'profile: book' 'title: "Formats Three"' \
     'formats: [epub]' 'chapters: [chapter.md]' >"$seriesdir/volume-c/manifest.yaml"
   printf '# C\n\nThree.\n' >"$seriesdir/volume-c/chapter.md"
-  mkdir -p "$scratch/checkout"
 
   set +e
   (cd "$scratch/checkout" && HOME="$scratch/no-home" SKELEPRESS_LANG=en \
