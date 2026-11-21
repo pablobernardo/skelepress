@@ -70,6 +70,17 @@
       "minimum": 1,
       "description": "Optional. The volume's first chapter prints with this number: the generated mode file sets the LaTeX chapter counter to chapter_start - 1."
     },
+    "formats": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "enum": ["pdf", "epub"] },
+      "description": "Optional output formats for this volume, written into the generated configuration. Values come from the renderer's accepted formats (pdf, epub). Overrides the series default; default when absent: [pdf]."
+    },
+    "template": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Optional book template for this volume. A bare name selects a shipped builtin template; any other value is a path relative to the volume directory. Overrides the series template. Precedence: --template flag > volume template > series template > builtin default."
+    },
     "chapters_dir": {
       "type": "string",
       "minLength": 1,

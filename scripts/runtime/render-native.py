@@ -99,11 +99,21 @@ def natural_key(path: Path) -> list[tuple[int, int, str]]:
     return [(0, len(part), part) if part.isdigit() else (1, 0, part) for part in parts]
 
 
-def select_chapter_files(input_cfg: dict, chapters_dir: Path) -> list[Path]:
+def select_chapter_files(input_cfg: dict, chapters_dir: Path, format_name: str) -> list[Path]:
     explicit_files = input_cfg.get("explicit_files") or []
     if explicit_files:
         selected_files = []
         for name in explicit_files:
+            # A file may gate itself to formats: a LaTeX-only switch is real for
+            # the PDF and noise for an EPUB, so a plain string lands in every
+            # format exactly as before, while an entry with a formats list only
+            # joins the formats it names. The schema keeps the shape; here only
+            # the per-format decision happens.
+            if isinstance(name, dict):
+                gated_formats = name.get("formats")
+                if isinstance(gated_formats, list) and format_name not in gated_formats:
+                    continue
+                name = name.get("file")
             candidate = chapters_dir / str(name)
             if not candidate.exists():
                 die(t("render.error.explicit_file_missing", "Explicit file not found: {path}", path=candidate))
@@ -258,7 +268,7 @@ def build_single_plan(cfg_user: dict, cfg_path: Path, root_dir: Path, format_nam
     if not chapters_dir.exists():
         die(t("render.error.chapters_dir_missing", "input.chapters_dir does not exist: {path}", path=chapters_dir))
 
-    selected_files = select_chapter_files(input_cfg, chapters_dir)
+    selected_files = select_chapter_files(input_cfg, chapters_dir, format_name)
     if not selected_files:
         die(t("render.error.no_chapters", "No chapters found to render"))
 

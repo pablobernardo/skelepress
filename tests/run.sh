@@ -137,6 +137,7 @@ main() {
   run_epub_metadata_precedence_test
   run_epub_resource_path_test
   run_epub_latex_markup_test
+  run_epub_explicit_entry_formats_test
   run_epub_document_metadata_cover_test
   run_epub_heading_emoji_test
   run_epub_document_links_stay_inside_publication_test
@@ -149,6 +150,8 @@ main() {
   run_bookkit_tests
   run_bookkit_toc_separators_test
   run_bookkit_series_defaults_test
+  run_bookkit_series_formats_template_test
+  run_bookkit_template_resolution_test
   run_book_command_test
 
   echo ""

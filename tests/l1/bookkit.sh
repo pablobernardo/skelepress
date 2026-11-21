@@ -92,7 +92,227 @@ PY
   rm -rf "$scratch"
 }
 
-# Exercise inheritance through emitted configurations, not adapter internals.
+# Series defaults and per-volume overrides for the 3.4.0 fields: formats and
+# template, resolved and emitted through the public --check interface.
+run_bookkit_series_formats_template_test() {
+  local tool="${ROOT_DIR}/scripts/tools/bookkit/build.py"
+  local scratch code seriesdir config_a config_b
+  scratch="$(mktemp -d)"
+  seriesdir="$scratch/projects/series"
+  mkdir -p "$seriesdir/volume-a" "$seriesdir/volume-b" "$seriesdir/volume-c" "$scratch/checkout"
+
+  printf '%s\n' 'manifest_version: 1' 'template: book-novel' \
+    'formats: [pdf, epub]' 'volumes: [volume-a, volume-b, volume-c]' >"$seriesdir/series.yaml"
+  printf '%s\n' 'manifest_version: 1' 'profile: book' 'title: "Formats One"' \
+    'chapters: [chapter.md]' >"$seriesdir/volume-a/manifest.yaml"
+  printf '# C\n\nOne.\n' >"$seriesdir/volume-a/chapter.md"
+  printf '%s\n' 'manifest_version: 1' 'profile: book' 'title: "Formats Two"' \
+    'template: book' 'formats: [pdf]' \
+    'chapters: [chapter.md]' >"$seriesdir/volume-b/manifest.yaml"
+  printf '# C\n\nTwo.\n' >"$seriesdir/volume-b/chapter.md"
+  printf '%s\n' 'manifest_version: 1' 'profile: book' 'title: "Formats Three"' \
+    'formats: [epub]' 'chapters: [chapter.md]' >"$seriesdir/volume-c/manifest.yaml"
+  printf '# C\n\nThree.\n' >"$seriesdir/volume-c/chapter.md"
+  mkdir -p "$scratch/checkout"
+
+  set +e
+  (cd "$scratch/checkout" && HOME="$scratch/no-home" SKELEPRESS_LANG=en \
+    "$CLI" book --check "$seriesdir") >"$scratch/out.stdout" 2>"$scratch/out.stderr"
+  code=$?
+  set -e
+  assert_exit_code "0" "$code" "book --check accepts series formats and template fields"
+  if [[ -s "$scratch/out.stderr" ]]; then
+    fail "book --check formats/template run must have empty stderr"
+  else
+    pass "book --check formats/template run has empty stderr"
+  fi
+
+  config_a="$scratch/checkout/.skelepress/series/volume-a/skelepress.config.yaml"
+  config_b="$scratch/checkout/.skelepress/series/volume-b/skelepress.config.yaml"
+  config_c="$scratch/checkout/.skelepress/series/volume-c/skelepress.config.yaml"
+  assert_file_exists "$config_a" "volume-a generates its configuration"
+  assert_file_exists "$config_b" "volume-b generates its configuration"
+  assert_file_exists "$config_c" "volume-c generates its configuration"
+
+  # volume-a inherits both series defaults: the generated configuration names
+  # both formats, keeps xelatex in runtime (the PDF job needs a TeX engine and
+  # preflight must demand it) and keeps pdf_engine for that job.
+  assert_contains "$config_a" 'formats: \[pdf, epub\]' "volume-a inherits the series formats default"
+  assert_contains "$config_a" '  template: "book-novel"' "volume-a inherits the series template default"
+  if grep -q '^    - xelatex$' "$config_a"; then
+    pass "the both-formats volume keeps its TeX engine for the PDF job"
+  else
+    fail "the both-formats volume must keep xelatex in runtime"
+  fi
+  assert_contains "$config_a" 'pdf_engine: xelatex' "the PDF job keeps its declared engine"
+  assert_contains "$config_a" '^    - file: ".*generated/00-mainmatter\.md"$' \
+    "the LaTeX mainmatter switch is a format-gated entry"
+  assert_contains "$config_a" '^      formats: \[pdf\]$' "the gated entry names its own formats"
+
+  # volume-b overrides both fields to the PDF-only defaults, so its generated
+  # configuration must keep today's shape: a plain formats list and plain
+  # string entries, no gating anywhere.
+  assert_contains "$config_b" 'formats: \[pdf\]' "volume-b keeps its declared formats"
+  assert_contains "$config_b" '  template: "book"' "volume-b overrides the series template"
+  if grep -q 'file:' "$config_b"; then
+    fail "a PDF-only volume must keep plain explicit_files entries"
+  else
+    pass "a PDF-only volume keeps plain explicit_files entries"
+  fi
+  if grep -q '^    - xelatex$' "$config_b"; then
+    pass "a PDF-only volume still demands its TeX engine"
+  else
+    fail "a PDF-only volume must keep xelatex in runtime"
+  fi
+
+  # volume-c asks only for an EPUB: the generated configuration must not make
+  # preflight demand a TeX engine for it (S5), and its LaTeX switch file stays
+  # gated to the formats that can interpret it.
+  assert_contains "$config_c" 'formats: \[epub\]' "volume-c keeps its declared formats"
+  if grep -q '^    - xelatex$' "$config_c"; then
+    fail "an EPUB-only volume must not demand a TeX engine through runtime"
+  else
+    pass "an EPUB-only volume does not demand a TeX engine through runtime"
+  fi
+  assert_contains "$config_c" '  template: "book-novel"' "volume-c inherits the series template default"
+
+  # --- a series-level template path resolves against the series directory --
+  # The inherited value must not be re-resolved as if the volume declared it:
+  # a regression resolving the series default against the volume directory
+  # would fail here with the volume-relative lookup.
+
+  local series_path_dir
+  series_path_dir="$scratch/projects/series-path"
+  mkdir -p "$series_path_dir/volume"
+  printf '%s\n' '\\documentclass{book}' '\\begin{document}' '$body$' '\\end{document}' \
+    >"$series_path_dir/series-template.tex"
+  printf '%s\n' 'manifest_version: 1' 'template: series-template.tex' \
+    'volumes: [volume]' >"$series_path_dir/series.yaml"
+  printf '%s\n' 'manifest_version: 1' 'profile: book' 'title: "Series Path"' \
+    'chapters: [chapter.md]' >"$series_path_dir/volume/manifest.yaml"
+  printf '# C\n\nOne.\n' >"$series_path_dir/volume/chapter.md"
+
+  set +e
+  (cd "$scratch/checkout" && HOME="$scratch/no-home" SKELEPRESS_LANG=en \
+    "$CLI" book --check "$series_path_dir") >"$scratch/sp.stdout" 2>"$scratch/sp.stderr"
+  code=$?
+  set -e
+  assert_exit_code "0" "$code" "a series-level template path plans"
+  assert_contains "$scratch/checkout/.skelepress/series-path/volume/skelepress.config.yaml" \
+    '  template: "../series-template.tex"' \
+    "the inherited series template resolves relative to the series directory"
+
+  # The generated configuration must plan through the public renderer.
+  local plan plan_log plan_code
+  plan="$(mktemp)"
+  plan_log="$(mktemp)"
+  set +e
+  (cd "$scratch/checkout/.skelepress/series/volume-a" && SKELEPRESS_LANG=en \
+    "$CLI" render -c skelepress.config.yaml --dry-run --json) >"$plan" 2>"$plan_log"
+  plan_code=$?
+  set -e
+  assert_exit_code "0" "$plan_code" "the generated both-formats configuration plans"
+  assert_json_expr "$plan" 'd["plan_version"] == 2' "the EPUB-capable volume plans both formats"
+  assert_json_expr "$plan" 'not any(p.endswith("generated/00-mainmatter.md") or p.endswith("generated/01-appendix.md") for p in d["jobs"][1]["chapters"])' \
+    "the EPUB job carries no generated LaTeX switch file"
+  assert_json_expr "$plan" 'any(p.endswith("generated/00-mainmatter.md") for p in d["jobs"][0]["chapters"])' \
+    "the PDF job keeps its LaTeX switch file"
+  rm -f "$plan" "$plan_log"
+
+  plan="$(mktemp)"
+  plan_log="$(mktemp)"
+  set +e
+  (cd "$scratch/checkout/.skelepress/series/volume-c" && SKELEPRESS_LANG=en \
+    "$CLI" render -c skelepress.config.yaml --dry-run --json) >"$plan" 2>"$plan_log"
+  plan_code=$?
+  set -e
+  assert_exit_code "0" "$plan_code" "the generated EPUB-only configuration plans"
+  assert_json_expr "$plan" 'd["plan_version"] == 1' "the EPUB-only volume plans a single job"
+  assert_json_expr "$plan" '"epub" in d["pandoc"]["target"]' "the EPUB-only plan targets an EPUB artifact"
+  assert_json_expr "$plan" 'not any(p.endswith("generated/00-mainmatter.md") for p in d["chapters"])' \
+    "the EPUB-only plan carries no generated LaTeX switch file"
+  rm -f "$plan" "$plan_log"
+
+  # --- an unknown format fails naming the field and the accepted values ---
+
+  printf 'formats: [docx]\n' >>"$seriesdir/volume-b/manifest.yaml"
+  set +e
+  (cd "$scratch/checkout" && HOME="$scratch/no-home" SKELEPRESS_LANG=en \
+    "$CLI" book --check "$seriesdir") >"$scratch/bad.stdout" 2>"$scratch/bad.stderr"
+  code=$?
+  set -e
+  assert_exit_code "1" "$code" "an unknown format fails the plan"
+  assert_contains "$scratch/bad.stdout" "formats\.\[0\]" \
+    "the failure names the offending 'formats' entry"
+  assert_contains "$scratch/bad.stdout" "must be one of: pdf, epub" \
+    "the failure names the accepted values"
+
+  rm -rf "$scratch"
+}
+
+# The template declaration walks the same precedence as every other field,
+# with the one-shot --template flag always outranking what a manifest declares.
+run_bookkit_template_resolution_test() {
+  local tool="${ROOT_DIR}/scripts/tools/bookkit/build.py"
+  local single="${ROOT_DIR}/examples/book-kit/single"
+  local scratch code project
+  scratch="$(mktemp -d)"
+  project="$scratch/project"
+  cp -R "$single" "$project"
+  printf '# Chapter\n\nDeclared file content.\n' >"$project/chapter.md"
+
+  # --- a path is resolved against the directory holding the manifest ------
+
+  mkdir -p "$project/local"
+  printf '%s\n' '\\documentclass{book}' '\\begin{document}' '$body$' '\\end{document}' \
+    >"$project/local/book-template.tex"
+  printf 'template: local/book-template.tex\n' >>"$project/manifest.yaml"
+
+  set +e
+  python3 "$tool" --check --out "$scratch/out-path" "$project" >"$scratch/log-path" 2>&1
+  code=$?
+  set -e
+  assert_exit_code "0" "$code" "a manifest template path resolves from the project directory"
+  assert_contains "$scratch/out-path/project/skelepress.config.yaml" '  template: "local/book-template.tex"' \
+    "a manifest template path reaches the generated configuration"
+
+  # --- a missing template path fails before anything is built -------------
+
+  printf '%s\n' 'manifest_version: 1' 'profile: book' 'title: "Relative Test"' \
+    'chapters: [chapter.md]' 'template: missing/never-there.tex' >"$project/manifest.yaml"
+  set +e
+  python3 "$tool" --check --out "$scratch/out-missing" "$project" >"$scratch/log-missing" 2>&1
+  code=$?
+  set -e
+  assert_exit_code "1" "$code" "a manifest template pointing nowhere fails the plan"
+  assert_contains "$scratch/log-missing" "volume 'project': template file not found" \
+    "the failure names the volume and the template"
+
+  # --- the --template flag outranks what a manifest declares --------------
+
+  printf '%s\n' 'manifest_version: 1' 'profile: book' 'title: "Precedence Test"' \
+    'chapters: [chapter.md]' 'template: book-novel' >"$project/manifest.yaml"
+  set +e
+  python3 "$tool" --check --out "$scratch/out-flag" --template book-manual "$project" >"$scratch/log-flag" 2>&1
+  code=$?
+  set -e
+  assert_exit_code "0" "$code" "an explicit --template flag still plans"
+  assert_contains "$scratch/out-flag/project/skelepress.config.yaml" '  template: "book-manual"' \
+    "the --template flag outranks a manifest template"
+
+  # --- the manifest template outranks the builtin default ----------------
+
+  set +e
+  python3 "$tool" --check --out "$scratch/out-manifest" "$project" >"$scratch/log-manifest" 2>&1
+  code=$?
+  set -e
+  assert_exit_code "0" "$code" "a manifest template plans with no flag"
+  assert_contains "$scratch/out-manifest/project/skelepress.config.yaml" '  template: "book-novel"' \
+    "a manifest template outranks the builtin default"
+
+  rm -rf "$scratch"
+}
+
 run_book_running_headers_test() {
   local scratch
   scratch="$(mktemp -d)"

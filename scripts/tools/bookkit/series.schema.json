@@ -35,6 +35,17 @@
       "type": "boolean",
       "description": "Optional shared PDF running-header request; a volume may override it with true or false."
     },
+    "formats": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "enum": ["pdf", "epub"] },
+      "description": "Optional shared output-formats request; a volume's formats override it. Values come from the renderer's accepted formats (pdf, epub). Default when absent: [pdf]."
+    },
+    "template": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Optional shared book-template request; a volume's template overrides it. A bare name selects a shipped builtin template; any other value is a path relative to the directory holding this series.yaml. Precedence: --template flag > volume template > series template > builtin default."
+    },
     "toc_separators": {
       "type": "string",
       "enum": ["none", "space", "rule", "label"],

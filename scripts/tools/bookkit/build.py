@@ -357,6 +357,8 @@ def merge_defaults(manifest: dict, defaults: dict) -> dict:
         "running_headers",
         "toc_separators",
         "toc_labels",
+        "formats",
+        "template",
     )
     merged = dict(manifest)
     for key in shared:
@@ -365,13 +367,31 @@ def merge_defaults(manifest: dict, defaults: dict) -> dict:
     return merged
 
 
+def resolve_template(raw: str, base: Path, volume_name: str) -> str:
+    """A declared template: a bare name is shipped, any other value is a path.
+
+    The path is relative to the directory holding the manifest that declared
+    it (the volume directory, or the series directory for a series default)
+    and must exist before anything is built, exactly like the flag's own path.
+    """
+    value = raw.strip()
+    if is_bare_name(value):
+        # A name is a template the toolkit ships, so the validator and the
+        # renderer resolve it and there is no path to check here.
+        return value
+    resolved = (base / value).resolve()
+    if not resolved.is_file():
+        die(f"volume '{volume_name}': template file not found: {resolved}")
+    return str(resolved)
+
+
 def build_volume(
     manifest: dict,
     volume_name: str,
     volume_dir: Path,
     defaults: dict,
     out_volume_dir: Path,
-    template: str,
+    template: str | None,
 ) -> Path:
     """Write the generated files and one skelepress.config.yaml; return the config path."""
 
@@ -396,6 +416,29 @@ def build_volume(
             f"volume '{volume_name}': 'language' must be one of"
             f" {', '.join(LANG_CODES)} (got {language!r})"
         )
+
+    # The template walks the declared precedence: the one-shot --template flag
+    # outranks the volume's own template, which outranks the series default,
+    # which outranks the builtin name. A flag path was already validated in
+    # main(); declared values validate here, before anything is built.
+    if template is not None:
+        template_used = template
+    elif "template" in manifest:
+        # A declared template path is relative to the directory holding the
+        # volume's manifest.yaml.
+        template_used = resolve_template(manifest["template"], volume_dir, volume_name)
+    elif "template" in defaults:
+        # An inherited series template path is relative to the directory
+        # holding series.yaml, not to the volume.
+        template_used = resolve_template(defaults["template"], volume_dir.parent, volume_name)
+    else:
+        template_used = DEFAULT_TEMPLATE
+
+    # Where the volume's output is decided. The contract pins the vocabulary
+    # (pdf, epub), so the shape and values are already validated; the format
+    # list only decides what the generated configuration asks for.
+    formats: list[str] = merged.get("formats") or ["pdf"]
+    epub_requested = "epub" in formats
 
     front = resolve_listed(
         ordered_entries("front_matter", merged.get("front_matter"), volume_name), volume_dir
@@ -431,7 +474,10 @@ def build_volume(
     # Generated mode files live in the run output, never inside the content
     # directories. explicit_files resolves against the volume directory
     # (input.chapters_dir is "."), so the tool computes the relative hops.
+    # The switches are LaTeX: when the volume outputs more than PDF they are
+    # format-gated entries, so an EPUB never receives them.
     generated_dir = out_volume_dir / "generated"
+    modes_gated = epub_requested
     mainmatter_file = generated_dir / "00-mainmatter.md"
     mainmatter_text = "\\mainmatter\n"
     if chapter_start is not None:
@@ -446,8 +492,14 @@ def build_volume(
     # 00 and 01 name the two structural switches; the contents guards start at
     # 10 so the numbering never collides as entries are added.
     guard_counter = [10]
-    explicit_files = with_toc_guards(front, generated_dir, volume_dir, guard_counter)
-    explicit_files.append(relpath(mainmatter_file, volume_dir))
+    explicit_files: list[str | dict] = []
+    explicit_files.extend(
+        format_gated_entry(entry, modes_gated)
+        for entry in with_toc_guards(front, generated_dir, volume_dir, guard_counter)
+    )
+    explicit_files.append(
+        format_gated_entry(relpath(mainmatter_file, volume_dir), modes_gated)
+    )
     explicit_files += list(chapters)
     if back:
         appendix_file = generated_dir / "01-appendix.md"
@@ -458,16 +510,44 @@ def build_volume(
                 toc_separators, toc_labels.get("appendices"), "BookTocSeparatorAppendices"
             ),
         )
-        explicit_files.append(relpath(appendix_file, volume_dir))
-        explicit_files += with_toc_guards(back, generated_dir, volume_dir, guard_counter)
+        explicit_files.append(
+            format_gated_entry(relpath(appendix_file, volume_dir), modes_gated)
+        )
+        explicit_files.extend(
+            format_gated_entry(entry, modes_gated)
+            for entry in with_toc_guards(back, generated_dir, volume_dir, guard_counter)
+        )
 
     out_volume_dir.mkdir(parents=True, exist_ok=True)
     config_path = out_volume_dir / "skelepress.config.yaml"
     config_path.write_text(
-        emit_config(merged, title, volume_dir, out_volume_dir, explicit_files, template),
+        emit_config(
+            merged,
+            title,
+            volume_dir,
+            out_volume_dir,
+            explicit_files,
+            template_used,
+            formats,
+        ),
         encoding="utf-8",
     )
     return config_path
+
+
+def format_gated_entry(relative: str, gated: bool) -> str | dict:
+    """One explicit_files entry, gated to the formats that can use it.
+
+    The LaTeX switches only make sense to a PDF job, so a volume that asks
+    for an EPUB publishes them as gated entries; a PDF-only volume keeps the
+    plain string form, which lands in every format exactly as before.
+    """
+    if not gated:
+        return relative
+    return {
+        "file": relative,
+        "formats": ["pdf"],
+    }
 
 
 def emit_config(
@@ -475,8 +555,9 @@ def emit_config(
     title: str,
     volume_dir: Path,
     out_volume_dir: Path,
-    explicit_files: list[str],
+    explicit_files: list[str | dict],
     template: str,
+    formats: list[str],
 ) -> str:
     """One standard skelepress.config.yaml per volume, emitted as canonical text.
 
@@ -484,6 +565,9 @@ def emit_config(
     byte-identical whichever parser read the manifests.
     """
     slug = slugify(title)
+    # A TeX engine is a PDF requirement: when no PDF is requested the generated
+    # configuration must not make preflight demand one for the other formats.
+    pdf_requested = "pdf" in formats
     lines = [
         "# Generated by scripts/tools/bookkit/build.py. Do not edit:",
         "# change the volume's manifest.yaml (and series.yaml) instead.",
@@ -522,12 +606,19 @@ def emit_config(
             "  explicit_files:",
         ]
     )
-    lines.extend(f"    - {quoted(path)}" for path in explicit_files)
+    # Declared order is document order: a gated entry keeps exactly its place
+    # instead of being grouped after the plain entries.
+    for entry in explicit_files:
+        if isinstance(entry, dict):
+            lines.append(f"    - file: {quoted(entry['file'])}")
+            lines.append(f"      formats: [{', '.join(entry['formats'])}]")
+        else:
+            lines.append(f"    - {quoted(entry)}")
     lines.extend(
         [
             "",
             "output:",
-            "  formats: [pdf]",
+            f"  formats: [{', '.join(formats)}]",
             f"  dir: {quoted(relpath(out_volume_dir, volume_dir))}",
             f"  file_prefix: {quoted(slug)}",
             '  suffix: "${date:YYYYMMDD}"',
@@ -561,7 +652,9 @@ def emit_config(
             "runtime:",
             "  required_commands:",
             "    - pandoc",
-            "    - xelatex",
+            # A TeX engine is a PDF requirement: when no PDF is requested the
+            # generated configuration must not make preflight demand one.
+            *([] if not pdf_requested else ["    - xelatex"]),
             "    - python3",
             "  strict: true",
             "",
@@ -654,7 +747,7 @@ def main() -> None:
                 die(f"book template not found: {resolved_template}")
             explicit_template = str(resolved_template)
 
-    projects: list[tuple[Path, str]] = []
+    projects: list[tuple[Path, str | None]] = []
     for raw in args.projects:
         # Resolve the project before anything computes a path against it. The
         # output directory is already resolved, and on a platform where the two
@@ -668,12 +761,11 @@ def main() -> None:
             die(f"not a directory: {project}")
         if not (project / "series.yaml").is_file() and not (project / "manifest.yaml").is_file():
             die(f"no series.yaml or manifest.yaml in: {project}")
-        template = explicit_template if explicit_template else DEFAULT_TEMPLATE
-        projects.append((project, template))
+        projects.append((project, explicit_template))
 
     # Contract validation first, for every project, before anything is built:
     # a manifest that fails validation never reaches the build.
-    plans: list[tuple[Path, str, Path, dict, dict, bool, str]] = []
+    plans: list[tuple[Path, str, Path, dict, dict, bool, str | None]] = []
     for project, template in projects:
         series_path = project / "series.yaml"
         if series_path.is_file():
@@ -693,14 +785,14 @@ def main() -> None:
 
     out_root = Path(args.out).resolve()
     failures: list[str] = []
-    for project, volume_name, volume_dir, defaults, manifest, is_series, template in plans:
+    for project, volume_name, volume_dir, defaults, manifest, is_series, explicit_template in plans:
         # A series nests one output directory per volume; a single-volume
         # project is its own volume and does not repeat its name.
         out_volume_dir = (
             out_root / project.name / volume_name if is_series else out_root / project.name
         )
         print(f"==> {project.name}/{volume_name}")
-        config_path = build_volume(manifest, volume_name, volume_dir, defaults, out_volume_dir, template)
+        config_path = build_volume(manifest, volume_name, volume_dir, defaults, out_volume_dir, explicit_template)
         print(f"    config: {relpath(config_path, Path.cwd())}")
 
         if args.check:
