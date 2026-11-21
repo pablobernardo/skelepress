@@ -44,7 +44,7 @@ import os
 import re
 import subprocess
 import sys
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import NoReturn
 
 TOOL_DIR = Path(__file__).resolve().parent
@@ -76,6 +76,10 @@ LANG_CODES = ("en", "es", "pt", "gl")
 # adapter controls: before the first chapter and before the first appendix.
 TOC_SEPARATORS = ("none", "space", "rule", "label")
 DEFAULT_TOC_SEPARATORS = "space"
+# The only format that consumes the LaTeX switches: format_gated_entry gates
+# its entries to it and emit_config keeps xelatex in runtime.required_commands
+# exactly when a volume requests it.
+LATEX_ONLY_FORMAT = "pdf"
 
 
 def die(message: str) -> NoReturn:
@@ -379,6 +383,15 @@ def resolve_template(raw: str, base: Path, volume_name: str) -> str:
         # A name is a template the toolkit ships, so the validator and the
         # renderer resolve it and there is no path to check here.
         return value
+    if PurePosixPath(value).is_absolute():
+        # The contract keeps declared templates inside the project: a path is
+        # relative to the directory holding the file that declares it, and an
+        # absolute value would reach outside it. The --template flag is the
+        # one-shot escape hatch and resolves its own value instead.
+        die(
+            f"volume '{volume_name}': 'template' must be a builtin name or a"
+            f" path relative to the directory holding the file, got: {value}"
+        )
     resolved = (base / value).resolve()
     if not resolved.is_file():
         die(f"volume '{volume_name}': template file not found: {resolved}")
@@ -477,7 +490,13 @@ def build_volume(
     # The switches are LaTeX: when the volume outputs more than PDF they are
     # format-gated entries, so an EPUB never receives them.
     generated_dir = out_volume_dir / "generated"
-    modes_gated = epub_requested
+    # The gate is "any requested format that cannot consume LaTeX switches";
+    # today the only such format is epub, so this stays a boolean read off the
+    # declared formats. format_gated_entry hardcodes the LaTeX job as pdf and
+    # emit_config keys the xelatex entry in runtime.required_commands on the
+    # same fact: extend the format vocabulary and re-check all three spots
+    # (LATEX_ONLY_FORMAT is the marker they must agree on).
+    latex_switches_gated = epub_requested
     mainmatter_file = generated_dir / "00-mainmatter.md"
     mainmatter_text = "\\mainmatter\n"
     if chapter_start is not None:
@@ -494,11 +513,11 @@ def build_volume(
     guard_counter = [10]
     explicit_files: list[str | dict] = []
     explicit_files.extend(
-        format_gated_entry(entry, modes_gated)
+        format_gated_entry(entry, latex_switches_gated)
         for entry in with_toc_guards(front, generated_dir, volume_dir, guard_counter)
     )
     explicit_files.append(
-        format_gated_entry(relpath(mainmatter_file, volume_dir), modes_gated)
+        format_gated_entry(relpath(mainmatter_file, volume_dir), latex_switches_gated)
     )
     explicit_files += list(chapters)
     if back:
@@ -511,10 +530,10 @@ def build_volume(
             ),
         )
         explicit_files.append(
-            format_gated_entry(relpath(appendix_file, volume_dir), modes_gated)
+            format_gated_entry(relpath(appendix_file, volume_dir), latex_switches_gated)
         )
         explicit_files.extend(
-            format_gated_entry(entry, modes_gated)
+            format_gated_entry(entry, latex_switches_gated)
             for entry in with_toc_guards(back, generated_dir, volume_dir, guard_counter)
         )
 
@@ -536,17 +555,20 @@ def build_volume(
 
 
 def format_gated_entry(relative: str, gated: bool) -> str | dict:
-    """One explicit_files entry, gated to the formats that can use it.
+    """One explicit_files entry, gated to LATEX_ONLY_FORMAT so EPUB never gets it.
 
     The LaTeX switches only make sense to a PDF job, so a volume that asks
     for an EPUB publishes them as gated entries; a PDF-only volume keeps the
-    plain string form, which lands in every format exactly as before.
+    plain string form, which lands in every format exactly as before. The
+    hardcoded LATEX_ONLY_FORMAT here and the pdf_requested check in emit_config
+    (which keeps xelatex in runtime.required_commands) express the same fact:
+    pdf is the only format that consumes these entries.
     """
     if not gated:
         return relative
     return {
         "file": relative,
-        "formats": ["pdf"],
+        "formats": [LATEX_ONLY_FORMAT],
     }
 
 
@@ -565,8 +587,9 @@ def emit_config(
     byte-identical whichever parser read the manifests.
     """
     slug = slugify(title)
-    # A TeX engine is a PDF requirement: when no PDF is requested the generated
-    # configuration must not make preflight demand one for the other formats.
+    # A TeX engine is a PDF requirement (LATEX_ONLY_FORMAT): when no PDF is
+    # requested the generated configuration must not make preflight demand one
+    # for the other formats.
     pdf_requested = "pdf" in formats
     lines = [
         "# Generated by scripts/tools/bookkit/build.py. Do not edit:",

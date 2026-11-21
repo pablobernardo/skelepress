@@ -113,7 +113,14 @@ def select_chapter_files(input_cfg: dict, chapters_dir: Path, format_name: str) 
                 gated_formats = name.get("formats")
                 if isinstance(gated_formats, list) and format_name not in gated_formats:
                     continue
-                name = name.get("file")
+                declared = name.get("file")
+                if not isinstance(declared, str) or not declared.strip():
+                    die(t(
+                        "render.error.explicit_file_missing_field",
+                        "Explicit file entry is missing its 'file' value: {entry}",
+                        entry=json.dumps(name, sort_keys=True),
+                    ))
+                name = declared
             candidate = chapters_dir / str(name)
             if not candidate.exists():
                 die(t("render.error.explicit_file_missing", "Explicit file not found: {path}", path=candidate))

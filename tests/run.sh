@@ -79,6 +79,7 @@ main() {
   run_render_native_advanced_paths_test
   run_render_python39_test
   run_render_missing_explicit_file_test
+  run_render_malformed_explicit_entry_test
   run_render_top_level_division_test
   run_render_running_headers_test
   run_running_headers_preflight_test
@@ -151,6 +152,7 @@ main() {
   run_bookkit_toc_separators_test
   run_bookkit_series_defaults_test
   run_bookkit_series_formats_template_test
+  run_bookkit_template_absolute_path_test
   run_bookkit_template_resolution_test
   run_book_command_test
 

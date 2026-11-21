@@ -277,6 +277,64 @@ EOF
   rm -f "$out"
 }
 
+# The renderer runs without the validator (and the schema itself is only a
+# contract for validated configurations), so a malformed explicit_files object
+# entry must die naming its missing 'file' field instead of surfacing as a
+# confusing "Explicit file not found: .../None".
+run_render_malformed_explicit_entry_test() {
+  local sandbox out cfg
+  sandbox="$(new_test_tmpdir)" || return
+  mkdir -p "${sandbox}/bin" "${sandbox}/schemas" "${sandbox}/scripts" "${sandbox}/scripts/runtime" "${sandbox}/chapters" "${sandbox}/templates"
+
+  cp "$CLI" "${sandbox}/bin/skelepress"
+  chmod +x "${sandbox}/bin/skelepress"
+  cp "${ROOT_DIR}/scripts/runtime/i18n.sh" "${sandbox}/scripts/runtime/i18n.sh"
+  cp "${ROOT_DIR}/scripts/runtime/validate-config.py" "${sandbox}/scripts/runtime/validate-config.py"
+  cp "${ROOT_DIR}/scripts/runtime/schema_runtime.py" "${sandbox}/scripts/runtime/schema_runtime.py"
+  cp "${ROOT_DIR}/scripts/runtime/template_runtime.py" "${sandbox}/scripts/runtime/template_runtime.py"
+  cp "${ROOT_DIR}/scripts/runtime/top_level_division_runtime.py" "${sandbox}/scripts/runtime/top_level_division_runtime.py"
+  cp "${ROOT_DIR}/scripts/runtime/render-native.py" "${sandbox}/scripts/runtime/render-native.py"
+  cp "${ROOT_DIR}/scripts/runtime/prepare-emojis.py" "${sandbox}/scripts/runtime/prepare-emojis.py"
+  chmod +x "${sandbox}/scripts/runtime/validate-config.py" "${sandbox}/scripts/runtime/render-native.py" "${sandbox}/scripts/runtime/prepare-emojis.py"
+  cp "${ROOT_DIR}/schemas/skelepress-config.schema.json" "${sandbox}/schemas/skelepress-config.schema.json"
+
+  cat >"${sandbox}/chapters/01-intro.md" <<'EOF'
+# Intro
+
+Only one file present
+EOF
+
+  cat >"${sandbox}/templates/default.tex" <<'EOF'
+\documentclass{article}
+\begin{document}
+$body$
+\end{document}
+EOF
+
+  cat >"${sandbox}/metadata.yaml" <<'EOF'
+title: Malformed explicit
+EOF
+
+  # The schema demands a 'file' per object entry; this one only carries the
+  # formats gate, so the renderer itself must name the missing field.
+  sed 's/- "99-missing.md"/- formats: [pdf]/' \
+    "${FIXTURES_DIR}/render-missing-explicit.config.yaml" >"${sandbox}/malformed.config.yaml"
+
+  out="$(new_test_tmpfile)" || return
+
+  set +e
+  SKELEPRESS_LANG=en "${REAL_PYTHON3}" "${sandbox}/scripts/runtime/render-native.py" \
+    "${sandbox}/malformed.config.yaml" "${sandbox}" >"$out" 2>&1
+  local code=$?
+  set -e
+
+  assert_exit_code "1" "$code" "render fails when an explicit_files entry lacks its file value"
+  assert_contains "$out" "missing its 'file' value" "render names the missing file field"
+
+  rm -rf "$sandbox"
+  rm -f "$out"
+}
+
 # ---------------------------------------------------------------------------
 # S1 — config contract alignment
 #   input.order / output.keep_merged_markdown / document.* template vars /
