@@ -66,7 +66,7 @@ then CLI/bookkit, then tests and docs.
 | T2 | S3-S5, S8, S10-S12 | Parent inline: renderer `select_chapter_files` per-format gating; `build.py` plan construction (`merge_defaults` shared tuple gains `template`/`formats`), template resolution, format-aware `emit_config` (mode files gated to `pdf` when EPUB is requested) | (fill) |
 | T3 | S4, S12 | Parent inline: error surface (die messages naming field and accepted values; catalogs only if any help/user surface changes) | (fill) |
 | T4 | S6, S7, S8 | Parent inline: L1 tests in `tests/l1/bookkit.sh` (+ epub fixtures where applicable), sway/differential for declared-nothing path | (fill) |
-| T5 | S9, S14 | Writer or inline: docs — `docs/books.md`, `docs/usage.md`, `scripts/tools/bookkit/README.md` (PDF-only sentence at README 168-170 must not go stale) | (fill) |
+| T5 | S9, S14 | Writer or inline: docs — `docs/books.md`, `docs/usage.md`, `scripts/tools/bookkit/README.md` (PDF-only sentence at README 168-170 must not go stale) | (this change, uncommitted) |
 | T6 | S15 | Parent inline: release pre-p — `VERSION` 3.3.1 -> 3.4.0, `CHANGELOG.md` | (fill) |
 | T7 | S15 | Parent inline: publication per `docs/releasing.md` (tag + release only on explicit maintainer order) | (fill) |
 
@@ -127,3 +127,16 @@ then CLI/bookkit, then tests and docs.
   (S7). `required_commands` drops `xelatex` when `pdf` is not requested (S5).
   An `[epub]`-only volume is not part of the advertised scope (S7 out-of-scope
   line) but flows through the same paths without a demand for TeX.
+- L6 (T5, documentation): The three user-facing docs now describe the shipped
+  behaviour of commit 0f10ea9. `scripts/tools/bookkit/README.md` gains `formats`
+  and `template` rows in both field tables, replaces the stale PDF-only
+  sentence in "How the mode files work" with the format-gated
+  `input.explicit_files` shape, extends the `--template` section with the two
+  declared forms, their per-file path bases and the precedence order, and notes
+  the TeX consequence in Requirements. `docs/books.md` gains the two field rows
+  plus "Producing a PDF, an EPUB, or both" and "Choosing the template", each
+  with config examples. `docs/usage.md` mentions the fields in the Books
+  section and states in `output.formats` that a bookkit volume's `formats` is
+  what the generated configuration declares. Verification is grep-based: there
+  is no docs runner, and the wording avoids any EPUBCheck claim, which stays
+  with the separate S6 acceptance item and is not yet run.

@@ -19,9 +19,10 @@ A **book project** is a directory that is one of two shapes:
   own `manifest.yaml`, which may override any shared field.
 
 A project without `series.yaml` is a single volume: one adapter handles
-both shapes. The manifests primarily describe **what** each volume contains:
-no engine or output settings. `running_headers` is an optional, narrowly scoped
-typesetting exception, like the contents-separator choices below. The tool turns that
+both shapes. The manifests primarily describe **what** each volume contains and
+which of the toolkit's two outputs it produces (`formats`): no engine settings.
+`running_headers` and `template` are optional, narrowly scoped typesetting
+exceptions, like the contents-separator choices below. The tool turns that
 model into one standard `skelepress.config.yaml` per volume and calls
 `bin/skelepress render`. The toolkit never learns that manifests or series
 exist.
@@ -73,6 +74,8 @@ Validated against `scripts/tools/bookkit/series.schema.json`.
 | `author`, `publisher`, `rights`, `language` | Shared defaults; a volume's manifest overrides each of them. `language` must be one of the toolkit's supported codes (`en`, `es`, `pt`, `gl`). |
 | `volumes` | Required, at least one entry. Ordered list of volume directory names relative to the series directory; the order is the build and reading order. |
 | `running_headers` | Optional boolean shared PDF running-header request; a volume may override it, including with `false`. Omitted means no generated setting. |
+| `formats` | Optional non-empty list of output formats, drawn from `pdf` and `epub`; default `[pdf]`. A volume's `formats` overrides it, and each volume's own list is what its generated `output.formats` declares. |
+| `template` | Optional shared book template; a volume's `template` overrides it. A bare name (no path separator, no dot) is a shipped builtin template; any other value is a path relative to the directory holding this `series.yaml`, and it must exist. Default: the builtin `book`. |
 
 ## `manifest.yaml` (one per volume)
 
@@ -90,6 +93,8 @@ Validated against `scripts/tools/bookkit/manifest.schema.json`.
 | `author`, `publisher`, `rights`, `language` | Optional overrides of the `series.yaml` defaults; in the single-volume shape the manifest is their only source. |
 | `chapter_start` | Optional integer, 1 or more. The volume's first chapter prints with that number: the generated mode file sets the LaTeX chapter counter to `chapter_start - 1`. |
 | `running_headers` | Optional boolean, overriding the series value. Emitted as `pandoc.running_headers` only when declared or inherited. Strings are rejected. |
+| `formats` | Optional non-empty list of output formats for this volume, drawn from `pdf` and `epub`; default `[pdf]`, or the series value. Written into the generated `output.formats`. A list without `pdf` keeps `xelatex` out of `runtime.required_commands`. |
+| `template` | Optional book template for this volume, overriding the series value. A bare name is a shipped builtin template; any other value is a path relative to the volume directory, and it must exist. |
 | `chapters` | Required, non-empty: either the keyword `ordered` or an ordered list of entries. |
 | `chapters_dir` | Optional string, default `chapters`. Only read when `chapters` is `ordered`. |
 | `front_matter`, `back_matter` | Optional ordered maps of **logical name to entry**; the render order follows the manifest order. |
@@ -166,8 +171,21 @@ prose:
 
 They are inserted into the reading order at the right places as ordinary
 `input.explicit_files` entries. Generated files live in the run output,
-never inside the content directories. A consequence: the rendered document
-is PDF-only, and the generated configuration declares `formats: [pdf]`.
+never inside the content directories.
+
+The switches are LaTeX, and a plan never carries LaTeX-only markup into an
+EPUB. So when a volume's `formats` include `epub`, the generated entries are
+gated to the format that can read them, and the EPUB job receives none of them:
+
+```yaml
+  explicit_files:
+    - file: "generated/00-mainmatter.md"
+      formats: [pdf]
+```
+
+A volume that asks for `pdf` only — or declares no `formats` at all — keeps
+the plain string form, so its generated configuration is byte-identical to the
+one produced before `formats` existed.
 
 ## The tool and `skelepress.config.yaml`
 
@@ -204,9 +222,36 @@ directory, not the project directory. A single volume writes to
 rendered PDFs share that layout. `--out` replaces only the root; existing
 `.output/` artifacts are left untouched.
 
-Without `--template`, the generated configurations carry the builtin name
-`book`: the toolkit ships `templates/book.tex` inside the artifact, so the
-same project builds from a checkout and from an installation.
+Without `--template` and without a declared `template`, the generated
+configurations carry the builtin name `book`: the toolkit ships
+`templates/book.tex` inside the artifact, so the same project builds from a
+checkout and from an installation.
+
+Both manifests accept the same two forms, so a project can declare its design
+once instead of passing a flag on every run:
+
+```yaml
+# series.yaml: every volume of the series
+formats: [pdf, epub]
+template: book-novel
+```
+
+```yaml
+# volume-3/manifest.yaml: this volume only
+formats: [epub]
+template: design/volume-3.tex
+```
+
+Four things can decide a volume's template, and the first one present wins:
+
+1. the `--template` flag, for every volume of that run;
+2. the volume's `manifest.yaml` `template`;
+3. the series' `series.yaml` `template`;
+4. the builtin `book`.
+
+The flag is a one-shot override: it ignores the declared values without
+editing them, so one build with another paper size stays possible without
+touching a manifest.
 
 `--template` accepts either of the two forms the CLI help names — a builtin
 template name or a template path:
@@ -223,6 +268,15 @@ template name or a template path:
   building anything when the file does not exist. Use this form when your book
   needs its own design.
 
+The flag resolves a path against the working directory. A **declared**
+`template` resolves it against the directory holding the file that declares it:
+the series directory for `series.yaml`, the volume directory for
+`manifest.yaml`. A declared path that does not exist fails before anything is
+generated, naming the volume and the path:
+`volume 'volume-1': template file not found: <path>`. A bare name is never a
+path, so an unknown style name is reported by `validate-config` with the list
+of valid ones instead of being read as a file.
+
 ## Requirements
 
 The same as any `skelepress` render (`pandoc`, a TeX engine, `python3`),
@@ -230,3 +284,9 @@ plus one YAML parser for the shared loader: PyYAML when importable,
 otherwise Ruby's stdlib YAML through a subprocess — exactly like the
 toolkit's own fallback. Without either, the tool fails with a clear
 message.
+
+The TeX engine is a PDF requirement, and `formats` decides who has it: a volume
+whose list contains no `pdf` gets a generated configuration without `xelatex`
+in `runtime.required_commands`, so preflight does not demand an engine for it.
+The generated `pandoc.pdf_engine` stays as it is, because an EPUB job never
+applies it.

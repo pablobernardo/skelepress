@@ -110,11 +110,78 @@ division and the number numbers the page.
 | `chapters_dir` | Folder for `ordered`; defaults to `chapters`. |
 | `chapter_start` | The number the volume's first chapter prints with, so a second volume can continue the first instead of restarting at 1. |
 | `running_headers` | Optional boolean request, emitted as `pandoc.running_headers`. A series can share it; a volume's explicit `false` overrides `true`. |
+| `formats` | What the volume produces: `[pdf]` (default), `[epub]`, or `[pdf, epub]`. A volume's list wins over the series value. |
+| `template` | The volume's book design: a builtin style name, or a path to your own template, relative to the file that declares it. A volume's `template` wins over the series value. |
 | `toc_separators` | Separates the contents into blocks: `none`, `space` (default), `rule`, or `label`. |
 | `toc_labels` | The words `label` prints, for `chapters` and `appendices`. |
 
 The generated configuration also carries what makes it a book: `template: book`
 and `top_level_division: chapter`.
+
+## Producing a PDF, an EPUB, or both
+
+`formats` decides what each volume produces: a non-empty list drawn from `pdf`
+and `epub`. It defaults to `[pdf]`, so a project that says nothing keeps
+producing exactly what it produced before.
+
+```yaml
+# series.yaml — every volume of the series, unless a volume says otherwise
+formats: [pdf, epub]
+```
+
+```yaml
+# volume-2/manifest.yaml — this volume only
+formats: [epub]
+```
+
+A volume's `formats` wins over the series value, and the list it ends with is
+what the generated `output.formats` declares, so both artifacts come from the
+same base name — `volume-1` — and differ only in the extension.
+
+An EPUB is assembled by pandoc, not typeset, so a volume that does not ask for
+`pdf` must not be made to look as if it needs TeX. The generated configuration
+keeps `pandoc.pdf_engine` — PDF jobs still use it, and an EPUB job never
+applies it — and leaves `xelatex` out of `runtime.required_commands`, so
+`doctor` and `render` do not demand an engine for that volume. The LaTeX switch
+files the adapter generates are gated to the `pdf` format for the same reason:
+an EPUB job receives no raw LaTeX.
+
+The values are the ones the toolkit already renders, and an unknown one fails
+naming the field before anything is generated:
+`'formats.[0]' must be one of: pdf, epub (got 'docx')`.
+
+## Choosing the template
+
+The book design is a field too: `template` in a volume's `manifest.yaml` for
+that volume, or in `series.yaml` for the whole series.
+
+```yaml
+# series.yaml
+template: book-novel
+```
+
+```yaml
+# volume-3/manifest.yaml — its own design file
+template: design/volume-3.tex
+```
+
+A bare name — no path separator and no dot — is one of
+[the built-in book styles](#built-in-book-styles). Anything else is a path to
+your own book-class LaTeX template, relative to the directory holding the file
+that declares it (the series directory for `series.yaml`, the volume directory
+for `manifest.yaml`) and required to exist, so a typo fails before anything is
+generated: `volume 'volume-1': template file not found: <path>`.
+
+Four things can decide the template, and the first one present wins:
+
+1. the `--template` flag, for every volume of that run;
+2. the volume's `manifest.yaml` `template`;
+3. the series' `series.yaml` `template`;
+4. the builtin `book`, which ships inside the toolkit.
+
+`--template` resolves its path against the working directory and applies to
+the whole run, which is what makes it a one-shot override: a build on another
+paper size stays possible without editing a single manifest.
 
 ## Requesting running headers
 
