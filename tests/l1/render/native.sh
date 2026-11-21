@@ -335,8 +335,60 @@ EOF
   rm -f "$out"
 }
 
+# A blank explicit_files object entry declares its 'file' key but gives it no
+# value; that defect differs from omitting the key, so the error must name the
+# empty value instead of claiming the field is missing.
+run_render_blank_explicit_file_test() {
+  local sandbox out
+  sandbox="$(new_test_tmpdir)" || return
+  mkdir -p "${sandbox}/bin" "${sandbox}/schemas" "${sandbox}/scripts" "${sandbox}/scripts/runtime" "${sandbox}/chapters" "${sandbox}/templates"
+
+  cp "$CLI" "${sandbox}/bin/skelepress"
+  chmod +x "${sandbox}/bin/skelepress"
+  cp "${ROOT_DIR}/scripts/runtime/i18n.sh" "${sandbox}/scripts/runtime/i18n.sh"
+  cp "${ROOT_DIR}/scripts/runtime/validate-config.py" "${sandbox}/scripts/runtime/validate-config.py"
+  cp "${ROOT_DIR}/scripts/runtime/schema_runtime.py" "${sandbox}/scripts/runtime/schema_runtime.py"
+  cp "${ROOT_DIR}/scripts/runtime/template_runtime.py" "${sandbox}/scripts/runtime/template_runtime.py"
+  cp "${ROOT_DIR}/scripts/runtime/top_level_division_runtime.py" "${sandbox}/scripts/runtime/top_level_division_runtime.py"
+  cp "${ROOT_DIR}/scripts/runtime/render-native.py" "${sandbox}/scripts/runtime/render-native.py"
+  cp "${ROOT_DIR}/scripts/runtime/prepare-emojis.py" "${sandbox}/scripts/runtime/prepare-emojis.py"
+  chmod +x "${sandbox}/scripts/runtime/validate-config.py" "${sandbox}/scripts/runtime/render-native.py" "${sandbox}/scripts/runtime/prepare-emojis.py"
+  cp "${ROOT_DIR}/schemas/skelepress-config.schema.json" "${sandbox}/schemas/skelepress-config.schema.json"
+
+  cat >"${sandbox}/chapters/01-intro.md" <<'EOF'
+# Intro
+
+Only one file present
+EOF
+
+  cat >"${sandbox}/templates/default.tex" <<'EOF'
+\documentclass{article}
+\begin{document}
+$body$
+\end{document}
+EOF
+
+  cat >"${sandbox}/metadata.yaml" <<'EOF'
+title: Blank explicit
+EOF
+
+  out="$(new_test_tmpfile)" || return
+
+  set +e
+  SKELEPRESS_LANG=en "${REAL_PYTHON3}" "${sandbox}/scripts/runtime/render-native.py" \
+    "${FIXTURES_DIR}/render-blank-explicit.config.yaml" "${sandbox}" >"$out" 2>&1
+  local code=$?
+  set -e
+
+  assert_exit_code "1" "$code" "render fails when an explicit_files entry declares a blank file value"
+  assert_contains "$out" "empty 'file' value" "render names the blank file value"
+  assert_not_contains "$out" "missing its 'file' value" "blank entry does not reuse the missing-field message"
+
+  rm -rf "$sandbox"
+  rm -f "$out"
+}
+
 # ---------------------------------------------------------------------------
-# S1 — config contract alignment
 #   input.order / output.keep_merged_markdown / document.* template vars /
 #   filters.emoji.include_ballot_icons / runtime.strict
 # ---------------------------------------------------------------------------

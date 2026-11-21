@@ -114,10 +114,16 @@ def select_chapter_files(input_cfg: dict, chapters_dir: Path, format_name: str) 
                 if isinstance(gated_formats, list) and format_name not in gated_formats:
                     continue
                 declared = name.get("file")
-                if not isinstance(declared, str) or not declared.strip():
+                if not isinstance(declared, str):
                     die(t(
                         "render.error.explicit_file_missing_field",
                         "Explicit file entry is missing its 'file' value: {entry}",
+                        entry=json.dumps(name, sort_keys=True),
+                    ))
+                if not declared.strip():
+                    die(t(
+                        "render.error.explicit_file_blank",
+                        "Explicit file entry has an empty 'file' value: {entry}",
                         entry=json.dumps(name, sort_keys=True),
                     ))
                 name = declared
