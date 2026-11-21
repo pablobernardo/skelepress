@@ -9,6 +9,14 @@ The project follows semantic versioning and keeps two versioned contracts:
 
 ## [Unreleased]
 
+### Added
+
+- Cross-chapter link fragments resolve to the target section: a link to another selected chapter with a `#heading` fragment lands on the matching heading in the PDF and the EPUB, with an explicit id derived from file and heading; a fragment naming no heading falls back to the chapter anchor with a visible localized note (#111).
+
+### Fixed
+
+- Apple Books mis-positions internal-link jumps in EPUBs built by the toolkit (blank pages until repaginating). The bundled EPUB header neutralizes the default stylesheet's forced initial-heading break with `page-break-before: avoid` instead of an explicit `auto`, which Apple Books mishandles when resolving anchors. Pandoc-only EPUBs were unaffected.
+
 ## [3.4.3] - 2026-11-22
 
 ### Fixed
