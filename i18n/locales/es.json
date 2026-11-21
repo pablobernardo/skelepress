@@ -150,6 +150,7 @@
   ,"render.error.base_dir_required": "'project.base_dir' es obligatorio"
   ,"render.error.chapters_dir_missing": "No existe input.chapters_dir: {path}"
   ,"render.error.explicit_file_missing": "Archivo explícito no encontrado: {path}"
+  ,"render.error.explicit_file_missing_field": "La entrada de archivo explícito no declara su valor 'file': {entry}"
   ,"render.error.no_chapters": "No se encontraron capítulos para renderizar"
   ,"render.error.chapter_count_mismatch": "Desajuste en el número de capítulos: {chapters} capítulos pero {texts} textos de capítulo"
   ,"render.error.order_invalid": "Valor no válido en 'input.order': {value}. Valores admitidos: {supported}"

@@ -68,3 +68,8 @@ English; no conversation transcripts.
   configuration named `../outside/custom.tex`, escaping the checkout); GREEN
   after the fix, 6/6 new assertions plus the focused bookkit suite 79/0.
   docs/books.md and both schema descriptions now state the rejection.
+- L4: T2 evidence — RED observed (the malformed entry surfaced as the
+  confusing "Explicit file not found: .../None"); GREEN after the guard added
+  the `file` field check with a new catalog string
+  (render.error.explicit_file_missing_field) in the four locales. The renderer
+  endpoint runs before the validator, so naming the field is its own duty.
