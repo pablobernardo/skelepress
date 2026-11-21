@@ -37,6 +37,26 @@ The project follows semantic versioning and keeps two versioned contracts:
   `runtime.required_commands`, so preflight no longer demands a TeX engine for
   it; `pandoc.pdf_engine` stays for PDF jobs.
 
+## [3.4.1] - 2026-11-21
+
+### Fixed
+
+- A `template` path declared in `manifest.yaml` or `series.yaml` can no longer
+  point outside the project: an absolute value is rejected with an error naming
+  the field and the relative-path rule, aligning the behavior with the
+  documented contract ("relative to the directory holding the file"). The
+  `--template` flag keeps its one-shot semantics for a file outside the
+  checkout (#219).
+- A malformed `input.explicit_files` object entry without its `file` value now
+  fails naming the missing field instead of surfacing as
+  `Explicit file not found: .../None` (#220).
+
+### Compatibility
+
+- No contract change: the rejection enforces the documented relative-path rule
+  for declared templates; configurations accepted by the validator behave as
+  before.
+
 ## [3.3.1] - 2026-11-20
 
 ### Fixed
