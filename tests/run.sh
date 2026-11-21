@@ -145,6 +145,10 @@ main() {
   run_epub_document_links_stay_inside_publication_test
   run_epub_mermaid_dark_mode_card_test
   run_chapter_link_rewrite_test
+  run_chapter_fragment_link_test
+  run_chapter_fragment_missing_heading_test
+  run_chapter_fragment_duplicate_heading_test
+  run_chapter_fragment_pdf_destination_test
   run_multi_format_export_test
   run_plan_conformance_tests
   run_book_default_output_test
