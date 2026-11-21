@@ -413,6 +413,62 @@ PY
   rm -rf "$scratch"
 }
 
+# An absolute path in a manifest.yaml or series.yaml template contradicts the
+# documented contract (a path is relative to the file that declares it), so a
+# declaration naming a file outside the project fails the plan before anything
+# is built. The --template flag keeps its own semantics and is not covered here.
+run_bookkit_template_absolute_path_test() {
+  local scratch code seriesdir
+  scratch="$(mktemp -d)"
+  mkdir -p "$scratch/project" "$scratch/outside" "$scratch/checkout"
+  printf 'template-x\n' >"$scratch/outside/custom.tex"
+  printf '# C\n\nOne.\n' >"$scratch/project/chapter.md"
+  printf '%s\n' 'manifest_version: 1' 'profile: book' 'title: "Escaping Volume"' \
+    'chapters: [chapter.md]' "template: $scratch/outside/custom.tex" >"$scratch/project/manifest.yaml"
+
+  set +e
+  (cd "$scratch/checkout" && HOME="$scratch/no-home" SKELEPRESS_LANG=en \
+    "$CLI" book --check "$scratch/project") >"$scratch/out-abs.stdout" 2>"$scratch/out-abs.stderr"
+  code=$?
+  set -e
+  assert_exit_code "1" "$code" "a manifest template pointing outside the project fails the plan"
+  assert_contains "$scratch/out-abs.stderr" "volume 'project': 'template' must be a builtin name or a path relative to the directory holding the file" \
+    "the rejection names the field and the relative-path rule"
+  if [[ -e "$scratch/checkout/.skelepress" ]]; then
+    fail "a rejected absolute template must not generate any configuration"
+  else
+    pass "a rejected absolute template generates no configuration"
+  fi
+
+  # The series default rejects absolute values too: the same declaration
+  # through series.yaml must fail the same way.
+  seriesdir="$scratch/series"
+  mkdir -p "$seriesdir/volume-a"
+  printf '# C\n\nTwo.\n' >"$seriesdir/volume-a/chapter.md"
+  printf '%s\n' 'manifest_version: 1' "template: $scratch/outside/custom.tex" \
+    'volumes: [volume-a]' >"$seriesdir/series.yaml"
+  printf '%s\n' 'manifest_version: 1' 'profile: book' 'title: "Series Escape"' \
+    'chapters: [chapter.md]' >"$seriesdir/volume-a/manifest.yaml"
+
+  rm -rf "$scratch/checkout/.skelepress"
+  set +e
+  (cd "$scratch/checkout" && HOME="$scratch/no-home" SKELEPRESS_LANG=en \
+    "$CLI" book --check "$seriesdir") >"$scratch/out-series.stdout" 2>"$scratch/out-series.stderr"
+  code=$?
+  set -e
+  assert_exit_code "1" "$code" "a series template pointing outside the project fails the plan"
+  assert_contains "$scratch/out-series.stderr" "'template' must be a builtin name or a path relative to the directory holding the file" \
+    "the series rejection names the field and the relative-path rule"
+  if [[ -e "$scratch/checkout/.skelepress" ]]; then
+    fail "a rejected series template must not generate any configuration"
+  else
+    pass "a rejected series template generates no configuration"
+  fi
+
+  rm -rf "$scratch"
+}
+
+
 run_bookkit_tests() {
   local tool="${ROOT_DIR}/scripts/tools/bookkit/build.py"
   local single="${ROOT_DIR}/examples/book-kit/single"

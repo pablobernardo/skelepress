@@ -44,7 +44,7 @@
     "template": {
       "type": "string",
       "minLength": 1,
-      "description": "Optional shared book-template request; a volume's template overrides it. A bare name selects a shipped builtin template; any other value is a path relative to the directory holding this series.yaml. Precedence: --template flag > volume template > series template > builtin default."
+      "description": "Optional shared book-template request; a volume's template overrides it. A bare name selects a shipped builtin template; any other value is a path relative to the directory holding this series.yaml, and absolute paths are rejected. Precedence: --template flag > volume template > series template > builtin default."
     },
     "toc_separators": {
       "type": "string",

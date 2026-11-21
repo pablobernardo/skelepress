@@ -79,7 +79,7 @@
     "template": {
       "type": "string",
       "minLength": 1,
-      "description": "Optional book template for this volume. A bare name selects a shipped builtin template; any other value is a path relative to the volume directory. Overrides the series template. Precedence: --template flag > volume template > series template > builtin default."
+      "description": "Optional book template for this volume. A bare name selects a shipped builtin template; any other value is a path relative to the volume directory, and absolute paths are rejected. Overrides the series template. Precedence: --template flag > volume template > series template > builtin default."
     },
     "chapters_dir": {
       "type": "string",

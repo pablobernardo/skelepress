@@ -170,7 +170,10 @@ A bare name — no path separator and no dot — is one of
 your own book-class LaTeX template, relative to the directory holding the file
 that declares it (the series directory for `series.yaml`, the volume directory
 for `manifest.yaml`) and required to exist, so a typo fails before anything is
-generated: `volume 'volume-1': template file not found: <path>`.
+generated: `volume 'volume-1': template file not found: <path>`. An absolute
+path is rejected there: `volume 'volume-1': 'template' must be a builtin name
+or a path relative to the directory holding the file, got: <path>`. The
+`--template` flag is the one-shot way to use a file outside the project.
 
 Four things can decide the template, and the first one present wins:
 

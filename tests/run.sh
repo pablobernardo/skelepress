@@ -151,6 +151,7 @@ main() {
   run_bookkit_toc_separators_test
   run_bookkit_series_defaults_test
   run_bookkit_series_formats_template_test
+  run_bookkit_template_absolute_path_test
   run_bookkit_template_resolution_test
   run_book_command_test
 

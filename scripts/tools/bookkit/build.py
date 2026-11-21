@@ -44,7 +44,7 @@ import os
 import re
 import subprocess
 import sys
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import NoReturn
 
 TOOL_DIR = Path(__file__).resolve().parent
@@ -379,6 +379,15 @@ def resolve_template(raw: str, base: Path, volume_name: str) -> str:
         # A name is a template the toolkit ships, so the validator and the
         # renderer resolve it and there is no path to check here.
         return value
+    if PurePosixPath(value).is_absolute():
+        # The contract keeps declared templates inside the project: a path is
+        # relative to the directory holding the file that declares it, and an
+        # absolute value would reach outside it. The --template flag is the
+        # one-shot escape hatch and resolves its own value instead.
+        die(
+            f"volume '{volume_name}': 'template' must be a builtin name or a"
+            f" path relative to the directory holding the file, got: {value}"
+        )
     resolved = (base / value).resolve()
     if not resolved.is_file():
         die(f"volume '{volume_name}': template file not found: {resolved}")
