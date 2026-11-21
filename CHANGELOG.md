@@ -7,13 +7,20 @@ The project follows semantic versioning and keeps two versioned contracts:
 - `VERSION` for the toolkit version
 - `skelepress.config.yaml -> version` for the configuration contract
 
-## [Unreleased]
+## [3.4.2] - 2026-11-21
 
 ### Fixed
 
 - A blank `file: ""` entry in `input.explicit_files` now fails with its own
   message naming the empty value instead of reusing the missing-field error
   (#223).
+
+### Compatibility
+
+- No contract change: the message change affects only rejections that already
+  failed before this release; a message naming the empty value replaces a
+  message naming a missing field. Configurations accepted by the validator
+  behave as before.
 
 ## [3.4.1] - 2026-11-21
 
