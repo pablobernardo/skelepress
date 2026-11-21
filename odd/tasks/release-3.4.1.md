@@ -44,7 +44,7 @@ English; no conversation transcripts.
 | T3 | S5 | Parent inline: build.py gating naming/structure clarification | 4473313 |
 | T4 | S6 | Parent inline: test cleanup in tests/l1/bookkit.sh | 847a2b8 |
 | T5 | S7 | Parent inline: feature-doc row fix in odd/tasks/release-3.4.0.md | 847a2b8 |
-| T6 | S9 | Parent inline: VERSION + CHANGELOG, make gate, PR closes #219 and #220 | (fill) |
+| T6 | S9 | Parent inline: VERSION + CHANGELOG, make gate, PR closes #219 and #220 | ed03bec |
 
 ## Log
 
@@ -81,3 +81,9 @@ English; no conversation transcripts.
 - L6: T4/T5 evidence — R2-004 cleanup (dead `local tool=` and duplicated
   `mkdir -p checkout` removed from the series test, 31/0 after), R2-005 fix
   (the release-3.4.0.md T1 row now names the plural `formats` field).
+- L7: T6 evidence — release prep committed (ed03bec: VERSION 3.4.1,
+  CHANGELOG Fixed for #219 and #220); full gate green after all five units:
+  PASS=932 FAIL=0 (924 before the cycle). Delivery goes through a PR closing
+  #219 and #220; #219 options 2/3 warrant no separate issues (they change
+  documented behavior without product need) and the rationale ships in the
+  PR body.
