@@ -179,8 +179,9 @@ warnings on the manual `run_epub_acceptance` job; `book-kit` renders through
 manifests into PDF-only configurations, so that job skips it. The inter-chapter
 link defect that `documentation` used to report no longer occurs: links between
 selected chapters are rewritten to internal anchors that resolve inside the
-merged publication (#94). EPUBCheck remains acceptance, not a gate: it runs only
-through the job described above.
+merged publication (#94), and a fragment in the link resolves to the target
+section rather than the chapter start (#111). EPUBCheck remains acceptance, not
+a gate: it runs only through the job described above.
 
 ## YAML: two parsers, one tested at a time
 
