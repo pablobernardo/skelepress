@@ -159,7 +159,7 @@ run_bookkit_series_formats_template_test() {
   else
     pass "a PDF-only volume keeps plain explicit_files entries"
   fi
-  if grep -q 'xelatex' "$config_b"; then
+  if grep -q '^    - xelatex$' "$config_b"; then
     pass "a PDF-only volume still demands its TeX engine"
   else
     fail "a PDF-only volume must keep xelatex in runtime"
@@ -176,7 +176,33 @@ run_bookkit_series_formats_template_test() {
   fi
   assert_contains "$config_c" '  template: "book-novel"' "volume-c inherits the series template default"
 
-  # The generated configurations must plan through the public renderer.
+  # --- a series-level template path resolves against the series directory --
+  # The inherited value must not be re-resolved as if the volume declared it:
+  # a regression resolving the series default against the volume directory
+  # would fail here with the volume-relative lookup.
+
+  local series_path_dir
+  series_path_dir="$scratch/projects/series-path"
+  mkdir -p "$series_path_dir/volume"
+  printf '%s\n' '\\documentclass{book}' '\\begin{document}' '$body$' '\\end{document}' \
+    >"$series_path_dir/series-template.tex"
+  printf '%s\n' 'manifest_version: 1' 'template: series-template.tex' \
+    'volumes: [volume]' >"$series_path_dir/series.yaml"
+  printf '%s\n' 'manifest_version: 1' 'profile: book' 'title: "Series Path"' \
+    'chapters: [chapter.md]' >"$series_path_dir/volume/manifest.yaml"
+  printf '# C\n\nOne.\n' >"$series_path_dir/volume/chapter.md"
+
+  set +e
+  (cd "$scratch/checkout" && HOME="$scratch/no-home" SKELEPRESS_LANG=en \
+    "$CLI" book --check "$series_path_dir") >"$scratch/sp.stdout" 2>"$scratch/sp.stderr"
+  code=$?
+  set -e
+  assert_exit_code "0" "$code" "a series-level template path plans"
+  assert_contains "$scratch/checkout/.skelepress/series-path/volume/skelepress.config.yaml" \
+    '  template: "../series-template.tex"' \
+    "the inherited series template resolves relative to the series directory"
+
+  # The generated configuration must plan through the public renderer.
   local plan plan_log plan_code
   plan="$(mktemp)"
   plan_log="$(mktemp)"

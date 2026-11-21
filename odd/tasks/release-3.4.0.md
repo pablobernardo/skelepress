@@ -147,3 +147,9 @@ then CLI/bookkit, then tests and docs.
   series.yaml default for the series); skelepress book rendered all 3 volumes
   in one run, each producing a PDF and an EPUB. EPUBCheck (local binary) on
   all 3 EPUBs: 0 fatal errors, 0 errors, 0 warnings, 0 hints. S6 covered.
+- L9 (advisory fixes, pre-merge): Two of the six #220 advisories fixed as
+  test-only changes before the merge: R2-001 (the volume-b xelatex assertion
+  now anchors on the runtime list form, not pdf_engine) and R3-003 (new
+  series-path fixture proves an inherited series template path resolves
+  against the series directory). Gate 924 PASS / 0 FAIL. The remaining four
+  advisories (R2-002, R2-003, R2-004, R2-005) stay in #220.
