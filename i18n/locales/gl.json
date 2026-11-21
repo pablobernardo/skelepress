@@ -92,6 +92,7 @@
   "validate.error.invalid_path": "Ruta inválida en '{field}': {detail}",
   "render.mode.native": "Modo nativo activo",
   "render.output.markdown": "Markdown combinado: {path}",
+  "render.fragment.section_not_found": "(sección non atopada)",
   "render.output.pdf": "PDF de saída: {path}",
   "render.output.epub": "EPUB de saída: {path}",
   "render.command.exec": "Executando: {command}",
