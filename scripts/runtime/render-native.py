@@ -664,8 +664,22 @@ def sibling_fragment_ids(chapters: list[str], texts: list[str], markers: dict[st
         used: set[str] = set()
         mapping: dict[str, str] = {}
         prefix = markers[name]
+        # The planner must agree with with_explicit_ids on what is a heading:
+        # fenced lines are never injected, and a heading carrying an
+        # author-written {#id} is author-owned and never injected either.
+        # Planning an id the injector would not emit would rewrite the link to
+        # a dangling anchor instead of the visible missing-section fallback.
+        fence = ""
         for line in text.splitlines():
-            heading = re.match(r"#{1,6} (.+?)(?:\s*\{#[^}]*\})?\s*$", line)
+            stripped = line.lstrip()
+            if stripped.startswith(("```", "~~~")):
+                fence = "" if fence else stripped[:3]
+                continue
+            if fence:
+                continue
+            if re.search(r"\{#[^}]*\}", line):
+                continue
+            heading = re.match(r"#{1,6} (.+?)\s*$", line)
             if not heading:
                 continue
             slug = slugify(heading.group(1))

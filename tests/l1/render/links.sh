@@ -157,6 +157,39 @@ run_chapter_fragment_duplicate_heading_test() {
 
 # In the PDF the fragment link must land on the page that carries the target
 # section, not on the chapter start (issue #111 acceptance, PDF side).
+# A fragment aimed at a heading that carries an author-written {#id}, or at a
+# heading-shaped line inside a fenced code block, must degrade visibly: the
+# planner and the injector agree those headings receive no derived id, so the
+# link falls back to the chapter anchor with the missing-section note instead
+# of pointing at an id no element ever emits.
+run_chapter_fragment_author_id_and_fence_test() {
+  if ! command -v pandoc >/dev/null 2>&1; then
+    echo "SKIP author-id/fence fragment targets (pandoc not available)"
+    return 0
+  fi
+
+  local sandbox out md code=0
+  sandbox="$(new_epub_sandbox)"
+  out="$(mktemp)"
+  md="${sandbox}/work/out/epub-guide-manual.md"
+
+  printf '# First Chapter\n\nSee [Section A](chapter-2.md#section-a) and [Fake](chapter-2.md#fake-heading).\n' >"${sandbox}/work/chapters/chapter-1.md"
+  printf '# Second Chapter\n\n## Section A {#custom-id}\n\nReal.\n\n```markdown\n## Fake Heading\n```\n\nAfter the fence.\n' >"${sandbox}/work/chapters/chapter-2.md"
+  write_epub_config "${sandbox}/skelepress.config.yaml" epub "EPUB Sandbox Guide" es true
+
+  (
+    cd "${sandbox}/work" && "${sandbox}/bin/skelepress" render -c "${sandbox}/skelepress.config.yaml"
+  ) >"$out" 2>&1 || code=$?
+  assert_exit_code "0" "$code" "author-id and fenced fragment targets render"
+  assert_contains "$md" '\]\(#ch-chapter-2\) \*\(sección no encontrada\)\*' "both degraded links fall back to the chapter anchor with the visible note (in the document language)"
+  assert_not_contains "$md" '\{#ch-chapter-2-section-a\}' "no derived id is emitted for an author-owned heading"
+  assert_not_contains "$md" '\{#ch-chapter-2-fake-heading\}' "no derived id is emitted for a fenced heading-shaped line"
+  assert_contains "$md" '\{#custom-id\}' "the author-written id survives untouched"
+
+  rm -rf "$sandbox"
+  rm -f "$out"
+}
+
 run_chapter_fragment_pdf_destination_test() {
   if ! command -v pandoc >/dev/null 2>&1 || ! command -v xelatex >/dev/null 2>&1 \
     || ! command -v pdftohtml >/dev/null 2>&1; then
