@@ -150,7 +150,6 @@
   ,"render.error.base_dir_required": "'project.base_dir' is required"
   ,"render.error.chapters_dir_missing": "input.chapters_dir does not exist: {path}"
   ,"render.error.explicit_file_missing": "Explicit file not found: {path}"
-  ,"render.error.explicit_file_missing": "Explicit file not found: {path}"
   ,"render.error.explicit_file_missing_field": "Explicit file entry is missing its 'file' value: {entry}"
   ,"render.error.explicit_file_blank": "Explicit file entry has an empty 'file' value: {entry}"
   ,"render.error.no_chapters": "No chapters found to render"

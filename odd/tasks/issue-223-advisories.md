@@ -37,7 +37,16 @@ cut: the fixes travel to main and ride the next release cycle.
   release had left its section below 3.4.0, so the file was not in descending
   version order. Restored the order (3.4.1 above 3.4.0) and added the
   `[Unreleased]` section above both, after the header preamble.
-- Full gate: `tests/run.sh` before commits.
+- Native review of the committed 4-commit range (review-d0a31e5945bf1843,
+  high tier, lenses reliability/readability, budget 110) approved and
+  acknowledged. Its three advisory findings reported real candidate-caused
+  slips, all verified and fixed in a follow-up commit: the catalog insertion
+  also added an identical duplicate `render.error.explicit_file_missing`
+  member in en/es/gl/pt (removed), and the S1 section title in the tests
+  banner comment was lost when the blank-file test was inserted above it
+  (restored). Focused blank/malformed/missing explicit-file tests re-run
+  green after the fix, then the full gate was re-run.
+- Full gate: `tests/run.sh` before and after the follow-up commit.
 
 ## Out of scope
 

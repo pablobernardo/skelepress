@@ -150,7 +150,6 @@
   "render.error.base_dir_required": "'project.base_dir' é obrigatorio",
   "render.error.chapters_dir_missing": "input.chapters_dir non existe: {path}",
   "render.error.explicit_file_missing": "Arquivo explícito non atopado: {path}",
-  "render.error.explicit_file_missing": "Arquivo explícito non atopado: {path}",
   "render.error.explicit_file_missing_field": "A entrada de ficheiro explícito non declara o seu valor 'file': {entry}",
   "render.error.explicit_file_blank": "A entrada de ficheiro explícito declara un valor 'file' baleiro: {entry}",
   "render.error.no_chapters": "Non se atoparon capítulos para renderizar",

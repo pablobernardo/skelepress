@@ -389,6 +389,7 @@ EOF
 }
 
 # ---------------------------------------------------------------------------
+# S1 — config contract alignment
 #   input.order / output.keep_merged_markdown / document.* template vars /
 #   filters.emoji.include_ballot_icons / runtime.strict
 # ---------------------------------------------------------------------------
