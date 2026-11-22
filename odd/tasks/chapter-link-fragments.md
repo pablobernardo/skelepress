@@ -182,3 +182,19 @@ L13. Escalation resolution (maintainer chose fix-and-review): shared helper
    (3 asserts), then GREEN: suite PASS=1018 FAIL=0, make gate green. Committed
    f3a15a5 (55 diff lines). A fresh delivered-range review lineage starts over
    the corrected candidate.
+L14. Fresh review lineage review-fcf8c9d4c1496acc (candidate tree 95effa21,
+   16 paths, 772 lines): the four-slotted reviewer group first aborted when
+   the resilience reviewer (glm5.3-flash) exceeded the 120s stream-idle
+   relay bound (no result admitted; advisory suggested raising
+   GENTLE_PI_REVIEW_RELAY_IDLE_TIMEOUT_MS, which does not reach the host
+   relay from a shell). STATUS re-offered all four slots; the risk slot
+   captured and was admitted (deepseek-v4-flash). The resilience slot then
+   completed its model run (~100s) but the SUBMISSION was refused by the
+   native store: managed reviewer assets outdated, recorded digest
+   df43293b... vs binary-embedded a03d90f5... [managed_assets_outdated].
+   The stop transition offers exactly one continuation (gentle-ai sync via
+   the gentle-pi v4.6.0 bundle); that sync reports no actions needed, and
+   the 5.0.0 PATH binary's sync reports none either, while the submission
+   keeps refusing. The lineage remains `reviewing` with 1/4 lenses
+   admitted; delivery blocked. This is a tooling defect (two gentle-ai
+   copies, unreconcilable digests), not a feature defect.
