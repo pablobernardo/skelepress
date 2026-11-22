@@ -80,3 +80,19 @@ L4. T1/T2 implemented: RED observed (schema rejection of the not-yet-existing
    fields; 7 failures), then GREEN: suite PASS=1038 FAIL=0, make gate green.
    Committed as one work-unit slice (schema + build.py plumbing + cross-check
    + 2 test functions + registration).
+L5. Native ordinary review (lineage review-7852c86d26ac0e5f, candidate tree
+   adba9045): all four lenses admitted; review APPROVED on the first pass with
+   six non-blocking advisory findings; acknowledge-approved consumed. Advisory
+   disposition: R2-001/R4-003 dead fixture write and R3-001 schema-rejection
+   test not proving the contract rejection were fixed in commit 4821e9d
+   (isolated fixture, message assertion, guard comment per R2-002). R4-001
+   (whitespace-only volume_label passes schema but is stripped by emit_config)
+   and R4-002 (die-on-first-mismatch observability, inherited loop shape) are
+   recorded follow-ups, not addressed in this candidate.
+L6. Remaining release path for 3.5.0: push branch, open PR, merge, then the
+   docs/releasing.md acceptance checks on the exact origin/main candidate
+   (make gate + CI levels + macOS workflow_dispatch, package contents and
+   checksums, clean install, upgrade from 3.4.3 via the real GitHub updater
+   path, smoke rendering, dual YAML loaders where feasible). VERSION bump and
+   CHANGELOG release date happen at the release-commit step, after which the
+   maintainer's explicit approval gates tag v3.5.0.
