@@ -96,3 +96,20 @@ L6. Remaining release path for 3.5.0: push branch, open PR, merge, then the
    path, smoke rendering, dual YAML loaders where feasible). VERSION bump and
    CHANGELOG release date happen at the release-commit step, after which the
    maintainer's explicit approval gates tag v3.5.0.
+L7. Release 3.5.0 published with the maintainer's explicit approval.
+   Candidate origin/main @ 3c92493 (merge of #231 fragments + #232 volumes +
+   release commit 4b5f5d3 in PR #233). Acceptance evidence (all on that exact
+   candidate): CI run 45070654099 success including L1 macos-15 and ubuntu;
+   packages built from a clean checkout of 3c92493, four tarballs verified
+   against checksums.txt and rebuild-deterministic (archive digest
+   7f8258cd...); clean-install --version/doctor/validate-config OK; PyYAML and
+   Ruby-fallback loaders byte-equal; smoke render of examples/manual (pdf and
+   epub); real 3.4.3 installed from GitHub releases and updated to the
+   candidate through the updater with a stub GitHub-shaped API, including a
+   corrupt-checksum rejection that left the 3.4.3 installation untouched.
+   Post-publication verification: release workflow 45073612834 success,
+   all four GitHub assets and checksums.txt byte-identical to the candidate,
+   clean install from the real release, and a real GitHub update 3.4.3 ->
+   3.5.0 through skelepress update (checksum verified, pointer moved, v3.4.3
+   preserved, smoke render of the updated install passes). Issues #111 and
+   #230 closed with the release link.
