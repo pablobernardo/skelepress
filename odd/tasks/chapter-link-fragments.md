@@ -165,7 +165,7 @@ L12. Delivery-range review: the branch was still based on `dbc6566` (v3.4.2);
    run_chapter_fragment_fenced_link_not_planned_test; RED observed first,
    GREEN suite PASS=1012). The targeted validator REJECTED the correction:
    R3-001 accepted; R3-002's fence toggle does not match the opening
-   delimiter, so a `~~~` fence containing a literal ``` line closes early and
+   delimiter, so a `~~~` fence containing a literal three-backtick line closes early and
    the real closing `~~~` reopens the fence, skipping real links after it
    (R3-REG-001, correction-caused regression). The state closed as
    `escalated` ("maintainer action is informational"); the single bounded
@@ -177,7 +177,7 @@ L12. Delivery-range review: the branch was still based on `dbc6566` (v3.4.2);
    checks have NOT started.
 L13. Escalation resolution (maintainer chose fix-and-review): shared helper
    fenced_lines() now tracks fences with opening-delimiter matching (~~~ vs
-   ```) and rewiring, id planning and id injection all read that one answer;
+   a three-backtick run) and rewiring, id planning and id injection all read that one answer;
    RED test run_chapter_fragment_mixed_fence_delimiters_test observed failing
    (3 asserts), then GREEN: suite PASS=1018 FAIL=0, make gate green. Committed
    f3a15a5 (55 diff lines). A fresh delivered-range review lineage starts over
@@ -390,7 +390,7 @@ L12. Delivery-range review: the branch was still based on `dbc6566` (v3.4.2);
    run_chapter_fragment_fenced_link_not_planned_test; RED observed first,
    GREEN suite PASS=1012). The targeted validator REJECTED the correction:
    R3-001 accepted; R3-002's fence toggle does not match the opening
-   delimiter, so a `~~~` fence containing a literal ``` line closes early and
+   delimiter, so a `~~~` fence containing a literal three-backtick line closes early and
    the real closing `~~~` reopens the fence, skipping real links after it
    (R3-REG-001, correction-caused regression). The state closed as
    `escalated` ("maintainer action is informational"); the single bounded
@@ -402,7 +402,7 @@ L12. Delivery-range review: the branch was still based on `dbc6566` (v3.4.2);
    checks have NOT started.
 L13. Escalation resolution (maintainer chose fix-and-review): shared helper
    fenced_lines() now tracks fences with opening-delimiter matching (~~~ vs
-   ```) and rewiring, id planning and id injection all read that one answer;
+   a three-backtick run) and rewiring, id planning and id injection all read that one answer;
    RED test run_chapter_fragment_mixed_fence_delimiters_test observed failing
    (3 asserts), then GREEN: suite PASS=1018 FAIL=0, make gate green. Committed
    f3a15a5 (55 diff lines). A fresh delivered-range review lineage starts over
