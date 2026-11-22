@@ -212,3 +212,7 @@ L15. Second correction round (gentle-shell/gentle-ai 5.0.0-1.6.0 update
    another chapter's anchor. Two tests added:
    run_chapter_fragment_long_fence_test, run_chapter_fragment_cross_chapter_
    id_collision_test. Correction plan pending submission (17 diff lines).
+L16. Validator rejected the second correction on one residual: tilde closers
+   accepted trailing text. Fixed with observed RED then GREEN (suite
+   PASS=1029, gate green): both delimiters now require a bare closing run.
+   Third validation round pending on a fresh lineage.
