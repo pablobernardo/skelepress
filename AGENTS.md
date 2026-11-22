@@ -77,9 +77,8 @@ YAML is read with PyYAML when available and otherwise through Ruby's stdlib in a
 subprocess; both paths must keep producing the same result.
 ## Planned additions (target)
 
-- Windows support: gated by the migration triggers in `docs/architecture.md`. It
-  cannot break the current CLI contract, and the current bash entry point is the
-  blocker, not the scripts.
+None tracked at this time. New targets are added here only when a real
+requirement appears.
 
 ## Configuration contract (`skelepress.config.yaml`)
 
