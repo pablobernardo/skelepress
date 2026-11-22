@@ -2,8 +2,8 @@
 # bookkit area tests. Sourced by tests/run.sh (not run standalone).
 #
 # The shipped tool (scripts/tools/bookkit/build.py) and its contract, checked
-# through its public interface only. No PDF renders here: --check validates the
-# manifests and emits the generated configurations, which is what L1 asserts.
+# through its public interface. Engine stubs exercise artifact paths without
+# requiring a real PDF or EPUB typesetting run.
 
 # Independent manifests pin the output-root contract without example coupling.
 run_book_default_output_test() {
@@ -50,6 +50,8 @@ run_book_default_output_test() {
     for project in single series/volume-1; do
       config="$scratch/$mode/$root/$project/skelepress.config.yaml"
       assert_file_exists "$config" "book $mode preserves the $project configuration layout"
+      assert_contains "$config" '^  suffix: "\$\{date:YYYYMMDD\}"$' \
+        "book --check keeps the portable date-only suffix for $project"
     done
   done
   assert_file_absent "$scratch/explicit/.skelepress" "explicit --out does not create the default root"
@@ -89,6 +91,144 @@ PY
   else
     fail "default and explicit configurations must preserve resolved layout and semantics"
   fi
+  rm -rf "$scratch"
+}
+
+run_bookkit_output_collision_test() {
+  local scratch day=20261121 series generation suffix volume format
+  scratch="$(new_test_tmpdir)" || return
+  series="$scratch/series"
+  mkdir -p "$scratch/bin" "$scratch/clock" "$series/one" "$series/two"
+  printf '%s\n' 'manifest_version: 1' 'formats: [pdf, epub]' 'volumes: [one, two]' \
+    >"$series/series.yaml"
+  for volume in one two; do
+    printf '%s\n' 'manifest_version: 1' 'profile: book' "title: Book $volume" \
+      'chapters: [chapter.md]' >"$series/$volume/manifest.yaml"
+    printf '# Chapter\n\nBook fixture.\n' >"$series/$volume/chapter.md"
+  done
+
+  # Freeze the local clock for the real Bookkit and renderer subprocesses.
+  # This makes the second and third builds compete for the same timestamp.
+  cat >"$scratch/clock/sitecustomize.py" <<'PY'
+import datetime
+import os
+
+class FixedDateTime(datetime.datetime):
+    @classmethod
+    def now(cls, tz=None):
+        return cls(2026, 11, int(os.environ.get("BOOKKIT_TEST_DAY", "21")), 15, 2, 34, tzinfo=tz)
+
+datetime.datetime = FixedDateTime
+PY
+  cat >"$scratch/bin/pandoc" <<'SH'
+#!/bin/bash
+set -euo pipefail
+while (( $# > 0 )); do
+  if [[ "$1" == "-o" ]]; then
+    printf '%s\n' "$BOOKKIT_TEST_GENERATION" >"$2"
+    exit
+  fi
+  shift
+done
+SH
+  printf '#!/bin/bash\nexit 0\n' >"$scratch/bin/xelatex"
+  chmod +x "$scratch/bin/pandoc" "$scratch/bin/xelatex"
+
+  local history="$scratch/.skelepress/series/one/book-one-20261120.pdf"
+  mkdir -p "$(dirname "$history")"
+  printf 'previous day\n' >"$history"
+
+  for generation in first second third; do
+    case "$generation" in
+      first) suffix="$day" ;;
+      second) suffix="$day-150234" ;;
+      third) suffix="$day-150234-0002" ;;
+    esac
+    local code=0
+    (cd "$scratch" && HOME="$scratch" PATH="$scratch/bin:$PATH" PYTHONPATH="$scratch/clock" \
+      BOOKKIT_TEST_GENERATION="$generation" "$CLI" book series) \
+      >"$scratch/$generation.stdout" 2>"$scratch/$generation.stderr" || code=$?
+    assert_exit_code "0" "$code" "book succeeds on the $generation generation"
+    if [[ -s "$scratch/$generation.stderr" ]]; then
+      fail "book $generation generation must have empty stderr"
+    else
+      pass "book $generation generation has empty stderr"
+    fi
+    if [[ "$generation" == first ]]; then
+      if cmp -s \
+        <(grep -E '^    \[ok\] .*\.pdf$' "$scratch/$generation.stdout") \
+        <(printf '    [ok] .skelepress/series/%s\n' \
+          'one/book-one-20261120.pdf' "one/book-one-$day.pdf" "two/book-two-$day.pdf"); then
+        pass "book preserves its sorted PDF listing when there is no filename collision"
+      else
+        fail "book must list both yesterday's PDF and today's new PDFs in the original order"
+      fi
+    fi
+    for volume in one two; do
+      assert_contains "$scratch/$generation.stdout" \
+        "^    \\[ok\\] \\.skelepress/series/$volume/book-$volume-$suffix\\.pdf$" \
+        "book reports the $generation generation's PDF for $volume"
+      for format in pdf epub; do
+        if cmp -s "$scratch/.skelepress/series/$volume/book-$volume-$suffix.$format" \
+          <(printf '%s\n' "$generation"); then
+          pass "the $generation generation writes one shared suffix to $volume.$format"
+        else
+          fail "the $generation generation must write suffix $suffix to $volume.$format"
+        fi
+      done
+    done
+    if [[ "$generation" == first ]]; then
+      # Only volume one has a collision when the next series build starts.
+      rm -f "$scratch/.skelepress/series/two/book-two-$day."{pdf,epub}
+    fi
+  done
+
+  # Reusing the generated config directly on a later date must not reuse the
+  # literal suffix allocated by the final Bookkit build.
+  local first_volume="$scratch/.skelepress/series/one" reuse_code=0
+  local reusable_config="$first_volume/skelepress.config.yaml"
+  assert_contains "$reusable_config" '^  suffix: "\$\{date:YYYYMMDD\}"$' \
+    "a normal book build leaves a reusable date-only configuration"
+  (cd "$scratch" && HOME="$scratch" PATH="$scratch/bin:$PATH" PYTHONPATH="$scratch/clock" \
+    BOOKKIT_TEST_DAY=22 BOOKKIT_TEST_GENERATION=reuse "$CLI" render -c "$reusable_config") \
+    >"$scratch/reuse.stdout" 2>"$scratch/reuse.stderr" || reuse_code=$?
+  assert_exit_code "0" "$reuse_code" "the next-day render succeeds with the saved config"
+  if [[ -s "$scratch/reuse.stderr" ]]; then
+    fail "the next-day render must have empty stderr"
+  else
+    pass "the next-day render has empty stderr"
+  fi
+  for format in pdf epub; do
+    assert_contains "$scratch/reuse.stdout" "book-one-20261122\.$format$" \
+      "the next-day render reports the new date for $format"
+    if cmp -s "$first_volume/book-one-20261122.$format" <(printf 'reuse\n') &&
+      cmp -s "$first_volume/book-one-$day-150234-0002.$format" <(printf 'third\n'); then
+      pass "the reused config writes a new $format without replacing the prior build"
+    else
+      fail "the reused config must add a next-day $format and preserve the previous build"
+    fi
+  done
+
+  if cmp -s "$history" <(printf 'previous day\n'); then
+    pass "book preserves yesterday's PDF"
+  else
+    fail "book must not modify yesterday's PDF"
+  fi
+  for generation in first second; do
+    suffix="$day"
+    [[ "$generation" != second ]] || suffix="$day-150234"
+    for volume in one two; do
+      [[ "$generation/$volume" != first/two ]] || continue
+      for format in pdf epub; do
+        if cmp -s "$scratch/.skelepress/series/$volume/book-$volume-$suffix.$format" \
+          <(printf '%s\n' "$generation"); then
+          pass "book preserves the $generation generation's $volume.$format"
+        else
+          fail "book must not overwrite the $generation generation's $volume.$format"
+        fi
+      done
+    done
+  done
   rm -rf "$scratch"
 }
 

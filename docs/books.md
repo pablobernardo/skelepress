@@ -76,6 +76,15 @@ working directory where you invoke the command, not the project directory.
 artifacts are not moved or removed; renderer paths in your own configurations
 are unchanged.
 
+The first build of the day keeps the date-only name, such as
+`my-book-20261121.pdf`. If a planned output already exists, the next build
+adds the local time (`my-book-20261121-150234.pdf`), and a repeat within that
+second can add a counter (`my-book-20261121-150234-0002.pdf`). All volumes and
+formats in the build share the suffix. Older artifacts are left in place;
+clean them up periodically if you no longer need them. Use one build at a time
+per output root: separate processes do not reserve filenames for each other.
+`--check` still emits date-only configurations without rendering.
+
 `skelepress book` forwards every argument to the shipped bookkit tool and
 reports its own output and exit code, so anything the tool accepts works here.
 The complete field reference — every manifest key, its type and its default —
