@@ -154,6 +154,7 @@ main() {
   run_chapter_fragment_mixed_fence_delimiters_test
   run_chapter_fragment_long_fence_test
   run_chapter_fragment_cross_chapter_id_collision_test
+  run_chapter_fragment_tilde_closer_test
   run_chapter_fragment_pdf_destination_test
   run_multi_format_export_test
   run_plan_conformance_tests

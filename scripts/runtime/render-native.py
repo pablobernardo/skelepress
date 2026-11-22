@@ -582,8 +582,8 @@ def fenced_lines(text: str) -> set[int]:
     """Line numbers (0-based) that belong to fenced code, CommonMark-shaped.
 
     A fence opens on a run of at least three backticks or tildes and stays
-    open until a closing run of the same character with at least that length
-    (for backtick fences, with nothing else on the line). A shorter or mixed
+    open until a closing run of the same character with at least that length,
+followed only by spaces or tabs on its line. A shorter or mixed
     run inside a fence is content, not a boundary: a ~~~ block holding a
     literal ``` line closes at its own ~~~, and a 4-backtick block keeps a
     literal ``` fenced. The one answer feeds rewriting, id planning and id
@@ -598,8 +598,10 @@ def fenced_lines(text: str) -> set[int]:
         run_len = len(run) - len(run.lstrip(ch)) if ch in ("`", "~") else 0
         if delim_char:
             fenced.add(index)
-            if run_len >= delim_len and ch == delim_char \
-                    and (delim_char == "~" or not run[run_len:].strip()):
+            if run_len >= delim_len and ch == delim_char and not run[run_len:].strip():
+                # Both delimiters need a bare closer: trailing text after the
+                # run makes the line content, not a boundary (CommonMark
+                # closing fence).
                 delim_char = ""
         elif run_len >= 3:
             info = run[run_len:].strip()

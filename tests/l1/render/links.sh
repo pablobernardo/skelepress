@@ -345,6 +345,35 @@ run_chapter_fragment_cross_chapter_id_collision_test() {
   rm -f "$out"
 }
 
+# A tilde closer must be bare like a backtick one: a `~~~ text` line inside a
+# tilde fence is content, not a closer, so a heading after it stays fenced and
+# is never a fragment target.
+run_chapter_fragment_tilde_closer_test() {
+  if ! command -v pandoc >/dev/null 2>&1; then
+    echo "SKIP tilde closer targets (pandoc not available)"
+    return 0
+  fi
+
+  local sandbox out md code=0
+  sandbox="$(new_epub_sandbox)"
+  out="$(mktemp)"
+  md="${sandbox}/work/out/epub-guide-manual.md"
+
+  printf '# First Chapter\n\nSee [Not Real](chapter-2.md#not-real).\n' >"${sandbox}/work/chapters/chapter-1.md"
+  printf '# Second Chapter\n\n~~~\n~~~ text\n## Not Real\n~~~\n\nAfter.\n' >"${sandbox}/work/chapters/chapter-2.md"
+  write_epub_config "${sandbox}/skelepress.config.yaml" epub "EPUB Sandbox Guide" es true
+
+  (
+    cd "${sandbox}/work" && "${sandbox}/bin/skelepress" render -c "${sandbox}/skelepress.config.yaml"
+  ) >"$out" 2>&1 || code=$?
+  assert_exit_code "0" "$code" "a tilde-closer scenario renders"
+  assert_not_contains "$md" '\{#ch-chapter-2-not-real\}' "no id is planned for a heading after a tilde line with trailing text"
+  assert_contains "$md" '\]\(#ch-chapter-2\)' "the fragment degrades to the chapter anchor"
+
+  rm -rf "$sandbox"
+  rm -f "$out"
+}
+
 run_chapter_fragment_pdf_destination_test() {
   if ! command -v pandoc >/dev/null 2>&1 || ! command -v xelatex >/dev/null 2>&1 \
     || ! command -v pdftohtml >/dev/null 2>&1; then
