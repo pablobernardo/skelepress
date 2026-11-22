@@ -148,3 +148,30 @@ L11. Retained-authority continuation: bound STATUS re-offered the supported
    then follows ordinary repository policy: PR with `Refs #111`, no auto-close.
    Supersedes the blocked-continuation state of L10 on this lineage; no code
    or authority reset was involved.
+L12. Delivery-range review: the branch was still based on `dbc6566` (v3.4.2);
+   a review started against `5dedc2f` (current `origin/main`) produced
+   CRITICAL "unexplained 3.4.3 revert" findings (#226/#227/#228/#229 error)
+   that were base drift, not feature defects. Fix: rebased the branch onto
+   `origin/main` (single CHANGELOG conflict, resolved keeping both; suite
+   PASS=1005). The first lineage (review-dca1e3fd38271052) was recovered with
+   provider disposition `scope_changed` into successor
+   review-b64aee450749cb31 (candidate tree be9e3a92, 604 lines, 16 paths).
+   Its four-lens review returned two deterministic CRITICAL findings:
+   R3-001 empty fragment (`chapter-2.md#`) left as a dead file link, R3-002
+   fenced-only fragment references planned as real targets. Bounded
+   correction committed on the branch (99 diff lines, 26 added / 11 deleted
+   in `scripts/runtime/render-native.py`, plus two regression tests
+   run_chapter_fragment_empty_fragment_test and
+   run_chapter_fragment_fenced_link_not_planned_test; RED observed first,
+   GREEN suite PASS=1012). The targeted validator REJECTED the correction:
+   R3-001 accepted; R3-002's fence toggle does not match the opening
+   delimiter, so a `~~~` fence containing a literal ``` line closes early and
+   the real closing `~~~` reopens the fence, skipping real links after it
+   (R3-REG-001, correction-caused regression). The state closed as
+   `escalated` ("maintainer action is informational"); the single bounded
+   correction is spent for this lineage. The correction commit stays on the
+   feature branch as the recorded correction candidate; delivery (push, PR,
+   release) is held pending the maintainer's decision: apply a
+   delimiter-matching fence fix and start a fresh review lineage, authorize
+   delivery without one, or disable RDD clone-scope. Release 3.5.0 acceptance
+   checks have NOT started.
