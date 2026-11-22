@@ -164,6 +164,8 @@ main() {
   run_bookkit_output_collision_test
   run_bookkit_toc_separators_test
   run_bookkit_series_defaults_test
+  run_bookkit_volume_metadata_test
+  run_bookkit_volume_crosscheck_test
   run_bookkit_series_formats_template_test
   run_bookkit_template_absolute_path_test
   run_bookkit_template_resolution_test

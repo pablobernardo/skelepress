@@ -29,6 +29,16 @@
       "type": "string",
       "description": "Optional ISBN, passed to pandoc as the 'isbn' metadata variable so a consumer's own template can print it."
     },
+    "volume": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Optional position of this volume in the series (1-based), passed to pandoc as the 'volume' metadata variable so a template can print $volume$. Per-volume by contract: series.yaml may not declare it, and when a series build declares it the tool cross-checks it against the volume's position in series.yaml's volumes list."
+    },
+    "volume_label": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Optional free-text label for this volume (for example 'Volume 2' or 'Tome II'), passed to pandoc as the 'volume_label' metadata variable so a template can print $volume_label$. Free text by design: the tool never cross-checks it."
+    },
     "date": {
       "type": "string",
       "description": "Optional date string, passed through to the document."
