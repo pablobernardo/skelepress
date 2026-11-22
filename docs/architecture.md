@@ -300,19 +300,11 @@ an optional positional root selects a different tree of cases and expectations.
 Machine-local paths are normalized as documented in the checker's docstring;
 object key order is ignored, but array order and all non-path values are checked.
 
-## Portability and a possible binary implementation
-
-The toolkit currently targets Linux and macOS. There is no Go migration planned;
-the Bash entry point is the blocker for native Windows support, not a reason to
-add another renderer today.
-
-Reconsider a binary implementation if Windows becomes a real requirement, a
-consumer cannot provide Python and a supported YAML parser, signed single-file
-artifacts are needed, or maintaining the Bash updater costs more than a rewrite.
+## Future implementation migration
 
 The frozen render plan and its conformance suite provide the comparison boundary
-for a replacement implementation. Use `SKELEPRESS_BIN` as described above rather
-than defining a second rendering contract. Any migration must preserve the CLI
+for any future replacement implementation. Use `SKELEPRESS_BIN` as described above
+rather than defining a second rendering contract. Any migration must preserve the CLI
 and configuration compatibility rules in `AGENTS.md`.
 
 ## Decision record
