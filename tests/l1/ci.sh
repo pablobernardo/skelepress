@@ -106,6 +106,49 @@ PY
   else
     fail "candidate acceptance must be opt-in with required dependencies and evidence"
   fi
+  if python3 - "${ROOT_DIR}/.github/workflows/ci.yml" <<'PY'
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+import textwrap
+from pathlib import Path
+
+workflow = Path(sys.argv[1]).read_text()
+step = re.search(r"^      - name: Accept committed release candidate\n.*?"
+                 r"^        run: \|\n(.*?)(?=^      - name:|\Z)", workflow, re.M | re.S)
+assert step, "Missing release acceptance step"
+bash = shutil.which("bash")
+assert bash
+with tempfile.TemporaryDirectory(prefix="skelepress-ci-chrome-") as scratch:
+    root = Path(scratch)
+    chrome = root / "google-chrome"
+    trace = root / "trace"
+    for tool, body in {
+        "google-chrome": "exit 0\n",
+        "sudo": "exit 0\n",
+        "make": 'test "${PUPPETEER_EXECUTABLE_PATH:-}" = "$CHROME" || exit 81\n'
+                'printf "make %s\\n" "$*" >>"$TRACE"\n',
+        "python3": 'test "${PUPPETEER_EXECUTABLE_PATH:-}" = "$CHROME" || exit 82\n'
+                   'printf "python3 %s\\n" "$*" >>"$TRACE"\n',
+    }.items():
+        executable = root / tool
+        executable.write_text("#!/bin/sh\n" + body)
+        executable.chmod(0o755)
+    result = subprocess.run([bash, "-eo", "pipefail", "-c", textwrap.dedent(step[1])],
+                            cwd=root, capture_output=True, text=True, timeout=5,
+                            env={"PATH": str(root), "RUNNER_TEMP": str(root),
+                                 "CHROME": str(chrome), "TRACE": str(trace)})
+    assert (result.returncode, result.stdout, result.stderr) == (0, "", ""), result
+    assert trace.read_text() == ("make gate\npython3 scripts/dev/check-release-candidate.py --out "
+                                 f"{root}/skelepress-candidate-evidence\n")
+PY
+  then
+    pass "release acceptance gives both the gate and candidate checker hosted Chrome"
+  else
+    fail "release acceptance must give hosted Chrome to both commands"
+  fi
   if python3 - "${ROOT_DIR}/scripts/dev/check-release-candidate.py" <<'PY'
 import os
 import subprocess
