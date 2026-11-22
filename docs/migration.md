@@ -46,9 +46,10 @@ keeps the PDF behaviour, and configuration contract `version: 1` is unchanged.
 `output.formats: [epub]` produces an EPUB3 publication. It carries an existing
 cover image declared through `cover-image` in the metadata file or in
 `document.metadata`, embeds emoji and Mermaid resources, keeps cross-references
-between chapters working as internal anchors, and drops LaTeX-only markup such
-as the generated `\clearpage`. Nothing generates a cover, and PDF output is
-unchanged.
+between chapters working as internal anchors — including a link fragment, which
+lands on the target section rather than the chapter start — and drops LaTeX-only
+markup such as the generated `\clearpage`. Nothing generates a cover, and PDF
+output is unchanged.
 
 ### Relative assets resolve from the project base
 

@@ -92,6 +92,7 @@
   "validate.error.invalid_path": "Invalid path in '{field}': {detail}",
   "render.mode.native": "Native mode enabled",
   "render.output.markdown": "Merged markdown: {path}",
+  "render.fragment.section_not_found": "(missing section)",
   "render.output.pdf": "Output PDF: {path}",
   "render.output.epub": "Output EPUB: {path}",
   "render.command.exec": "Running: {command}",

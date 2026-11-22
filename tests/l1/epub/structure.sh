@@ -135,8 +135,13 @@ for href in resolved:
     name = f"{opf_dir}/{href}" if opf_dir else href
     root = ET.fromstring(archive.read(name))
     styles = "\n".join(e.text or "" for e in root.findall(".//{http://www.w3.org/1999/xhtml}style"))
-    check("page-break-before: auto" in styles and "break-before: auto" in styles,
+    # The initial-heading override must neutralize the default stylesheet's
+    # forced break with `avoid`, never with `auto`: Apple Books mis-positions
+    # internal-link jumps when an explicit `auto` participates in the cascade.
+    check("page-break-before: avoid" in styles and "break-before: avoid" in styles,
           f"{href} overrides the redundant initial heading page break")
+    check("page-break-before: auto" not in styles and "break-before: auto" not in styles,
+          f"{href} never declares an explicit auto page break (Apple Books jump defect)")
 title_path = next((n for n in names if n.endswith('/title_page.xhtml')), None)
 check(title_path is not None, "the EPUB retains its internal title page")
 if title_path:

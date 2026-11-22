@@ -59,3 +59,20 @@ def t(_key: str, fallback: str, **kwargs: object) -> str:
         return template.format(**kwargs)
     except Exception:
         return template
+
+
+def t_for(lang: str, _key: str, fallback: str, **kwargs: object) -> str:
+    """Translate for a declared language, not the operator's environment.
+
+    Reader-visible content produced during the merge belongs to the document,
+    so its language follows the configuration, with the same availability and
+    fallback rules as t().
+    """
+    resolved = _resolve_lang(lang)
+    template = (_CATALOG if resolved == _LANG else _load_catalog(resolved)).get(_key)
+    if not isinstance(template, str) or not template.strip():
+        template = fallback
+    try:
+        return template.format(**kwargs)
+    except Exception:
+        return template

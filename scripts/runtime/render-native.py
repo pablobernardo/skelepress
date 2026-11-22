@@ -30,7 +30,7 @@ except Exception:  # PyYAML is optional: Ruby's stdlib YAML is the fallback.
     yaml = None
 
 try:
-    from i18n_runtime import t
+    from i18n_runtime import t, t_for
 except Exception:
     def t(_key: str, fallback: str, **kwargs: object) -> str:
         try:
@@ -38,6 +38,8 @@ except Exception:
         except Exception:
             return fallback
 
+    def t_for(lang: str, _key: str, fallback: str, **kwargs: object) -> str:
+        return t(_key, fallback, **kwargs)
 
 ORDER_NATURAL = "natural"
 ORDER_ALPHABETICAL = "alphabetical"
@@ -576,26 +578,86 @@ def sibling_link_markers(chapters: list[str], texts: list[str]) -> dict[str, str
     return {name: f"ch-{slugify(Path(name).stem)}" for name in sorted(targets)}
 
 
-def rewrite_sibling_links(text: str, markers: dict[str, str]) -> str:
+def fenced_lines(text: str) -> set[int]:
+    """Line numbers (0-based) that belong to fenced code, CommonMark-shaped.
+
+    A fence opens on a run of at least three backticks or tildes and stays
+    open until a closing run of the same character with at least that length,
+followed only by spaces or tabs on its line. A shorter or mixed
+    run inside a fence is content, not a boundary: a ~~~ block holding a
+    literal ``` line closes at its own ~~~, and a 4-backtick block keeps a
+    literal ``` fenced. The one answer feeds rewriting, id planning and id
+    injection, so the three passes cannot disagree about what is code.
+    """
+    fenced: set[int] = set()
+    delim_char = ""
+    delim_len = 0
+    for index, line in enumerate(text.splitlines(keepends=True)):
+        run = line.lstrip()
+        ch = run[:1]
+        run_len = len(run) - len(run.lstrip(ch)) if ch in ("`", "~") else 0
+        if delim_char:
+            fenced.add(index)
+            if run_len >= delim_len and ch == delim_char and not run[run_len:].strip():
+                # Both delimiters need a bare closer: trailing text after the
+                # run makes the line content, not a boundary (CommonMark
+                # closing fence).
+                delim_char = ""
+        elif run_len >= 3:
+            info = run[run_len:].strip()
+            if ch == "`" and "`" in info:
+                # A backtick opener must not carry backticks in its info
+                # string; such a line is a paragraph, not a fence.
+                continue
+            delim_char = ch
+            delim_len = run_len
+            fenced.add(index)
+    return fenced
+
+
+def rewrite_sibling_links(
+    text: str,
+    markers: dict[str, str],
+    fragment_ids: dict[str, dict[str, str]] | None = None,
+    missing_note: str = "",
+) -> str:
     """Point a link at an in-document anchor instead of a file the merge removes.
 
-    Fenced code is left alone: a chapter that documents the link syntax must not
-    have its example rewritten.
+    A link with a fragment lands on the explicit id of the matching target
+    heading. A fragment naming no heading falls back to the chapter anchor with
+    a reader-visible note, so the degradation is visible, not silent. Fenced
+    code is left alone: a chapter that documents the link syntax must not have
+    its example rewritten.
     """
+    fragment_ids = fragment_ids or {}
 
     def replace(match: re.Match[str]) -> str:
-        marker = markers.get(Path(match.group(1)).name)
+        name = Path(match.group(1)).name
+        marker = markers.get(name)
+        fragment = match.group(2)
+        if fragment:
+            body = fragment[1:]
+            target_id = fragment_ids.get(name, {}).get(slugify(body)) if body else None
+            if target_id:
+                return f"](#{target_id})"
+            # No heading answers the fragment: land on the chapter and say so.
+            # A fragment that named a missing section gets the visible note; an
+            # empty fragment ("file.md#") names the top of the file, so it
+            # degrades to the chapter anchor without the note.
+            if marker:
+                if body and missing_note:
+                    return f"](#{marker}) *{missing_note}*"
+                return f"](#{marker})"
+            return match.group(0)
         return f"](#{marker})" if marker else match.group(0)
 
     rewritten = []
-    fence = ""
-    for line in text.splitlines(keepends=True):
-        stripped = line.lstrip()
-        if stripped.startswith(("```", "~~~")):
-            fence = "" if fence else stripped[:3]
+    fenced = fenced_lines(text)
+    for index, line in enumerate(text.splitlines(keepends=True)):
+        if index in fenced:
             rewritten.append(line)
             continue
-        rewritten.append(line if fence else SIBLING_LINK.sub(replace, line))
+        rewritten.append(SIBLING_LINK.sub(replace, line))
     return "".join(rewritten)
 
 
@@ -618,12 +680,125 @@ def with_marker(text: str, marker: str) -> str:
     return "[]{#" + marker + "}\n\n" + text
 
 
-def merged_markdown(chapters: list[str], insert_clearpage: bool, heading_break_level: int = 1) -> str:
+def sibling_fragment_ids(chapters: list[str], texts: list[str], markers: dict[str, str]) -> dict[str, dict[str, str]]:
+    """Per-target-chapter fragment slugs that resolve, with the id each heading gets.
+
+    Only fragments actually referenced across chapters are planned, and only for
+    chapters whose fragment links resolve. A heading-less target has no section
+    to point at, so its fragments degrade visibly instead of inventing ids.
+    """
+    wanted: dict[str, set[str]] = {}
+    for text in texts:
+        # The planner must see what rewrite_sibling_links sees: fenced lines
+        # are never rewritten, so a fragment link quoted inside an example is
+        # not a real reference and must not plan any id.
+        fenced = fenced_lines(text)
+        for index, line in enumerate(text.splitlines()):
+            if index in fenced:
+                continue
+            for match in SIBLING_LINK.finditer(line):
+                name = Path(match.group(1)).name
+                fragment = match.group(2)
+                if not fragment or not fragment[1:] or name not in markers:
+                    continue
+                wanted.setdefault(name, set()).add(slugify(fragment[1:]))
+
+    resolved: dict[str, dict[str, str]] = {}
+    # Derived ids reserve globally: the textual marker of a differently named
+    # chapter (ch-<stem> of a-b.md) can spell the same string as a derived
+    # heading id (ch-<stem>-<slug> of a.md), so the reservation starts from
+    # every chapter marker and every id an earlier chapter already took.
+    used_global: set[str] = set(markers.values())
+    for name, slugs in wanted.items():
+        path = next(path for path in chapters if Path(path).name == name)
+        text = texts[chapters.index(path)]
+        used: set[str] = set(used_global)
+        mapping: dict[str, str] = {}
+        prefix = markers[name]
+        # The planner must agree with with_explicit_ids on what is a heading:
+        # fenced lines are never injected, and a heading carrying an
+        # author-written {#id} is author-owned and never injected either.
+        # Planning an id the injector would not emit would rewrite the link to
+        # a dangling anchor instead of the visible missing-section fallback.
+        fenced = fenced_lines(text)
+        for line_number, line in enumerate(text.splitlines()):
+            if line_number in fenced:
+                continue
+            if re.search(r"\{#[^}]*\}", line):
+                continue
+            heading = re.match(r"#{1,6} (.+?)\s*$", line)
+            if not heading:
+                continue
+            slug = slugify(heading.group(1))
+            if slug not in slugs:
+                continue
+            candidate = f"{prefix}-{slug}"
+            deduped, suffix = candidate, 1
+            while deduped in used:
+                deduped, suffix = f"{candidate}-{suffix}", suffix + 1
+            used.add(deduped)
+            mapping.setdefault(slug, deduped)
+        used_global.update(mapping.values())
+        if mapping:
+            resolved[name] = mapping
+    return resolved
+
+
+def with_explicit_ids(text: str, mapping: dict[str, str]) -> str:
+    """Append the explicit id to the headings the mapping assigns.
+
+    Only the first occurrence of a repeated heading keeps the derived id; later
+    duplicates carry a suffix so explicit ids never collide. Fenced code is left
+    alone, like sibling-link rewriting.
+    """
+    lines = text.splitlines(keepends=True)
+    fenced = fenced_lines(text)
+    used: set[str] = set()
+    for index, line in enumerate(lines):
+        if index in fenced:
+            continue
+        heading = re.match(r"(#{1,6} .+?)(\s*\{#[^}]*\})?(\s*)$", line)
+        if not heading or heading.group(2):
+            # A heading that already carries an author-written explicit id is
+            # author-owned and stays untouched.
+            continue
+        slug = slugify(heading.group(1)[heading.group(1).index(" ") + 1:])
+        if slug not in mapping:
+            continue
+        candidate = mapping[slug]
+        suffix = 1
+        while candidate in used:
+            candidate = f"{mapping[slug]}-{suffix}"
+            suffix += 1
+        used.add(candidate)
+        lines[index] = f"{heading.group(1)} {{#{candidate}}}{heading.group(3)}"
+    return "".join(lines)
+
+
+def merged_markdown(
+    chapters: list[str],
+    insert_clearpage: bool,
+    heading_break_level: int = 1,
+    document_language: str = "",
+) -> str:
     texts = [Path(raw_path).read_text(encoding="utf-8", errors="ignore") for raw_path in chapters]
     # Chapters become sections of one document, so a link to a sibling file would
     # point at a file the publication does not contain. Anchors are injected only
     # for chapters something actually links to.
     markers = sibling_link_markers(chapters, texts)
+    fragment_ids = sibling_fragment_ids(chapters, texts, markers) if markers else {}
+    # A fragment naming no heading lands on the chapter with a reader-visible
+    # note; the note belongs to the document, so it follows the configured
+    # language, not the operator's environment.
+    missing_note = t_for(
+        document_language,
+        "render.fragment.section_not_found",
+        "section not found",
+    ) if any(
+        link_match.group(2) and link_match.group(2)[1:]
+        for text in texts
+        for link_match in SIBLING_LINK.finditer(text)
+    ) else ""
     parts = []
     # Unequal lists must fail loudly, never truncate silently: this keeps the
     # guarantee zip(..., strict=True) gave on Python 3.10, which 3.9 does not
@@ -643,7 +818,13 @@ def merged_markdown(chapters: list[str], insert_clearpage: bool, heading_break_l
     for index, raw_path in enumerate(chapters):
         text = texts[index]
         if markers:
-            text = rewrite_sibling_links(text, markers)
+            text = rewrite_sibling_links(text, markers, fragment_ids, missing_note)
+            # Explicit ids are only planned when a fragment actually resolves;
+            # injecting ids for planned slugs that the chapter does not own
+            # would fabricate anchors the links cannot use.
+            mapping = fragment_ids.get(Path(raw_path).name)
+            if mapping:
+                text = with_explicit_ids(text, mapping)
         if index > 0 and insert_clearpage:
             first_nonempty = ""
             for line in text.splitlines():
@@ -663,6 +844,18 @@ def merged_markdown(chapters: list[str], insert_clearpage: bool, heading_break_l
         parts.append(text)
         parts.append("\n\n")
     return "".join(parts)
+
+
+def plan_document_language(plan: dict) -> str:
+    """The configured document language; reader-visible merge content follows it."""
+    try:
+        document = load_yaml_map(Path(plan["config"]["path"])).get("document") or {}
+    except SystemExit:
+        # The config was validated during planning; a failure here means the
+        # file vanished mid-run, so merge content keeps the neutral default.
+        return ""
+    language = str(document.get("language") or "").strip()
+    return language or "en"
 
 
 def artifact_target(plan: dict) -> tuple[str, str]:
@@ -718,6 +911,7 @@ def execute_single_plan(plan: dict) -> int:
             plan["chapters"],
             bool(side_effects["clearpage_between_h1"]),
             int(side_effects.get("heading_break_level", 1)),
+            document_language=plan_document_language(plan),
         ),
         encoding="utf-8",
     )
