@@ -44,6 +44,7 @@ import os
 import re
 import subprocess
 import sys
+from datetime import datetime
 from pathlib import Path, PurePosixPath
 from typing import NoReturn
 
@@ -69,6 +70,7 @@ SERIES_SCHEMA = TOOL_DIR / "series.schema.json"
 # an installation. --template still accepts a path.
 DEFAULT_TEMPLATE = "book"
 DEFAULT_OUT = Path(".skelepress")
+DATE_SUFFIX = "${date:YYYYMMDD}"
 
 LANG_CODES = ("en", "es", "pt", "gl")
 
@@ -398,6 +400,40 @@ def resolve_template(raw: str, base: Path, volume_name: str) -> str:
     return str(resolved)
 
 
+def volume_output_dir(out_root: Path, project: Path, volume_name: str, is_series: bool) -> Path:
+    # A series nests one output directory per volume; a single-volume project
+    # is its own volume and does not repeat its name.
+    project_out = out_root / project.name
+    return project_out / volume_name if is_series else project_out
+
+
+def output_formats(merged: dict) -> list[str]:
+    return merged.get("formats") or ["pdf"]
+
+
+def generation_suffix(destinations: list[tuple[Path, list[str]]], now: datetime) -> str:
+    """Pick a suffix unused by every planned artifact in this invocation."""
+
+    def available(suffix: str) -> bool:
+        return not any(
+            os.path.lexists(stem.with_name(f"{stem.name}-{suffix}.{ext}"))
+            for stem, formats in destinations
+            # The renderer also writes a temporary merged Markdown file.
+            for ext in (*formats, "md")
+        )
+
+    day = now.strftime("%Y%m%d")
+    if available(day):
+        return day
+    timestamp = now.strftime("%Y%m%d-%H%M%S")
+    suffix = timestamp
+    sequence = 2
+    while not available(suffix):
+        suffix = f"{timestamp}-{sequence:04d}"
+        sequence += 1
+    return suffix
+
+
 def build_volume(
     manifest: dict,
     volume_name: str,
@@ -405,8 +441,9 @@ def build_volume(
     defaults: dict,
     out_volume_dir: Path,
     template: str | None,
-) -> Path:
-    """Write the generated files and one skelepress.config.yaml; return the config path."""
+    suffix: str,
+) -> tuple[Path, Path | None]:
+    """Write the volume config and return its path and the expected PDF, if any."""
 
     merged = merge_defaults(manifest, defaults)
 
@@ -450,7 +487,7 @@ def build_volume(
     # Where the volume's output is decided. The contract pins the vocabulary
     # (pdf, epub), so the shape and values are already validated; the format
     # list only decides what the generated configuration asks for.
-    formats: list[str] = merged.get("formats") or ["pdf"]
+    formats = output_formats(merged)
     epub_requested = "epub" in formats
 
     front = resolve_listed(
@@ -548,10 +585,12 @@ def build_volume(
             explicit_files,
             template_used,
             formats,
+            suffix,
         ),
         encoding="utf-8",
     )
-    return config_path
+    pdf = out_volume_dir / f"{slugify(title)}-{suffix}.pdf" if LATEX_ONLY_FORMAT in formats else None
+    return config_path, pdf
 
 
 def format_gated_entry(relative: str, gated: bool) -> str | dict:
@@ -580,6 +619,7 @@ def emit_config(
     explicit_files: list[str | dict],
     template: str,
     formats: list[str],
+    suffix: str,
 ) -> str:
     """One standard skelepress.config.yaml per volume, emitted as canonical text.
 
@@ -644,7 +684,7 @@ def emit_config(
             f"  formats: [{', '.join(formats)}]",
             f"  dir: {quoted(relpath(out_volume_dir, volume_dir))}",
             f"  file_prefix: {quoted(slug)}",
-            '  suffix: "${date:YYYYMMDD}"',
+            f"  suffix: {quoted(suffix)}",
             "  keep_merged_markdown: false",
             "",
             "pandoc:",
@@ -807,25 +847,41 @@ def main() -> None:
         die(f"skelepress CLI not found: {CLI}")
 
     out_root = Path(args.out).resolve()
+    suffix = DATE_SUFFIX
+    if not args.check:
+        destinations = []
+        for project, volume_name, _, defaults, manifest, is_series, _ in plans:
+            title = manifest.get("title")  # Titles are per-volume, never inherited.
+            if isinstance(title, str) and title.strip():
+                out_dir = volume_output_dir(out_root, project, volume_name, is_series)
+                formats = output_formats(merge_defaults(manifest, defaults))
+                destinations.append((out_dir / slugify(title), formats))
+        # Each volume renders in its own process. Freeze one suffix here so
+        # neither a partial collision nor a clock boundary splits a generation.
+        suffix = generation_suffix(destinations, datetime.now())
+
     failures: list[str] = []
     for project, volume_name, volume_dir, defaults, manifest, is_series, explicit_template in plans:
-        # A series nests one output directory per volume; a single-volume
-        # project is its own volume and does not repeat its name.
-        out_volume_dir = (
-            out_root / project.name / volume_name if is_series else out_root / project.name
-        )
+        out_volume_dir = volume_output_dir(out_root, project, volume_name, is_series)
         print(f"==> {project.name}/{volume_name}")
-        config_path = build_volume(manifest, volume_name, volume_dir, defaults, out_volume_dir, explicit_template)
+        config_path, pdf = build_volume(
+            manifest, volume_name, volume_dir, defaults, out_volume_dir, explicit_template, suffix
+        )
         print(f"    config: {relpath(config_path, Path.cwd())}")
 
         if args.check:
             continue
 
         result = subprocess.run([str(CLI), "render", "-c", str(config_path)])
-        pdfs = sorted(out_volume_dir.glob("*.pdf"))
+        # Report only the PDF scheduled by this build, not preserved history.
+        # Leave the existing footer behavior for EPUB-only volumes unchanged.
+        if pdf is None:
+            pdfs = sorted(out_volume_dir.glob("*.pdf"))
+        else:
+            pdfs = [pdf] if pdf.is_file() else []
         if result.returncode == 0 and pdfs:
-            for pdf in pdfs:
-                print(f"    [ok] {relpath(pdf, Path.cwd())}")
+            for artifact in pdfs:
+                print(f"    [ok] {relpath(artifact, Path.cwd())}")
         else:
             failures.append(f"{project.name}/{volume_name}")
             print(f"    [FAIL] {project.name}/{volume_name} (exit {result.returncode})")

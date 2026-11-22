@@ -150,6 +150,7 @@ main() {
   run_book_default_output_test
   run_book_running_headers_test
   run_bookkit_tests
+  run_bookkit_output_collision_test
   run_bookkit_toc_separators_test
   run_bookkit_series_defaults_test
   run_bookkit_series_formats_template_test

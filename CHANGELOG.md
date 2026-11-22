@@ -7,6 +7,14 @@ The project follows semantic versioning and keeps two versioned contracts:
 - `VERSION` for the toolkit version
 - `skelepress.config.yaml -> version` for the configuration contract
 
+## [Unreleased]
+
+### Fixed
+
+- Repeated `skelepress book` builds preserve earlier artifacts. The first build
+  keeps the date-only name; if a planned path is taken, all volumes and formats
+  in the new build share a time suffix and, if needed, a counter (#226).
+
 ## [3.4.2] - 2026-11-21
 
 ### Fixed
