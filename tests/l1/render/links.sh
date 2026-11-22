@@ -250,6 +250,39 @@ run_chapter_fragment_fenced_link_not_planned_test() {
   rm -f "$out"
 }
 
+# Fence tracking must match the opening delimiter: a ~~~ block that contains a
+# literal ``` line stays a fence until its own ~~~ closes. The example inside
+# must keep its literal link, and a real fragment link after the block must
+# still resolve instead of being swallowed by the miscounted fence.
+run_chapter_fragment_mixed_fence_delimiters_test() {
+  if ! command -v pandoc >/dev/null 2>&1; then
+    echo "SKIP mixed fence delimiters (pandoc not available)"
+    return 0
+  fi
+
+  local sandbox out md code=0
+  sandbox="$(new_epub_sandbox)"
+  out="$(mktemp)"
+  md="${sandbox}/work/out/epub-guide-manual.md"
+
+  printf '# First Chapter\n\n~~~markdown\n```\nSee [Fenced](chapter-2.md#section-a).\n~~~\n\nRead: [Section A](chapter-2.md#section-a).\n' >"${sandbox}/work/chapters/chapter-1.md"
+  printf '# Second Chapter\n\n## Section A\n\nBody.\n' >"${sandbox}/work/chapters/chapter-2.md"
+  write_epub_config "${sandbox}/skelepress.config.yaml" epub "EPUB Sandbox Guide" es true
+
+  (
+    cd "${sandbox}/work" && "${sandbox}/bin/skelepress" render -c "${sandbox}/skelepress.config.yaml"
+  ) >"$out" 2>&1 || code=$?
+  assert_exit_code "0" "$code" "mixed fence delimiters render"
+  assert_contains "$md" '\[Fenced\]\(chapter-2.md#section-a\)' "the example inside the ~~~ fence keeps its literal link"
+  assert_not_contains "$md" '\[Fenced\]\(#ch-chapter-2-section-a\)' "the fenced example link is not rewritten"
+  assert_contains "$md" '\[Section A\]\(#ch-chapter-2-section-a\)' "the link after the mixed-fence block still resolves"
+  assert_contains "$md" '\{#ch-chapter-2-section-a\}' "the target heading carries the explicit id"
+  assert_not_contains "$md" 'sección no encontrada' "no link is treated as a missing section"
+
+  rm -rf "$sandbox"
+  rm -f "$out"
+}
+
 run_chapter_fragment_pdf_destination_test() {
   if ! command -v pandoc >/dev/null 2>&1 || ! command -v xelatex >/dev/null 2>&1 \
     || ! command -v pdftohtml >/dev/null 2>&1; then

@@ -578,6 +578,31 @@ def sibling_link_markers(chapters: list[str], texts: list[str]) -> dict[str, str
     return {name: f"ch-{slugify(Path(name).stem)}" for name in sorted(targets)}
 
 
+def fenced_lines(text: str) -> set[int]:
+    """Line numbers (0-based) that belong to fenced code, delimiter-aware.
+
+    A fence opens on a line whose first non-blank characters are ``` or ~~~
+    and stays open until a line starting with the same delimiter. A different
+    delimiter inside a fence is content, not a boundary: a ~~~ block holding a
+    literal ``` line closes at its own ~~~. Rewriting, id planning and id
+    injection all read this one answer, so the three passes cannot disagree
+    about what is code.
+    """
+    fenced: set[int] = set()
+    delimiter = ""
+    for index, line in enumerate(text.splitlines(keepends=True)):
+        stripped = line.lstrip()
+        opener = stripped[:3] if stripped[:3] in ("```", "~~~") else ""
+        if delimiter:
+            fenced.add(index)
+            if opener == delimiter:
+                delimiter = ""
+        elif opener:
+            delimiter = opener
+            fenced.add(index)
+    return fenced
+
+
 def rewrite_sibling_links(
     text: str,
     markers: dict[str, str],
@@ -615,14 +640,12 @@ def rewrite_sibling_links(
         return f"](#{marker})" if marker else match.group(0)
 
     rewritten = []
-    fence = ""
-    for line in text.splitlines(keepends=True):
-        stripped = line.lstrip()
-        if stripped.startswith(("```", "~~~")):
-            fence = "" if fence else stripped[:3]
+    fenced = fenced_lines(text)
+    for index, line in enumerate(text.splitlines(keepends=True)):
+        if index in fenced:
             rewritten.append(line)
             continue
-        rewritten.append(line if fence else SIBLING_LINK.sub(replace, line))
+        rewritten.append(SIBLING_LINK.sub(replace, line))
     return "".join(rewritten)
 
 
@@ -657,13 +680,9 @@ def sibling_fragment_ids(chapters: list[str], texts: list[str], markers: dict[st
         # The planner must see what rewrite_sibling_links sees: fenced lines
         # are never rewritten, so a fragment link quoted inside an example is
         # not a real reference and must not plan any id.
-        fence = ""
-        for line in text.splitlines():
-            stripped = line.lstrip()
-            if stripped.startswith(("```", "~~~")):
-                fence = "" if fence else stripped[:3]
-                continue
-            if fence:
+        fenced = fenced_lines(text)
+        for index, line in enumerate(text.splitlines()):
+            if index in fenced:
                 continue
             for match in SIBLING_LINK.finditer(line):
                 name = Path(match.group(1)).name
@@ -684,13 +703,9 @@ def sibling_fragment_ids(chapters: list[str], texts: list[str], markers: dict[st
         # author-written {#id} is author-owned and never injected either.
         # Planning an id the injector would not emit would rewrite the link to
         # a dangling anchor instead of the visible missing-section fallback.
-        fence = ""
-        for line in text.splitlines():
-            stripped = line.lstrip()
-            if stripped.startswith(("```", "~~~")):
-                fence = "" if fence else stripped[:3]
-                continue
-            if fence:
+        fenced = fenced_lines(text)
+        for line_number, line in enumerate(text.splitlines()):
+            if line_number in fenced:
                 continue
             if re.search(r"\{#[^}]*\}", line):
                 continue
@@ -719,14 +734,10 @@ def with_explicit_ids(text: str, mapping: dict[str, str]) -> str:
     alone, like sibling-link rewriting.
     """
     lines = text.splitlines(keepends=True)
-    fence = ""
+    fenced = fenced_lines(text)
     used: set[str] = set()
     for index, line in enumerate(lines):
-        stripped = line.lstrip()
-        if stripped.startswith(("```", "~~~")):
-            fence = "" if fence else stripped[:3]
-            continue
-        if fence:
+        if index in fenced:
             continue
         heading = re.match(r"(#{1,6} .+?)(\s*\{#[^}]*\})?(\s*)$", line)
         if not heading or heading.group(2):
