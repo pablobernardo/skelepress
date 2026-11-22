@@ -660,8 +660,13 @@ def emit_config(
     lines.append("  titlepage: true")
     metadata = {
         key: str(manifest[key])
-        for key in ("collection", "isbn", "audience", "description")
-        if isinstance(manifest.get(key), str) and manifest[key].strip()
+        # volume is an integer by contract, the rest are strings; the
+        # isinstance pair with the bool exclusion passes exactly one shape
+        # per key (a bool would stringify as "True" and fabricate a value).
+        for key in ("collection", "isbn", "audience", "description", "volume", "volume_label")
+        if isinstance(manifest.get(key), (int, str))
+        and not isinstance(manifest.get(key), bool)
+        and str(manifest[key]).strip()
     }
     if metadata:
         lines.append("  metadata:")
@@ -840,11 +845,23 @@ def main() -> None:
         series_path = project / "series.yaml"
         if series_path.is_file():
             series = load_contract(series_path, SERIES_SCHEMA)
-            for volume_name in series["volumes"]:
+            # Issue #230's cross-check: a volume-declared 'volume' ordinal is
+            # meaningful only where the tool can see both sides. In the series
+            # shape the declared value must equal the volume's 1-based position
+            # in the volumes list, or the build fails with a message naming
+            # all three facts. The label is free text and is never checked.
+            for position, volume_name in enumerate(series["volumes"], 1):
                 volume_dir = project / volume_name
                 if not (volume_dir / "manifest.yaml").is_file():
                     die(f"series '{project.name}': volume '{volume_name}' has no manifest.yaml")
                 manifest = load_contract(volume_dir / "manifest.yaml", MANIFEST_SCHEMA)
+                declared_volume = manifest.get("volume")
+                if isinstance(declared_volume, int) and not isinstance(declared_volume, bool) \
+                        and declared_volume != position:
+                    die(
+                        f"series '{project.name}': volume '{volume_name}' declares "
+                        f"volume {declared_volume}, expected {position}"
+                    )
                 plans.append((project, volume_name, volume_dir, series, manifest, True, template))
         else:
             manifest = load_contract(project / "manifest.yaml", MANIFEST_SCHEMA)

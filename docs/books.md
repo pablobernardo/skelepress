@@ -123,6 +123,7 @@ division and the number numbers the page.
 | `template` | The volume's book design: a builtin style name, or a path to your own template, relative to the file that declares it. A volume's `template` wins over the series value. |
 | `toc_separators` | Separates the contents into blocks: `none`, `space` (default), `rule`, or `label`. |
 | `toc_labels` | The words `label` prints, for `chapters` and `appendices`. |
+| `volume`, `volume_label` | This volume's place in the series and an optional free-text label ("Volume 2", "Tome II"), exposed to templates as `$volume$` and `$volume_label$` the way `collection` and `isbn` are. `volume` is per-volume by contract: `series.yaml` may not declare it, and when a series build declares it the tool cross-checks it against the volume's position in `series.yaml`'s `volumes` list, failing with a message that names the volume, the declared value and the expected position. A single-volume build has no series position to check against. |
 
 The generated configuration also carries what makes it a book: `template: book`
 and `top_level_division: chapter`.

@@ -1133,3 +1133,110 @@ run_bookkit_series_defaults_test() {
   rm -f "$out"
   rm -rf "$scratch"
 }
+
+# A volume's own position in the series is exposed the way collection and isbn
+# are: per-volume manifest fields, clearly not series-inherited, landing in the
+# generated configuration's document.metadata so templates read $volume$ and
+# $volume_label$.
+run_bookkit_volume_metadata_test() {
+  local tool="${ROOT_DIR}/scripts/tools/bookkit/build.py"
+  local scratch out code
+  scratch="$(mktemp -d)"
+  mkdir -p "$scratch/series/tome-1" "$scratch/series/tome-2" "$scratch/single"
+
+  printf '%s\n' 'manifest_version: 1' 'profile: book' 'title: "Volume Metadata Test"' \
+    'volume: 1' 'volume_label: "Tome I"' 'chapters: [chapter.md]' \
+    >"$scratch/series/tome-1/manifest.yaml"
+  printf '%s\n' 'manifest_version: 1' 'profile: book' 'title: "Volume Metadata Test II"' \
+    'volume: 2' 'volume_label: "Tome II"' 'chapters: [chapter.md]' \
+    >"$scratch/series/tome-2/manifest.yaml"
+  for dir in tome-1 tome-2; do
+    printf '# Chapter\n\nVolume metadata fixture.\n' >"$scratch/series/$dir/chapter.md"
+  done
+  printf '%s\n' 'manifest_version: 1' 'volumes: [tome-1, tome-2]' \
+    >"$scratch/series/series.yaml"
+
+  printf '%s\n' 'manifest_version: 1' 'profile: book' 'title: "Own Ordinal"' \
+    'volume: 7' 'volume_label: "Standalone"' 'chapters: [chapter.md]' \
+    >"$scratch/single/manifest.yaml"
+  printf '# Chapter\n\nStandalone volume metadata fixture.\n' >"$scratch/single/chapter.md"
+
+  out="$(mktemp)"
+  set +e
+  python3 "$tool" --check --out "$scratch/out" "$scratch/series" "$scratch/single" >"$out" 2>&1
+  code=$?
+  set -e
+  assert_exit_code "0" "$code" "volume ordinal/label manifests are accepted"
+
+  assert_contains "$scratch/out/series/tome-1/skelepress.config.yaml" '    volume: "1"' \
+    "the declared volume ordinal reaches the generated metadata"
+  assert_contains "$scratch/out/series/tome-1/skelepress.config.yaml" '    volume_label: "Tome I"' \
+    "the declared volume label reaches the generated metadata"
+  assert_contains "$scratch/out/single/skelepress.config.yaml" '    volume: "7"' \
+    "a single-volume build passes its own ordinal through"
+  assert_contains "$scratch/out/single/skelepress.config.yaml" '    volume_label: "Standalone"' \
+    "a single-volume build passes its own label through"
+
+  rm -f "$out"
+  rm -rf "$scratch"
+}
+
+# Issue #230's optional cross-check: when a series build can see both the
+# declared ordinal and the volume's position in series.yaml's volumes list,
+# a stale value fails with a clear message instead of printing the wrong
+# number. A single-volume build has no series.yaml, so nothing is checked
+# there. A series-level volume: key is a contract error (per-volume only).
+run_bookkit_volume_crosscheck_test() {
+  local tool="${ROOT_DIR}/scripts/tools/bookkit/build.py"
+  local scratch out code
+  scratch="$(mktemp -d)"
+  mkdir -p "$scratch/series/vol-one" "$scratch/series/vol-two" "$scratch/single"
+
+  printf '%s\n' 'manifest_version: 1' 'profile: book' 'title: "Crosscheck One"' \
+    'volume: 1' 'chapters: [chapter.md]' >"$scratch/series/vol-one/manifest.yaml"
+  printf '%s\n' 'manifest_version: 1' 'profile: book' 'title: "Crosscheck Two"' \
+    'volume: 3' 'chapters: [chapter.md]' >"$scratch/series/vol-two/manifest.yaml"
+  for dir in vol-one vol-two; do
+    printf '# Chapter\n\nCrosscheck fixture.\n' >"$scratch/series/$dir/chapter.md"
+  done
+  printf '%s\n' 'manifest_version: 1' 'volumes: [vol-one, vol-two]' \
+    >"$scratch/series/series.yaml"
+
+  printf '%s\n' 'manifest_version: 1' 'profile: book' 'title: "Unchecked Ordinal"' \
+    'volume: 9' 'chapters: [chapter.md]' >"$scratch/single/manifest.yaml"
+  printf '# Chapter\n\nUnchecked fixture.\n' >"$scratch/single/chapter.md"
+
+  out="$(mktemp)"
+  set +e
+  python3 "$tool" --check --out "$scratch/out" "$scratch/series" >"$out" 2>&1
+  local series_code=$?
+  set -e
+  assert_exit_code "1" "$series_code" "a stale declared ordinal fails the series build"
+  assert_contains "$out" "volume 'vol-two' declares volume 3, expected 2" \
+    "the mismatch message names the volume, the declared value and the expected position"
+
+  set +e
+  python3 "$tool" --check --out "$scratch/out" "$scratch/single" >"$out" 2>&1
+  local single_code=$?
+  set -e
+  assert_exit_code "0" "$single_code" "a single-volume build has no series position to check the ordinal against"
+
+  # The schema-level rejection is isolated: vol-one is complete, so the only
+  # possible failure is series.yaml itself carrying a per-volume key.
+  mkdir -p "$scratch/series-bad/vol-one"
+  printf '%s\n' 'manifest_version: 1' 'profile: book' 'title: "Schema Reject"' \
+    'chapters: [chapter.md]' >"$scratch/series-bad/vol-one/manifest.yaml"
+  printf '# Chapter\n\nSchema fixture.\n' >"$scratch/series-bad/vol-one/chapter.md"
+  printf '%s\n' 'manifest_version: 1' 'volume: 2' 'volumes: [vol-one]' \
+    >"$scratch/series-bad/series.yaml"
+  set +e
+  python3 "$tool" --check --out "$scratch/out" "$scratch/series-bad" >"$out" 2>&1
+  local schema_code=$?
+  set -e
+  assert_exit_code "1" "$schema_code" "a series-level volume key fails the contract (per-volume only)"
+  assert_contains "$out" "volume" \
+    "the rejection names the series-level key instead of a build error"
+
+  rm -f "$out"
+  rm -rf "$scratch"
+}
