@@ -12,6 +12,7 @@ The project follows semantic versioning and keeps two versioned contracts:
 ### Added
 
 - Cross-chapter link fragments resolve to the target section: a link to another selected chapter with a `#heading` fragment lands on the matching heading in the PDF and the EPUB, with an explicit id derived from file and heading; a fragment naming no heading falls back to the chapter anchor with a visible localized note (#111).
+- A serialized work declares which volume it is per volume: optional `volume` (integer position) and `volume_label` (free text) in a volume's `manifest.yaml` reach templates as the `$volume$` and `$volume_label$` metadata variables. `volume` is per-volume by contract — `series.yaml` may not declare it — and a series build cross-checks a declared `volume` against the volume's position in `series.yaml`'s `volumes` list, failing with a message that names the volume, the declared value and the expected position (#230).
 
 ### Fixed
 
