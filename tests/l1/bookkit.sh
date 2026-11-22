@@ -111,11 +111,12 @@ run_bookkit_output_collision_test() {
   # This makes the second and third builds compete for the same timestamp.
   cat >"$scratch/clock/sitecustomize.py" <<'PY'
 import datetime
+import os
 
 class FixedDateTime(datetime.datetime):
     @classmethod
     def now(cls, tz=None):
-        return cls(2026, 11, 21, 15, 2, 34, tzinfo=tz)
+        return cls(2026, 11, int(os.environ.get("BOOKKIT_TEST_DAY", "21")), 15, 2, 34, tzinfo=tz)
 
 datetime.datetime = FixedDateTime
 PY
@@ -179,6 +180,32 @@ SH
     if [[ "$generation" == first ]]; then
       # Only volume one has a collision when the next series build starts.
       rm -f "$scratch/.skelepress/series/two/book-two-$day."{pdf,epub}
+    fi
+  done
+
+  # Reusing the generated config directly on a later date must not reuse the
+  # literal suffix allocated by the final Bookkit build.
+  local first_volume="$scratch/.skelepress/series/one" reuse_code=0
+  local reusable_config="$first_volume/skelepress.config.yaml"
+  assert_contains "$reusable_config" '^  suffix: "\$\{date:YYYYMMDD\}"$' \
+    "a normal book build leaves a reusable date-only configuration"
+  (cd "$scratch" && HOME="$scratch" PATH="$scratch/bin:$PATH" PYTHONPATH="$scratch/clock" \
+    BOOKKIT_TEST_DAY=22 BOOKKIT_TEST_GENERATION=reuse "$CLI" render -c "$reusable_config") \
+    >"$scratch/reuse.stdout" 2>"$scratch/reuse.stderr" || reuse_code=$?
+  assert_exit_code "0" "$reuse_code" "the next-day render succeeds with the saved config"
+  if [[ -s "$scratch/reuse.stderr" ]]; then
+    fail "the next-day render must have empty stderr"
+  else
+    pass "the next-day render has empty stderr"
+  fi
+  for format in pdf epub; do
+    assert_contains "$scratch/reuse.stdout" "book-one-20261122\.$format$" \
+      "the next-day render reports the new date for $format"
+    if cmp -s "$first_volume/book-one-20261122.$format" <(printf 'reuse\n') &&
+      cmp -s "$first_volume/book-one-$day-150234-0002.$format" <(printf 'third\n'); then
+      pass "the reused config writes a new $format without replacing the prior build"
+    else
+      fail "the reused config must add a next-day $format and preserve the previous build"
     fi
   done
 

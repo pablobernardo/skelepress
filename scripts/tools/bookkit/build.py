@@ -46,6 +46,7 @@ import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path, PurePosixPath
+from tempfile import mkstemp
 from typing import NoReturn
 
 TOOL_DIR = Path(__file__).resolve().parent
@@ -441,9 +442,9 @@ def build_volume(
     defaults: dict,
     out_volume_dir: Path,
     template: str | None,
-    suffix: str,
-) -> Path:
-    """Write the generated files and one skelepress.config.yaml; return the config path."""
+    suffix: str | None,
+) -> tuple[Path, str | None]:
+    """Write the reusable config and prepare an invocation-specific render config."""
 
     merged = merge_defaults(manifest, defaults)
 
@@ -576,20 +577,27 @@ def build_volume(
 
     out_volume_dir.mkdir(parents=True, exist_ok=True)
     config_path = out_volume_dir / "skelepress.config.yaml"
-    config_path.write_text(
-        emit_config(
-            merged,
-            title,
-            volume_dir,
-            out_volume_dir,
-            explicit_files,
-            template_used,
-            formats,
-            suffix,
-        ),
-        encoding="utf-8",
-    )
-    return config_path
+
+    def config_text(output_suffix: str) -> str:
+        return emit_config(
+            merged, title, volume_dir, out_volume_dir, explicit_files,
+            template_used, formats, output_suffix,
+        )
+
+    config_path.write_text(config_text(DATE_SUFFIX), encoding="utf-8")
+    return config_path, config_text(suffix) if suffix is not None else None
+
+
+def render_volume(config_dir: Path, text: str) -> subprocess.CompletedProcess:
+    # Keep the config beside the reusable one so relative paths mean the same
+    # thing. The chosen suffix belongs only to this invocation.
+    fd, name = mkstemp(dir=config_dir, prefix=".book-render-", suffix=".yaml")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as stream:
+            stream.write(text)
+        return subprocess.run([str(CLI), "render", "-c", name])
+    finally:
+        Path(name).unlink(missing_ok=True)
 
 
 def format_gated_entry(relative: str, gated: bool) -> str | dict:
@@ -846,7 +854,7 @@ def main() -> None:
         die(f"skelepress CLI not found: {CLI}")
 
     out_root = Path(args.out).resolve()
-    suffix = DATE_SUFFIX
+    suffix = None
     if not args.check:
         destinations = []
         for project, volume_name, _, defaults, manifest, is_series, _ in plans:
@@ -863,15 +871,15 @@ def main() -> None:
     for project, volume_name, volume_dir, defaults, manifest, is_series, explicit_template in plans:
         out_volume_dir = volume_output_dir(out_root, project, volume_name, is_series)
         print(f"==> {project.name}/{volume_name}")
-        config_path = build_volume(
+        config_path, render_config = build_volume(
             manifest, volume_name, volume_dir, defaults, out_volume_dir, explicit_template, suffix
         )
         print(f"    config: {relpath(config_path, Path.cwd())}")
 
-        if args.check:
+        if render_config is None:
             continue
 
-        result = subprocess.run([str(CLI), "render", "-c", str(config_path)])
+        result = render_volume(config_path.parent, render_config)
         pdfs = sorted(out_volume_dir.glob("*.pdf"))
         if result.returncode == 0 and pdfs:
             for pdf in pdfs:
