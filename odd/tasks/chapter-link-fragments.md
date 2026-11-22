@@ -216,3 +216,10 @@ L16. Validator rejected the second correction on one residual: tilde closers
    accepted trailing text. Fixed with observed RED then GREEN (suite
    PASS=1029, gate green): both delimiters now require a bare closing run.
    Third validation round pending on a fresh lineage.
+L17. Third review round (lineage review-45782cc3b840805e, candidate tree
+   b8722626): all four lenses and the refuter admitted (the reliability slot
+   needed one reoffer after deepseek exhausted its reasoning output budget).
+   Review APPROVED with 9 non-blocking advisory findings only; no correction
+   opened. acknowledge-approved consumed (authority burned, receipt stored).
+   Delivery follows ordinary repository policy: branch pushed to origin as
+   feat/chapter-link-fragments.
