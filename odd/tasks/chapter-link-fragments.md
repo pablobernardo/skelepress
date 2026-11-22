@@ -175,3 +175,10 @@ L12. Delivery-range review: the branch was still based on `dbc6566` (v3.4.2);
    delimiter-matching fence fix and start a fresh review lineage, authorize
    delivery without one, or disable RDD clone-scope. Release 3.5.0 acceptance
    checks have NOT started.
+L13. Escalation resolution (maintainer chose fix-and-review): shared helper
+   fenced_lines() now tracks fences with opening-delimiter matching (~~~ vs
+   ```) and rewiring, id planning and id injection all read that one answer;
+   RED test run_chapter_fragment_mixed_fence_delimiters_test observed failing
+   (3 asserts), then GREEN: suite PASS=1018 FAIL=0, make gate green. Committed
+   f3a15a5 (55 diff lines). A fresh delivered-range review lineage starts over
+   the corrected candidate.
