@@ -579,26 +579,36 @@ def sibling_link_markers(chapters: list[str], texts: list[str]) -> dict[str, str
 
 
 def fenced_lines(text: str) -> set[int]:
-    """Line numbers (0-based) that belong to fenced code, delimiter-aware.
+    """Line numbers (0-based) that belong to fenced code, CommonMark-shaped.
 
-    A fence opens on a line whose first non-blank characters are ``` or ~~~
-    and stays open until a line starting with the same delimiter. A different
-    delimiter inside a fence is content, not a boundary: a ~~~ block holding a
-    literal ``` line closes at its own ~~~. Rewriting, id planning and id
-    injection all read this one answer, so the three passes cannot disagree
-    about what is code.
+    A fence opens on a run of at least three backticks or tildes and stays
+    open until a closing run of the same character with at least that length
+    (for backtick fences, with nothing else on the line). A shorter or mixed
+    run inside a fence is content, not a boundary: a ~~~ block holding a
+    literal ``` line closes at its own ~~~, and a 4-backtick block keeps a
+    literal ``` fenced. The one answer feeds rewriting, id planning and id
+    injection, so the three passes cannot disagree about what is code.
     """
     fenced: set[int] = set()
-    delimiter = ""
+    delim_char = ""
+    delim_len = 0
     for index, line in enumerate(text.splitlines(keepends=True)):
-        stripped = line.lstrip()
-        opener = stripped[:3] if stripped[:3] in ("```", "~~~") else ""
-        if delimiter:
+        run = line.lstrip()
+        ch = run[:1]
+        run_len = len(run) - len(run.lstrip(ch)) if ch in ("`", "~") else 0
+        if delim_char:
             fenced.add(index)
-            if opener == delimiter:
-                delimiter = ""
-        elif opener:
-            delimiter = opener
+            if run_len >= delim_len and ch == delim_char \
+                    and (delim_char == "~" or not run[run_len:].strip()):
+                delim_char = ""
+        elif run_len >= 3:
+            info = run[run_len:].strip()
+            if ch == "`" and "`" in info:
+                # A backtick opener must not carry backticks in its info
+                # string; such a line is a paragraph, not a fence.
+                continue
+            delim_char = ch
+            delim_len = run_len
             fenced.add(index)
     return fenced
 
@@ -692,10 +702,15 @@ def sibling_fragment_ids(chapters: list[str], texts: list[str], markers: dict[st
                 wanted.setdefault(name, set()).add(slugify(fragment[1:]))
 
     resolved: dict[str, dict[str, str]] = {}
+    # Derived ids reserve globally: the textual marker of a differently named
+    # chapter (ch-<stem> of a-b.md) can spell the same string as a derived
+    # heading id (ch-<stem>-<slug> of a.md), so the reservation starts from
+    # every chapter marker and every id an earlier chapter already took.
+    used_global: set[str] = set(markers.values())
     for name, slugs in wanted.items():
         path = next(path for path in chapters if Path(path).name == name)
         text = texts[chapters.index(path)]
-        used: set[str] = set()
+        used: set[str] = set(used_global)
         mapping: dict[str, str] = {}
         prefix = markers[name]
         # The planner must agree with with_explicit_ids on what is a heading:
@@ -721,6 +736,7 @@ def sibling_fragment_ids(chapters: list[str], texts: list[str], markers: dict[st
                 deduped, suffix = f"{candidate}-{suffix}", suffix + 1
             used.add(deduped)
             mapping.setdefault(slug, deduped)
+        used_global.update(mapping.values())
         if mapping:
             resolved[name] = mapping
     return resolved

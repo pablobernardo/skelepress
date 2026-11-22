@@ -283,6 +283,68 @@ run_chapter_fragment_mixed_fence_delimiters_test() {
   rm -f "$out"
 }
 
+# A 4-backtick fence holding a literal ``` line stays fenced until its own
+# 4-backtick closer: the heading-shaped text inside is content, never a target,
+# and the fragment link aimed at it degrades visibly.
+run_chapter_fragment_long_fence_test() {
+  if ! command -v pandoc >/dev/null 2>&1; then
+    echo "SKIP long-fence fragment targets (pandoc not available)"
+    return 0
+  fi
+
+  local sandbox out md code=0
+  sandbox="$(new_epub_sandbox)"
+  out="$(mktemp)"
+  md="${sandbox}/work/out/epub-guide-manual.md"
+
+  printf '# First Chapter\n\nSee [Not Real](chapter-2.md#not-real).\n' >"${sandbox}/work/chapters/chapter-1.md"
+  printf '# Second Chapter\n\n````\n# not code\n```\n## Not Real\n````\n\nAfter.\n' >"${sandbox}/work/chapters/chapter-2.md"
+  write_epub_config "${sandbox}/skelepress.config.yaml" epub "EPUB Sandbox Guide" es true
+
+  (
+    cd "${sandbox}/work" && "${sandbox}/bin/skelepress" render -c "${sandbox}/skelepress.config.yaml"
+  ) >"$out" 2>&1 || code=$?
+  assert_exit_code "0" "$code" "a long-fence chapter renders"
+  assert_not_contains "$md" '\{#ch-chapter-2-not-code\}' "no id is injected for heading-shaped text inside a 4-backtick fence"
+  assert_not_contains "$md" '\{#ch-chapter-2-not-real\}' "no id is planned for a heading inside a 4-backtick fence"
+  assert_contains "$md" '\]\(#ch-chapter-2\)' "the fragment aimed inside the long fence degrades to the chapter anchor"
+
+  rm -rf "$sandbox"
+  rm -f "$out"
+}
+
+# Derived ids must not collide with another chapter's anchor: a heading id
+# derived as ch-<stem>-<slug> may equal the chapter marker ch-<stem> of a
+# differently named chapter. The injected id is deduplicated globally, and the
+# link points at the deduplicated id while the marker keeps its own name once.
+run_chapter_fragment_cross_chapter_id_collision_test() {
+  if ! command -v pandoc >/dev/null 2>&1; then
+    echo "SKIP cross-chapter id collision (pandoc not available)"
+    return 0
+  fi
+
+  local sandbox out md code=0
+  sandbox="$(new_epub_sandbox)"
+  out="$(mktemp)"
+  md="${sandbox}/work/out/epub-guide-manual.md"
+
+  printf '# Chapter A\n\n## B\n\nBody.\n' >"${sandbox}/work/chapters/a.md"
+  printf '# A B Chapter\n\nStandalone.\n' >"${sandbox}/work/chapters/a-b.md"
+  printf '# Links\n\nOpen [A-B chapter](a-b.md) and read [B](a.md#b).\n' >"${sandbox}/work/chapters/link1.md"
+  write_epub_config "${sandbox}/skelepress.config.yaml" epub "EPUB Sandbox Guide" en true
+
+  (
+    cd "${sandbox}/work" && "${sandbox}/bin/skelepress" render -c "${sandbox}/skelepress.config.yaml"
+  ) >"$out" 2>&1 || code=$?
+  assert_exit_code "0" "$code" "the collision scenario renders"
+  assert_contains "$md" '\{#ch-a-b-1\}' "the derived heading id is deduplicated against the other chapter's marker"
+  assert_contains "$md" '\[B\]\(#ch-a-b-1\)' "the fragment link points at the deduplicated id"
+  assert_contains "$md" '\[\]{#ch-a-b}' "the a-b chapter marker keeps its original id"
+
+  rm -rf "$sandbox"
+  rm -f "$out"
+}
+
 run_chapter_fragment_pdf_destination_test() {
   if ! command -v pandoc >/dev/null 2>&1 || ! command -v xelatex >/dev/null 2>&1 \
     || ! command -v pdftohtml >/dev/null 2>&1; then
