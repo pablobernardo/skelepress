@@ -442,8 +442,8 @@ def build_volume(
     out_volume_dir: Path,
     template: str | None,
     suffix: str,
-) -> tuple[Path, Path | None]:
-    """Write the volume config and return its path and the expected PDF, if any."""
+) -> Path:
+    """Write the generated files and one skelepress.config.yaml; return the config path."""
 
     merged = merge_defaults(manifest, defaults)
 
@@ -589,8 +589,7 @@ def build_volume(
         ),
         encoding="utf-8",
     )
-    pdf = out_volume_dir / f"{slugify(title)}-{suffix}.pdf" if LATEX_ONLY_FORMAT in formats else None
-    return config_path, pdf
+    return config_path
 
 
 def format_gated_entry(relative: str, gated: bool) -> str | dict:
@@ -864,7 +863,7 @@ def main() -> None:
     for project, volume_name, volume_dir, defaults, manifest, is_series, explicit_template in plans:
         out_volume_dir = volume_output_dir(out_root, project, volume_name, is_series)
         print(f"==> {project.name}/{volume_name}")
-        config_path, pdf = build_volume(
+        config_path = build_volume(
             manifest, volume_name, volume_dir, defaults, out_volume_dir, explicit_template, suffix
         )
         print(f"    config: {relpath(config_path, Path.cwd())}")
@@ -873,15 +872,10 @@ def main() -> None:
             continue
 
         result = subprocess.run([str(CLI), "render", "-c", str(config_path)])
-        # Report only the PDF scheduled by this build, not preserved history.
-        # Leave the existing footer behavior for EPUB-only volumes unchanged.
-        if pdf is None:
-            pdfs = sorted(out_volume_dir.glob("*.pdf"))
-        else:
-            pdfs = [pdf] if pdf.is_file() else []
+        pdfs = sorted(out_volume_dir.glob("*.pdf"))
         if result.returncode == 0 and pdfs:
-            for artifact in pdfs:
-                print(f"    [ok] {relpath(artifact, Path.cwd())}")
+            for pdf in pdfs:
+                print(f"    [ok] {relpath(pdf, Path.cwd())}")
         else:
             failures.append(f"{project.name}/{volume_name}")
             print(f"    [FAIL] {project.name}/{volume_name} (exit {result.returncode})")

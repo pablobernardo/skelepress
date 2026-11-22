@@ -133,6 +133,10 @@ SH
   printf '#!/bin/bash\nexit 0\n' >"$scratch/bin/xelatex"
   chmod +x "$scratch/bin/pandoc" "$scratch/bin/xelatex"
 
+  local history="$scratch/.skelepress/series/one/book-one-20261120.pdf"
+  mkdir -p "$(dirname "$history")"
+  printf 'previous day\n' >"$history"
+
   for generation in first second third; do
     case "$generation" in
       first) suffix="$day" ;;
@@ -149,15 +153,20 @@ SH
     else
       pass "book $generation generation has empty stderr"
     fi
-    if cmp -s \
-      <(grep -E '^    \[ok\] .*\.pdf$' "$scratch/$generation.stdout") \
-      <(printf '    [ok] .skelepress/series/%s/book-%s-%s.pdf\n' \
-        one one "$suffix" two two "$suffix"); then
-      pass "book reports only PDFs from the $generation generation"
-    else
-      fail "book must report exactly the $generation generation's PDFs"
+    if [[ "$generation" == first ]]; then
+      if cmp -s \
+        <(grep -E '^    \[ok\] .*\.pdf$' "$scratch/$generation.stdout") \
+        <(printf '    [ok] .skelepress/series/%s\n' \
+          'one/book-one-20261120.pdf' "one/book-one-$day.pdf" "two/book-two-$day.pdf"); then
+        pass "book preserves its sorted PDF listing when there is no filename collision"
+      else
+        fail "book must list both yesterday's PDF and today's new PDFs in the original order"
+      fi
     fi
     for volume in one two; do
+      assert_contains "$scratch/$generation.stdout" \
+        "^    \\[ok\\] \\.skelepress/series/$volume/book-$volume-$suffix\\.pdf$" \
+        "book reports the $generation generation's PDF for $volume"
       for format in pdf epub; do
         if cmp -s "$scratch/.skelepress/series/$volume/book-$volume-$suffix.$format" \
           <(printf '%s\n' "$generation"); then
@@ -173,6 +182,11 @@ SH
     fi
   done
 
+  if cmp -s "$history" <(printf 'previous day\n'); then
+    pass "book preserves yesterday's PDF"
+  else
+    fail "book must not modify yesterday's PDF"
+  fi
   for generation in first second; do
     suffix="$day"
     [[ "$generation" != second ]] || suffix="$day-150234"
