@@ -1221,9 +1221,12 @@ run_bookkit_volume_crosscheck_test() {
   set -e
   assert_exit_code "0" "$single_code" "a single-volume build has no series position to check the ordinal against"
 
-  printf '%s\n' 'manifest_version: 1' 'volume: 2' 'volumes: [vol-one]' \
-    >"$scratch/series-bad/series.yaml" 2>/dev/null || true
-  mkdir -p "$scratch/series-bad"
+  # The schema-level rejection is isolated: vol-one is complete, so the only
+  # possible failure is series.yaml itself carrying a per-volume key.
+  mkdir -p "$scratch/series-bad/vol-one"
+  printf '%s\n' 'manifest_version: 1' 'profile: book' 'title: "Schema Reject"' \
+    'chapters: [chapter.md]' >"$scratch/series-bad/vol-one/manifest.yaml"
+  printf '# Chapter\n\nSchema fixture.\n' >"$scratch/series-bad/vol-one/chapter.md"
   printf '%s\n' 'manifest_version: 1' 'volume: 2' 'volumes: [vol-one]' \
     >"$scratch/series-bad/series.yaml"
   set +e
@@ -1231,6 +1234,8 @@ run_bookkit_volume_crosscheck_test() {
   local schema_code=$?
   set -e
   assert_exit_code "1" "$schema_code" "a series-level volume key fails the contract (per-volume only)"
+  assert_contains "$out" "volume" \
+    "the rejection names the series-level key instead of a build error"
 
   rm -f "$out"
   rm -rf "$scratch"

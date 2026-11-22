@@ -660,6 +660,9 @@ def emit_config(
     lines.append("  titlepage: true")
     metadata = {
         key: str(manifest[key])
+        # volume is an integer by contract, the rest are strings; the
+        # isinstance pair with the bool exclusion passes exactly one shape
+        # per key (a bool would stringify as "True" and fabricate a value).
         for key in ("collection", "isbn", "audience", "description", "volume", "volume_label")
         if isinstance(manifest.get(key), (int, str))
         and not isinstance(manifest.get(key), bool)
