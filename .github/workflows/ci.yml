@@ -323,10 +323,13 @@ jobs:
         if: ${{ inputs.run_release_acceptance == true }}
         run: |
           sudo apt-get install -y poppler-utils fonts-freefont-ttf
+          chrome_path="$(command -v google-chrome)"
+          test -x "$chrome_path"
+          # The gate also needs Chrome for its EPUB Mermaid test.
+          export PUPPETEER_EXECUTABLE_PATH="$chrome_path"
           make gate
-          PUPPETEER_EXECUTABLE_PATH="$(command -v google-chrome)" \
-            python3 scripts/dev/check-release-candidate.py --out \
-              "${RUNNER_TEMP}/skelepress-candidate-evidence"
+          python3 scripts/dev/check-release-candidate.py --out \
+            "${RUNNER_TEMP}/skelepress-candidate-evidence"
 
       - name: Retain candidate acceptance evidence
         if: ${{ always() && inputs.run_release_acceptance == true }}
