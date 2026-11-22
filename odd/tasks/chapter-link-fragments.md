@@ -198,3 +198,17 @@ L14. Fresh review lineage review-fcf8c9d4c1496acc (candidate tree 95effa21,
    keeps refusing. The lineage remains `reviewing` with 1/4 lenses
    admitted; delivery blocked. This is a tooling defect (two gentle-ai
    copies, unreconcilable digests), not a feature defect.
+L15. Second correction round (gentle-shell/gentle-ai 5.0.0-1.6.0 update
+   unblocked the reviewer digest mismatch; resilience, readability and
+   reliability slots admitted one by one; one deepseek-reliability run hit
+   its reasoning output budget and was reoffered, second run admitted).
+   Refuter produced three CRITICAAL->CRITICAL findings, all fixed with observed
+   RED then GREEN (suite PASS=1026, gate green, commit of 17 diff lines):
+   R1-001/R3-002 fenced_lines now parses fences CommonMark-style (delimiter
+   run >= 3, closing run same char >= open length, backtick closer bare,
+   backtick info without backticks); R3-001 sibling_fragment_ids now
+   reserves derived ids globally, starting from every chapter marker and
+   every id an earlier chapter took, so a derived id can never duplicate
+   another chapter's anchor. Two tests added:
+   run_chapter_fragment_long_fence_test, run_chapter_fragment_cross_chapter_
+   id_collision_test. Correction plan pending submission (17 diff lines).
