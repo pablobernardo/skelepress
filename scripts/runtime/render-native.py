@@ -600,13 +600,17 @@ def rewrite_sibling_links(
         fragment = match.group(2)
         if fragment:
             body = fragment[1:]
-            if body:
-                target_id = fragment_ids.get(name, {}).get(slugify(body))
-                if target_id:
-                    return f"](#{target_id})"
+            target_id = fragment_ids.get(name, {}).get(slugify(body)) if body else None
+            if target_id:
+                return f"](#{target_id})"
             # No heading answers the fragment: land on the chapter and say so.
-            if marker and missing_note:
-                return f"](#{marker}) *{missing_note}*"
+            # A fragment that named a missing section gets the visible note; an
+            # empty fragment ("file.md#") names the top of the file, so it
+            # degrades to the chapter anchor without the note.
+            if marker:
+                if body and missing_note:
+                    return f"](#{marker}) *{missing_note}*"
+                return f"](#{marker})"
             return match.group(0)
         return f"](#{marker})" if marker else match.group(0)
 
@@ -650,12 +654,23 @@ def sibling_fragment_ids(chapters: list[str], texts: list[str], markers: dict[st
     """
     wanted: dict[str, set[str]] = {}
     for text in texts:
-        for match in SIBLING_LINK.finditer(text):
-            name = Path(match.group(1)).name
-            fragment = match.group(2)
-            if not fragment or not fragment[1:] or name not in markers:
+        # The planner must see what rewrite_sibling_links sees: fenced lines
+        # are never rewritten, so a fragment link quoted inside an example is
+        # not a real reference and must not plan any id.
+        fence = ""
+        for line in text.splitlines():
+            stripped = line.lstrip()
+            if stripped.startswith(("```", "~~~")):
+                fence = "" if fence else stripped[:3]
                 continue
-            wanted.setdefault(name, set()).add(slugify(fragment[1:]))
+            if fence:
+                continue
+            for match in SIBLING_LINK.finditer(line):
+                name = Path(match.group(1)).name
+                fragment = match.group(2)
+                if not fragment or not fragment[1:] or name not in markers:
+                    continue
+                wanted.setdefault(name, set()).add(slugify(fragment[1:]))
 
     resolved: dict[str, dict[str, str]] = {}
     for name, slugs in wanted.items():

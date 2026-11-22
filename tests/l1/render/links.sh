@@ -190,6 +190,66 @@ run_chapter_fragment_author_id_and_fence_test() {
   rm -f "$out"
 }
 
+# An empty fragment (`chapter.md#`) still names the file, not a section: the
+# baseline rewrote it to the chapter anchor, so it must keep degrading there.
+# It never needs the missing-section note, because it named no section.
+run_chapter_fragment_empty_fragment_test() {
+  if ! command -v pandoc >/dev/null 2>&1; then
+    echo "SKIP empty fragment targets (pandoc not available)"
+    return 0
+  fi
+
+  local sandbox out md code=0
+  sandbox="$(new_epub_sandbox)"
+  out="$(mktemp)"
+  md="${sandbox}/work/out/epub-guide-manual.md"
+
+  printf '# First Chapter\n\nOpen: [Second](chapter-2.md#).\n' >"${sandbox}/work/chapters/chapter-1.md"
+  printf '# Second Chapter\n\n## Section A\n\nBody.\n' >"${sandbox}/work/chapters/chapter-2.md"
+  write_epub_config "${sandbox}/skelepress.config.yaml" epub "EPUB Sandbox Guide" es true
+
+  (
+    cd "${sandbox}/work" && "${sandbox}/bin/skelepress" render -c "${sandbox}/skelepress.config.yaml"
+  ) >"$out" 2>&1 || code=$?
+  assert_exit_code "0" "$code" "an empty fragment degrades instead of failing the render"
+  assert_contains "$md" '\]\(#ch-chapter-2\)' "an empty fragment falls back to the chapter anchor"
+  assert_contains "$md" '## Section A' "the target chapter content survives"
+  assert_not_contains "$md" '\](chapter-2.md#\)' "no dead file link survives the merge"
+
+  rm -rf "$sandbox"
+  rm -f "$out"
+}
+
+# A fragment link that exists only inside a fenced example is not a real
+# reference: the injector must not give the target heading an explicit id for
+# it, because rewrite_sibling_links never rewrites fenced examples and the id
+# would only change valid output (and risk dedup collisions).
+run_chapter_fragment_fenced_link_not_planned_test() {
+  if ! command -v pandoc >/dev/null 2>&1; then
+    echo "SKIP fenced-only fragment targets (pandoc not available)"
+    return 0
+  fi
+
+  local sandbox out md code=0
+  sandbox="$(new_epub_sandbox)"
+  out="$(mktemp)"
+  md="${sandbox}/work/out/epub-guide-manual.md"
+
+  printf '# First Chapter\n\n```markdown\nSee [Section A](chapter-2.md#section-a).\n```\n\nNo real link outside the fence.\n' >"${sandbox}/work/chapters/chapter-1.md"
+  printf '# Second Chapter\n\n## Section A\n\nBody.\n' >"${sandbox}/work/chapters/chapter-2.md"
+  write_epub_config "${sandbox}/skelepress.config.yaml" epub "EPUB Sandbox Guide" es true
+
+  (
+    cd "${sandbox}/work" && "${sandbox}/bin/skelepress" render -c "${sandbox}/skelepress.config.yaml"
+  ) >"$out" 2>&1 || code=$?
+  assert_exit_code "0" "$code" "a fenced-only fragment reference renders"
+  assert_contains "$md" '## Section A' "the plain target heading survives untouched"
+  assert_not_contains "$md" '\{#ch-chapter-2-section-a\}' "no derived id is planned from a fenced-only reference"
+
+  rm -rf "$sandbox"
+  rm -f "$out"
+}
+
 run_chapter_fragment_pdf_destination_test() {
   if ! command -v pandoc >/dev/null 2>&1 || ! command -v xelatex >/dev/null 2>&1 \
     || ! command -v pdftohtml >/dev/null 2>&1; then

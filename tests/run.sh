@@ -149,6 +149,8 @@ main() {
   run_chapter_fragment_missing_heading_test
   run_chapter_fragment_duplicate_heading_test
   run_chapter_fragment_author_id_and_fence_test
+  run_chapter_fragment_empty_fragment_test
+  run_chapter_fragment_fenced_link_not_planned_test
   run_chapter_fragment_pdf_destination_test
   run_multi_format_export_test
   run_plan_conformance_tests
