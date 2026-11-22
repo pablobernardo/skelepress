@@ -9,11 +9,19 @@ The project follows semantic versioning and keeps two versioned contracts:
 
 ## [Unreleased]
 
+## [3.4.3] - 2026-11-22
+
 ### Fixed
 
 - Repeated `skelepress book` builds preserve earlier artifacts. The first build
   keeps the date-only name; if a planned path is taken, all volumes and formats
   in the new build share a time suffix and, if needed, a counter (#226).
+
+### Compatibility
+
+- No configuration contract change. The date-only name remains the default
+  when there is no collision, and saved configurations still resolve the date
+  at render time. Run one build at a time per output root.
 
 ## [3.4.2] - 2026-11-21
 
