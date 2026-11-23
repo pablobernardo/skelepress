@@ -95,6 +95,16 @@ L2. T1 execution evidence: the plan normally resolves chapters as absolute
     `# yamllint disable-line` (a `disable-next-line` on its own line inside a
     step failed for this version); the two Pages actions use it because the
     full SHA pin exceeds the line budget.
+L6. Favicon/identity round (`76e9c74`): theme-aware logo pair (dark wordmark
+    on light theme, white on dark, alt="Skelepress") in navbar and hero, the
+    navbar site title dropped next to the wordmark, the ICO raster shipped as
+    alternate icon because Safari ignores SVG favicons, and a preview gallery
+    on the brand page built with inline-CSS background tiles — VitePress
+    compiles HTML img src attributes as bundler imports even with v-pre, and
+    the assets sit outside the bundler root, so <img> tags could not reference
+    docs/brand from a page. The created docs/public copy is excluded from the
+    site source pages. Gate 1040/0; live checks green (logo pair present,
+    9 preview tiles, favicon.ico HTTP 200).
 L5. Post-merge maintainer review round (two commits, `d6883eb` and `7d61027`):
     brand returned to `docs/brand/` (identity surface, not a dev-manual page;
     raw-HTML image references the move had broken point at real files again),
