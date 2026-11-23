@@ -95,6 +95,11 @@ L2. T1 execution evidence: the plan normally resolves chapters as absolute
     `# yamllint disable-line` (a `disable-next-line` on its own line inside a
     step failed for this version); the two Pages actions use it because the
     full SHA pin exceeds the line budget.
+L9. Install box alignment round (`4ea56c7`): maintainer screenshot showed the
+    box floating (centered in a wider container beside the left-aligned
+    hero) and purposeless; it now fills the hero text container (flush with
+    heading and buttons) and opens with an "Install in one command" label.
+    Live check confirmed the label.
 L8. Copyable install shortcut (`4a15f0a`): maintainer-approved theme override
     renders the installation guide's one-liner in a copy box under the hero
     actions (`home-hero-actions-after` slot, HeroInstallSnippet.vue with
