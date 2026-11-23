@@ -18,22 +18,35 @@ async function copy() {
 </script>
 
 <template>
-  <div class="hero-install-snippet">
-    <span class="prompt" aria-hidden="true">$</span>
-    <code>{{ command }}</code>
-    <button type="button" :data-copied="copied" @click="copy">
-      {{ copied ? 'Copied!' : 'Copy' }}
-    </button>
+  <div class="hero-install" role="group" aria-label="Quick install command">
+    <p class="hero-install-label">Install in one command</p>
+    <div class="hero-install-snippet">
+      <span class="prompt" aria-hidden="true">$</span>
+      <code>{{ command }}</code>
+      <button type="button" :data-copied="copied" @click="copy">
+        {{ copied ? 'Copied!' : 'Copy' }}
+      </button>
+    </div>
   </div>
 </template>
 
 <style scoped>
+.hero-install {
+  margin-top: 16px;
+}
+.hero-install-label {
+  margin: 0 0 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--vp-c-text-1);
+}
 .hero-install-snippet {
+  /* The slot sits inside the hero's text container: full width keeps the box
+     flush with the heading and the action buttons above it. */
   display: flex;
   align-items: center;
   gap: 8px;
-  max-width: 480px;
-  margin: 12px auto 0;
+  width: 100%;
   padding: 10px 12px 10px 16px;
   border: 1px solid var(--vp-c-divider);
   border-radius: 10px;
