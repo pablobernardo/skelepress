@@ -5,6 +5,9 @@ hero:
   name: Skelepress
   text: PDF and EPUB from one configuration
   tagline: An agnostic, versioned Pandoc toolkit — declare your chapters once, render a typeset PDF, a reflowable EPUB3, or both in a single invocation.
+  image:
+    src: /brand/logo/skelepress-logo-dark.svg
+    alt: Skelepress logo
   actions:
     - theme: brand
       text: Get started

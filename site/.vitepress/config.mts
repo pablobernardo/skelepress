@@ -12,12 +12,6 @@ import { defineConfig } from 'vitepress'
 export default defineConfig({
   srcDir: '../docs',
   srcExclude: ['README.md'],
-  // docs/README.md navigates the repository on GitHub: its ../ links point at
-  // files outside srcDir by design and are not site content. The pattern is
-  // regex-wide: it exempts EVERY relative parent-directory link in the docs
-  // tree, not only README.md's, so dead-link checking stays meaningful for
-  // links that start inside srcDir.
-  ignoreDeadLinks: [/^(\.\/)?\.\.\//],
   // Project Pages deployment: https://pablobernardo.github.io/skelepress/
   base: '/skelepress/',
   lang: 'en-US',
@@ -25,13 +19,22 @@ export default defineConfig({
   description:
     'Agnostic, versioned Pandoc toolkit: PDF and EPUB from one declarative configuration.',
   head: [
-    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/skelepress/dev/brand/icons/favicon.svg' }]
+    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/skelepress/brand/icons/favicon.svg' }]
   ],
+  // VitePress renders a directory's README.md as README.html, not as the
+  // clean directory URL, so the brand entry is rewritten to /brand/.
+  rewrites: {
+    'brand/README.md': 'brand/index.md'
+  },
+  // Brand identity belongs to the toolkit itself, not to either manual: the
+  // logo shows in the navbar and the brand page ships as its own entry.
   themeConfig: {
+    logo: '/brand/logo/skelepress-logo-dark.svg',
     siteTitle: 'Skelepress',
     nav: [
       { text: 'User guide', link: '/user/install', activeMatch: '/user/' },
-      { text: 'Developer guide', link: '/dev/architecture', activeMatch: '/dev/' }
+      { text: 'Developer guide', link: '/dev/architecture', activeMatch: '/dev/' },
+      { text: 'Brand', link: '/brand/', activeMatch: '/brand/' }
     ],
     sidebar: {
       '/user/': [
@@ -41,6 +44,7 @@ export default defineConfig({
             { text: 'Installation', link: '/user/install' },
             { text: 'Optional dependencies', link: '/user/dependencies' },
             { text: 'Usage', link: '/user/usage' },
+            { text: 'Books', link: '/user/books' },
             { text: 'Migration', link: '/user/migration' }
           ]
         }
@@ -52,10 +56,15 @@ export default defineConfig({
             { text: 'Architecture', link: '/dev/architecture' },
             { text: 'Releasing', link: '/dev/releasing' },
             { text: 'Dependency policy', link: '/dev/dependency-policy' },
-            { text: 'i18n', link: '/dev/i18n' },
-            { text: 'Books', link: '/dev/books' },
-            { text: 'Brand', link: '/dev/brand/' }
+            { text: 'i18n', link: '/dev/i18n' }
           ]
+        }
+      ],
+      // Brand is identity, not a manual section: one entry, clean URL, no
+      // numbered reading order of its own.
+      '/brand/': [
+        {
+          items: [{ text: 'Brand assets', link: '/brand/' }]
         }
       ]
     },

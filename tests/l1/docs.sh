@@ -359,8 +359,9 @@ print("\n".join(sorted({"docs/" + path.split("docs/", 1)[-1] if "docs/" in path 
 # The VitePress sidebar in site/.vitepress/config.mts is the ONE canonical
 # reading order for the documentation. The PDF example must derive its
 # explicit_files order from that same list: web and PDF may never diverge.
-# The brand page is an asset gallery, not part of the reading order, so it is
-# the one sidebar link allowed to be absent from the PDF.
+# The brand page is identity, not part of the reading order, so it is the one
+# sidebar link allowed to be absent from the PDF (it lives at /brand/, outside
+# the user/dev sections).
 run_sidebar_pdf_reading_order_agreement_test() {
   local sidebar planned
 
@@ -370,7 +371,7 @@ run_sidebar_pdf_reading_order_agreement_test() {
   sidebar="$(awk '/^    sidebar: \{/{flag=1; next} /^    \},?$/{flag=0} flag' \
     "${ROOT_DIR}/site/.vitepress/config.mts" \
     | sed -n "s/^.*link: '\/\([^']*\)'.*$/\1/p" \
-    | grep -v '^dev/brand/$' \
+    | grep -v '^brand/$' \
     | sed 's#$#.md#; s#^#docs/#')"
 
   # The documentation example declares two formats, so the plan is a version-2

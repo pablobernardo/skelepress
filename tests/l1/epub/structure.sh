@@ -286,7 +286,7 @@ PY
 # An EPUB is a closed artefact: a document inside it can only link to something
 # the package carries. A relative link to a file elsewhere in the repository
 # renders happily and is then rejected by EPUBCheck with RSC-007, which is how
-# `docs/user/usage.md` and `docs/dev/books.md` broke the documentation publication. The
+# `docs/user/usage.md` and `docs/user/books.md` broke the documentation publication. The
 # same link also leads nowhere in the PDF's own index.
 run_epub_document_links_stay_inside_publication_test() {
   local output

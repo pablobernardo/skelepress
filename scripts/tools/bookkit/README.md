@@ -262,7 +262,7 @@ template name or a template path:
   generated configurations as-is, and the validator and the renderer resolve
   it inside the installation. The eight styles, their paper sizes and what each
   is for are tabulated in
-  [the built-in book styles](../../../docs/dev/books.md#built-in-book-styles).
+  [the built-in book styles](../../../docs/user/books.md#built-in-book-styles).
 - anything else is a **path to a book-class LaTeX template of your own** —
   relative to the working directory, or absolute — and the tool fails before
   building anything when the file does not exist. Use this form when your book

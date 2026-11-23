@@ -31,12 +31,12 @@ input:
     - "user/install.md"
     - "user/dependencies.md"
     - "user/usage.md"
+    - "user/books.md"
     - "user/migration.md"
     - "dev/architecture.md"
     - "dev/releasing.md"
     - "dev/dependency-policy.md"
     - "dev/i18n.md"
-    - "dev/books.md"
 
 output:
   formats: [pdf, epub]

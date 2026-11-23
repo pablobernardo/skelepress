@@ -13,6 +13,7 @@ example in `examples/documentation/` derives its order from that same list.
 | → [`user/install.md`](user/install.md) | How do I install it, and which system dependencies does it need? |
 | [`user/dependencies.md`](user/dependencies.md) | Which optional PDF layout features need additional dependencies? |
 | → [`user/usage.md`](user/usage.md) | How do I configure a repository, run the commands and wire it into CI? |
+| [`user/books.md`](user/books.md) | How do I build a book: the template, manifests, `skelepress book`, the cover and the contents. |
 | [`user/migration.md`](user/migration.md) | What a consuming repository has to do when a toolkit version changes. |
 
 ## Maintaining the toolkit (`docs/dev/`)
@@ -23,8 +24,12 @@ example in `examples/documentation/` derives its order from that same list.
 | [`dev/releasing.md`](dev/releasing.md) | How is a version cut, published and verified? |
 | [`dev/dependency-policy.md`](dev/dependency-policy.md) | Which versions are pinned, how are they updated, and why is the Mermaid CLI different? |
 | [`dev/i18n.md`](dev/i18n.md) | How do the catalogs, the keys and the two runtimes fit together? |
-| [`dev/books.md`](dev/books.md) | How do I build a book: the template, manifests, `skelepress book`, the cover and the contents. |
-| [`dev/brand/README.md`](dev/brand/README.md) | Brand assets: logo, symbol and icons, with their palette and usage rules. |
+
+## Brand assets (`docs/brand/`)
+
+| Document | Answers |
+| --- | --- |
+| [`brand/README.md`](brand/README.md) | Brand assets: logo, symbol and icons, with their palette and usage rules. |
 
 ## Outside `docs/`
 

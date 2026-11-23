@@ -185,15 +185,18 @@ skelepress/
     render-all.sh
   docs/
     README.md                # navigation index
-    install.md
-    usage.md
-    architecture.md
-    books.md
-    dependencies.md
-    dependency-policy.md
-    i18n.md
-    migration.md
-    releasing.md
+    index.md                 # web-site landing page (site/, VitePress)
+    user/                    # using the toolkit
+      install.md
+      dependencies.md
+      usage.md
+      books.md
+      migration.md
+    dev/                     # maintaining the toolkit
+      architecture.md
+      releasing.md
+      dependency-policy.md
+      i18n.md
     brand/                   # logo, symbol, icons and their usage rules
   tests/
     run.sh
@@ -202,7 +205,7 @@ skelepress/
 ```
 
 The nine templates are eight selectable book styles plus the article
-`default.tex`; `docs/dev/books.md#built-in-book-styles` says what each style is for
+`default.tex`; `docs/user/books.md#built-in-book-styles` says what each style is for
 and what paper it targets. A style name (`book-kdp-6x9`) selects the shipped
 file, a path selects a consumer-owned one; `template_runtime.py` owns both
 rules.

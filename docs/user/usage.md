@@ -79,7 +79,7 @@ A book is the same renderer with a `book`-class template and, when the volumes
 are declared as manifests, one configuration per volume. The whole story —
 manifests, the volume layout, `skelepress book`, the fields that shape a book,
 the cover image and how the contents is separated — is
-[`books.md`](../dev/books.md).
+[`books.md`](books.md).
 
 In short:
 
@@ -92,8 +92,8 @@ A volume's manifest can also declare what it produces (`formats: [pdf, epub]`)
 and which book template it uses (`template`). A series shares both through
 `series.yaml`, a volume overrides them, and the `--template` flag still outranks
 the declared value. See
-[Producing a PDF, an EPUB, or both](../dev/books.md#producing-a-pdf-an-epub-or-both)
-and [Choosing the template](../dev/books.md#choosing-the-template).
+[Producing a PDF, an EPUB, or both](books.md#producing-a-pdf-an-epub-or-both)
+and [Choosing the template](books.md#choosing-the-template).
 
 The field reference for a manifest lives with the tool, in
 [`scripts/tools/bookkit/README.md`](https://github.com/pablobernardo/skelepress/blob/main/scripts/tools/bookkit/README.md).
@@ -317,7 +317,7 @@ skelepress validate-config -c skelepress.config.yaml
 
 The validator implements an explicit subset of JSON Schema (`type`, `properties`, `required`, `additionalProperties`, `items`, `minItems`, `minLength`, `minimum`, `enum`, `anyOf`), shared with the bookkit tool through `scripts/runtime/schema_runtime.py`. A test fails if the schema starts using any other keyword, so one can never be silently ignored.
 
-`pandoc.template` is optional. Omitted, the render uses the toolkit's `templates/default.tex`. A **bare name — no path separator and no dot — selects a template that ships with the toolkit**: `book` resolves to `templates/book.tex`, which travels in the artifact, so the same configuration works in a checkout and in an installation. An unknown bare name fails naming the valid ones instead of being read as a path; anything else is a path resolved against `project.base_dir`. The full list of built-in names — eight book styles — is in [the built-in book styles](../dev/books.md#built-in-book-styles).
+`pandoc.template` is optional. Omitted, the render uses the toolkit's `templates/default.tex`. A **bare name — no path separator and no dot — selects a template that ships with the toolkit**: `book` resolves to `templates/book.tex`, which travels in the artifact, so the same configuration works in a checkout and in an installation. An unknown bare name fails naming the valid ones instead of being read as a path; anything else is a path resolved against `project.base_dir`. The full list of built-in names — eight book styles — is in [the built-in book styles](books.md#built-in-book-styles).
 
 `pandoc.top_level_division` is optional and **PDF-only**. It maps one to one to Pandoc's own `--top-level-division` flag, so a top-level Markdown heading becomes the LaTeX command you name: `section` (Pandoc's default), `chapter` or `part`. `default` and an absent field pass no flag at all, so existing configurations keep Pandoc's behaviour. Any other value is rejected by `validate-config` naming the four valid ones.
 
