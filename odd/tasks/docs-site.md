@@ -37,20 +37,38 @@ S5. Docs hygiene (repo rules): every new/changed doc sentence stays in
 
 ## Tasks
 
-T1 [S2,S3] Scaffold `site/` (package.json, config.mts with user/dev sidebar,
-    srcDir), landing page, and the docs reorganization into `user/`/`dev/`
-    (git mv, update internal links, keep docs/README.md navigation accurate).
-    Route: inline.
-T2 [S3] Derive `examples/documentation/skelepress.config.yaml` order from the
-    sidebar; extend the reading-order test to pin sidebar ↔ PDF order
-    agreement. RED first. Route: inline.
-T3 [S1,S5] `docs/dependency-policy.md` Node entry (dev-only), architecture
-    decision row, CHANGELOG entry. Route: inline.
-T4 [S4] `docs.yml` Pages workflow; verify a manual run builds and publishes;
-    confirm the gate and release workflows are untouched. Route: inline.
-T5 [S1-S5] Verification: `make gate` green; `pnpm build` clean; visual check
-    of the built site locally (user and dev sections, search); native review
-    per RDD; PR, merge, Pages deployment verified live. Route: parent.
+T1 [S2,S3] done; route: inline; commit `351603a`. docs/ split into user/ and dev/
+    (git mv, all live cross-references updated: README, AGENTS, CONTRIBUTING,
+    SECURITY, example READMEs, i18n catalogs, suite tests, CHANGELOG links),
+    site/ scaffolded (package.json, config.mts with the canonical sidebar,
+    srcDir ../docs), docs/index.md landing, coverage test extended to nested
+    guides. Full suite 1039/0.
+T2 [S3] done; route: inline; commit `5c86ea5`; RED first: books.md sat fourth
+    in the PDF order but last in the sidebar (assertion failed with the exact
+    diff), GREEN after mirroring the sidebar order in the example. Full suite
+    1040/0.
+T3 [S1,S5] done; route: inline; commit `8762940`. dependency-policy Node entry
+    (dev-only, npm chosen and recorded, vitepress@1.6.3 exact), decision row
+    D21, CHANGELOG [Unreleased] entry.
+T4 [S4] done; route: inline; commit `8a5039d`. docs.yml isolated Pages workflow
+    (paths-filtered, not in the gate, does not touch ci.yml/release.yml),
+    actions pinned to full SHAs, npm ci, build, deploy. Site build verified
+    locally: 12 pages, local search present, preview serving 200 for landing,
+    /user/ and /dev/.
+T5 [S1-S5] done; route: parent. Gate green (1040 PASS, exit 0) before push.
+    Native review per work-unit slice (the whole branch exceeded the reviewer
+    context budget; split per provider stop): slice A approved after a
+    deterministic correction (srcDir ../../docs -> ../docs, validated by a
+    targeted validator); slice B approved (advisories only); slice C passive
+    (docs-only, structural readback); one intermediate candidate stopped
+    escalated (unknown causality; the refuter probe is unavailable on this
+    host) and was not retried — its actionable findings became the hardening
+    commit `6c7c143` (Pages permissions scoped to the deploy job, prepreview
+    hook, ignoreDeadLinks comment) reviewed as a new candidate D'; that review
+    caught a real deterministic blocker (lockfile out of sync with the exact
+    1.6.3 pin, npm ci would fail) corrected in `d0ff4ab` and validated; final
+    state approved with authority burned. PR opened; merge and live Pages
+    verification follow ordinary repository policy per maintainer instruction.
 
 ## Log
 
@@ -62,9 +80,30 @@ L1. Origin (this session, maintainer dialogue): after publishing 3.5.0 and
     duplicating content. The maintainer confirmed VitePress despite the Node
     dependency ("más elegante"), accepted the containment design (`site/`
     dev-only), and asked for a clean-session prompt to start it.
-L2. Design constraints carried from the maintainer dialogue: no content
-    duplication (`docs/` stays canonical); one canonical nav list shared by
-    web and PDF (S3); Node never in the shipped artifact (S1); one isolated
-    deploy workflow (S4); package manager choice (npm/pnpm) is an
-    implementation decision for T1 — pick one and record the choice in
-    `docs/dependency-policy.md`.
+L2. T1 execution evidence: the plan normally resolves chapters as absolute
+    paths, so `explicit_files` entries are relative to `input.chapters_dir`
+    (`user/install.md`, not `docs/user/install.md`); the suite failed with
+    doubled `docs/docs/` paths before the example was fixed. The npm option
+    name is `srcExclude` (singular); `srcExcludes` silently ignores the list.
+    VitePress resolves page sources outside the npm root with no visible
+    node_modules, so `site/scripts/ensure-docs-link.mjs` creates a relative
+    symlink `docs/node_modules -> ../site/node_modules` before every
+    dev/build/preview run; `docs/node_modules` and site build output are
+    gitignored. npm resolves `^1.6.3` to vitepress 1.6.4: after pinning the
+    exact version the lockfile had to be regenerated, which the native review
+    caught as a deterministic blocker. yamllint only honors inline
+    `# yamllint disable-line` (a `disable-next-line` on its own line inside a
+    step failed for this version); the two Pages actions use it because the
+    full SHA pin exceeds the line budget.
+L3. Review evidence: the branch-wide candidate exceeded the native reviewer
+    context budget (81 files), so review ran per work-unit slice in detached
+    worktrees. Findings applied as ordinary engineering: Pages/id-token
+    permissions moved from workflow level to the deploy job (the build job
+    must never hold deployment credentials), checkout runs with
+    `persist-credentials: false` matching the ci.yml convention, prepreview
+    hook added, ignoreDeadLinks comment states the regex is wide. Advisories
+    left as follow-ups: dangling-symlink handling in ensure-docs-link
+    (existsSync follows symlinks and the EEXIST fallthrough reports before
+    the script's own message), the shared docs-path normalization helper in
+    tests/l1/docs.sh, and the duplicated canonical-order prose between the
+    config comment and docs/README.md.

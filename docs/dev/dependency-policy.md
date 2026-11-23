@@ -50,7 +50,7 @@ evidence. Release preparation must explicitly request and inspect both jobs.
 The template's default prose and mono faces do not contain the six ballot and
 warning symbols of #83 (`☐ ☑ ☒ ✅ ❌ ⚠`). The template maps exactly those glyphs,
 and only those glyphs, to GNU FreeSerif when the font exists (D14 in
-`docs/architecture.md`). This font is an **optional** dependency: the toolkit,
+`docs/dev/architecture.md`). This font is an **optional** dependency: the toolkit,
 `bootstrap.sh` and ordinary CI do not install or download it. The opt-in
 `run_release_acceptance` profile installs `fonts-freefont-ttf` only in its
 disposable VM to exercise symbol rendering and retain review evidence. It does
@@ -202,6 +202,31 @@ What would close it: a parity test that loads every fixture through both parsers
 in the same environment, run where PyYAML is installed. Until then, prefer quoted
 scalars in configuration examples and fixtures.
 
+## Node: dev-only (documentation site)
+
+The web documentation (`site/`, VitePress) introduces a Node dependency, and
+its containment is a deliberate decision (D21 in `docs/dev/architecture.md`):
+
+- **Never shipped.** The release tarball and every runtime path are untouched:
+  no script, filter, template or test reads `site/`. Node is needed only to
+  build or preview the site locally and in the Pages workflow.
+- **Dev-only by layout.** Everything lives in `site/package.json` with
+  `devDependencies` only; `site/node_modules` and the build output are
+  gitignored.
+- **Package manager: npm.** The repository ships `site/package-lock.json` and
+  the Pages workflow installs with `npm ci`. npm needs no global tool beyond
+  Node itself, which hosted runners already provide, and this is a single
+  dev-only package where a second lockfile format would add surface without
+  benefit. The build scripts create a relative symlink
+  `docs/node_modules -> ../site/node_modules` before every run (pages live
+  outside the npm root, and Node resolves dependencies by walking up from the
+  importing file); it is a link, not a copy, and it is gitignored.
+
+- `vitepress@1.6.3`
+  - Usage: `site/package.json` (exact pin, `devDependencies`), build/preview
+    scripts, `.github/workflows/docs.yml`. Updated like any other pinned
+    dependency: bump, `npm install` in `site/`, review the diff, rebuild.
+
 ## Pinned critical dependencies
 
 - `@mermaid-js/mermaid-cli@10.9.1`
@@ -222,9 +247,9 @@ So the contract is the smoke test, not the number:
   version to compare against when reporting a bug.
 - **Any other version is accepted** if `skelepress doctor` renders its test
   diagram. `doctor` reports the version it found, and on failure prints the two
-  fixes from `docs/install.md`.
+  fixes from `docs/user/install.md`.
 - **Do not pin a user's system-wide install from this repository.** The
-  remediation for a browserless `mermaid-cli` is documented in `docs/install.md`,
+  remediation for a browserless `mermaid-cli` is documented in `docs/user/install.md`,
   and `make bootstrap` only warns, because downloading a browser is the user's
   decision.
 
@@ -252,7 +277,7 @@ pointing here for exactly that reason.
 1. Update the pinned version in bootstrap/workflows.
 2. Run `tests/run.sh`.
 3. Run the security workflow (`security.yml`).
-4. Update `CHANGELOG.md` (Unreleased) and, when the process itself changes, `docs/releasing.md`.
+4. Update `CHANGELOG.md` (Unreleased) and, when the process itself changes, `docs/dev/releasing.md`.
 
 ## Acceptance criteria
 

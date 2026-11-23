@@ -19,7 +19,7 @@ everything except an actual render, `make test` needs no extra setup.
 
 For managed local installations, the `skelepress-dev` development symlink and
 bootstrap options (dry-run, non-interactive and CI), see
-[development installation](docs/install.md#development-installation-from-the-repo).
+[development installation](docs/user/install.md#development-installation-from-the-repo).
 `make install-release` installs the latest published release instead of the
 working copy.
 
@@ -31,7 +31,7 @@ working copy.
 | `make gate` | Everything a pull request is verified with: suite, catalogs, docs, plan conformance |
 | `make validate CONFIG=path/to/skelepress.config.yaml` | Validates a configuration against the schema |
 | `make doctor` | Checks the local toolchain |
-| `make epubcheck FILE=path/to/publication.epub` | Validates a finished publication with EPUBCheck. Optional, needs a JVM; see [dependency policy](docs/dependency-policy.md) |
+| `make epubcheck FILE=path/to/publication.epub` | Validates a finished publication with EPUBCheck. Optional, needs a JVM; see [dependency policy](docs/dev/dependency-policy.md) |
 | `make install-local-dev` | Puts the working copy on `PATH` for manual testing |
 | `python3 scripts/dev/check-i18n.py` | Catalog parity and placeholders |
 | `python3 scripts/dev/check-docs.py` | No document points at something missing |
@@ -117,10 +117,10 @@ the others are translations, not copies.
 | Changing | Touch |
 | --- | --- |
 | The configuration contract | `schemas/skelepress-config.schema.json`, then `scripts/runtime/validate-config.py`, then `tests/l1/validate.sh` |
-| The CLI surface | `bin/skelepress` and its catalog keys, then `tests/l1/help.sh`, then `docs/usage.md` |
+| The CLI surface | `bin/skelepress` and its catalog keys, then `tests/l1/help.sh`, then `docs/user/usage.md` |
 | Rendering | `scripts/runtime/render-native.py`, plus the checks in `scripts/runtime/preflight.py`; the matching file under `tests/l1/render/` |
 | A filter | `filters/<name>.lua`; a failure must be loud, never silent |
-| Dependencies | `scripts/delivery/bootstrap.sh`, `.github/workflows/`, `docs/dependency-policy.md` |
+| Dependencies | `scripts/delivery/bootstrap.sh`, `.github/workflows/`, `docs/dev/dependency-policy.md` |
 | A breaking change | The affected areas, an explicit migration guide when the change reaches a consumer other than the maintainer, updated examples and a `CHANGELOG.md` entry; apply the toolkit and contract version rules in `AGENTS.md` |
 
 [`docs/README.md`](docs/README.md) maps every document to the question it answers.
@@ -144,7 +144,7 @@ which exist to prove that accents and punctuation render.
 ## Releasing
 
 Maintainers cut versions. The gates, the commands and what CI does not exercise
-are in [`docs/releasing.md`](docs/releasing.md).
+are in [`docs/dev/releasing.md`](docs/dev/releasing.md).
 
 ## CLI tests and CI levels
 

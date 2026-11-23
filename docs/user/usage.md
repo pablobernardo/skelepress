@@ -2,7 +2,7 @@
 
 This guide explains how to consume the toolkit from any repository.
 
-> Before you start: see `docs/install.md` to get `skelepress` on your PATH.
+> Before you start: see `docs/user/install.md` to get `skelepress` on your PATH.
 
 ## Minimum requirements
 
@@ -79,7 +79,7 @@ A book is the same renderer with a `book`-class template and, when the volumes
 are declared as manifests, one configuration per volume. The whole story —
 manifests, the volume layout, `skelepress book`, the fields that shape a book,
 the cover image and how the contents is separated — is
-[`books.md`](books.md).
+[`books.md`](../dev/books.md).
 
 In short:
 
@@ -92,8 +92,8 @@ A volume's manifest can also declare what it produces (`formats: [pdf, epub]`)
 and which book template it uses (`template`). A series shares both through
 `series.yaml`, a volume overrides them, and the `--template` flag still outranks
 the declared value. See
-[Producing a PDF, an EPUB, or both](books.md#producing-a-pdf-an-epub-or-both)
-and [Choosing the template](books.md#choosing-the-template).
+[Producing a PDF, an EPUB, or both](../dev/books.md#producing-a-pdf-an-epub-or-both)
+and [Choosing the template](../dev/books.md#choosing-the-template).
 
 The field reference for a manifest lives with the tool, in
 [`scripts/tools/bookkit/README.md`](https://github.com/pablobernardo/skelepress/blob/main/scripts/tools/bookkit/README.md).
@@ -175,7 +175,7 @@ output:
 `document.*` — metadata and cover page:
 
 - With `pandoc.metadata_file` empty, the non-empty `title`, `subtitle`, `publisher`, `author`, `date` and `rights` fields are passed to pandoc as template variables (`-V field=value`) and fill the cover page of `templates/default.tex`.
-- With `pandoc.metadata_file` set, they are **not** passed: the metadata file takes precedence (see 'Contract rules' in `docs/architecture.md`).
+- With `pandoc.metadata_file` set, they are **not** passed: the metadata file takes precedence (see 'Contract rules' in `docs/dev/architecture.md`).
 - The output file name is a **slug**: `output.file_prefix` when declared, otherwise `document.title`. Lowercase, ASCII, dashes; accents are transliterated (`Informe Ñandú` becomes `informe-nandu`), so a name never needs quoting and can never escape the output directory.
 - `pandoc.metadata_file` is **optional**: without it, `document.*` is what reaches the template, so a project needs no side YAML file.
 - `document.language` (`en`, `es`, `pt`, `gl`) selects the babel language and applies even when a metadata file provides the cover. The default is **English**.
@@ -317,7 +317,7 @@ skelepress validate-config -c skelepress.config.yaml
 
 The validator implements an explicit subset of JSON Schema (`type`, `properties`, `required`, `additionalProperties`, `items`, `minItems`, `minLength`, `minimum`, `enum`, `anyOf`), shared with the bookkit tool through `scripts/runtime/schema_runtime.py`. A test fails if the schema starts using any other keyword, so one can never be silently ignored.
 
-`pandoc.template` is optional. Omitted, the render uses the toolkit's `templates/default.tex`. A **bare name — no path separator and no dot — selects a template that ships with the toolkit**: `book` resolves to `templates/book.tex`, which travels in the artifact, so the same configuration works in a checkout and in an installation. An unknown bare name fails naming the valid ones instead of being read as a path; anything else is a path resolved against `project.base_dir`. The full list of built-in names — eight book styles — is in [the built-in book styles](books.md#built-in-book-styles).
+`pandoc.template` is optional. Omitted, the render uses the toolkit's `templates/default.tex`. A **bare name — no path separator and no dot — selects a template that ships with the toolkit**: `book` resolves to `templates/book.tex`, which travels in the artifact, so the same configuration works in a checkout and in an installation. An unknown bare name fails naming the valid ones instead of being read as a path; anything else is a path resolved against `project.base_dir`. The full list of built-in names — eight book styles — is in [the built-in book styles](../dev/books.md#built-in-book-styles).
 
 `pandoc.top_level_division` is optional and **PDF-only**. It maps one to one to Pandoc's own `--top-level-division` flag, so a top-level Markdown heading becomes the LaTeX command you name: `section` (Pandoc's default), `chapter` or `part`. `default` and an absent field pass no flag at all, so existing configurations keep Pandoc's behaviour. Any other value is rejected by `validate-config` naming the four valid ones.
 
@@ -470,7 +470,7 @@ skelepress render -c skelepress.config.yaml --dry-run --json
 
 The renderer exports `PANDOC_MERMAID_BACKGROUND_EXPLICIT` as `1` only when the configuration declares `filters.mermaid.background`; conformance fixtures that declare it record `1` with the same `transparent` value this default example records as `0`.
 
-The plan is the verifiable contract of the render: it is what makes it possible to compare render implementations without reading code, and the shipped conformance suite enforces it. Four recorded cases in `tests/conformance/` are compared by `python3 scripts/dev/check-plan-conformance.py` over normalized plans; [the architecture guide](architecture.md) documents what is normalized and how to add a case.
+The plan is the verifiable contract of the render: it is what makes it possible to compare render implementations without reading code, and the shipped conformance suite enforces it. Four recorded cases in `tests/conformance/` are compared by `python3 scripts/dev/check-plan-conformance.py` over normalized plans; [the architecture guide](../dev/architecture.md) documents what is normalized and how to add a case.
 
 ### Quick drafts without a configuration
 
@@ -535,7 +535,7 @@ All inputs must be existing Markdown files; relative paths are resolved from the
 - `render` fails with Mermaid: `mmdc` is on PATH but cannot launch a browser. `mermaid-cli` needs a Chromium that Puppeteer can find, and its own download is separate from the npm package. `skelepress doctor` renders a test diagram and reports the exact fix:
   - install the browser Puppeteer expects: `npx puppeteer browsers install chrome-headless-shell`;
   - or point it at a browser you already have: `export PUPPETEER_EXECUTABLE_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"`.
-  A dropped diagram is not ignored: the merged markdown keeps the code block, `render` reports which diagrams failed and exits non-zero. To drop diagrams on purpose, set `filters.mermaid.enabled: false`. See `docs/install.md` for which of the two browser options to use and what not to hardcode.
+  A dropped diagram is not ignored: the merged markdown keeps the code block, `render` reports which diagrams failed and exits non-zero. To drop diagrams on purpose, set `filters.mermaid.enabled: false`. See `docs/user/install.md` for which of the two browser options to use and what not to hardcode.
 
 ## Configuration security
 

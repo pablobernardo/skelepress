@@ -7,6 +7,12 @@ The project follows semantic versioning and keeps two versioned contracts:
 - `VERSION` for the toolkit version
 - `skelepress.config.yaml -> version` for the configuration contract
 
+## [Unreleased]
+
+### Added
+
+- Web documentation site built with VitePress over the existing `docs/` Markdown: the guides move into `docs/user/` (install, dependencies, usage, migration) and `docs/dev/` (architecture, releasing, dependency-policy, i18n, books, brand), `docs/` stays the single source of truth, and `site/.vitepress/config.mts` holds the one canonical navigation whose order the PDF example mirrors (a test fails when web and PDF diverge). Node is a dev-only dependency: everything lives in `site/` with npm, the release artifact never carries it, and deployment is one isolated GitHub Pages workflow that does not run in the gate (#docs-site).
+
 ## [3.5.0] - 2026-11-22
 
 ### Added
@@ -508,7 +514,7 @@ The project follows semantic versioning and keeps two versioned contracts:
   files remain if another format fails; the command returns nonzero. EPUB-only
   requests need no implicit TeX engine; explicit runtime requirements apply.
   This replaces the unreleased singular `format` field; see
-  [migration](docs/migration.md). Multi-output JSON plans use version 2 (#94).
+  [migration](docs/user/migration.md). Multi-output JSON plans use version 2 (#94).
 - Visible emoji compatibility samples in the ohmyfake example's heading,
   paragraph, list and table, with regression coverage for those contexts (#93).
 - An optional installable Agent Skill for configuring, checking and reviewing
@@ -570,7 +576,7 @@ migration.
 
 The first release since 1.1.3, and a major one because **defaults changed**: the
 output file name, the typesetting language and the update path. Every one of them
-has its section in `docs/migration.md`. The configuration contract version stays
+has its section in `docs/user/migration.md`. The configuration contract version stays
 at `1`: no key was removed or made stricter, so existing files keep validating.
 
 ### Added

@@ -215,8 +215,8 @@ This optional typesetting choice is an explicit exception to the manifest's
 content-first model, not a place to configure engines or renderer paths. The
 generated configuration requests a PDF-only template variable; EPUB content is
 unaffected and custom templates are never modified. See
-[the full page policy and custom-template adoption](usage.md#pdf-running-headers)
-and [the optional TeX dependency](dependencies.md) before enabling it.
+[the full page policy and custom-template adoption](../user/usage.md#pdf-running-headers)
+and [the optional TeX dependency](../user/dependencies.md) before enabling it.
 
 ## Separating the contents
 

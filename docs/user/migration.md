@@ -30,7 +30,7 @@ command shim, no environment-variable alias, no fallback configuration loader
 and no duplicate release assets. The 2.5.2 updater hardcodes the old artifact
 names and cannot reach 3.0.0.
 
-Install 3.x as described in [docs/install.md](install.md), then remove the old
+Install 3.x as described in [docs/user/install.md](install.md), then remove the old
 2.5.2 managed installation by hand; the new installation leaves it untouched.
 Configuration contract `version: 1` is unchanged, and `skelepress.config.yaml`
 remains the generated configuration file name.

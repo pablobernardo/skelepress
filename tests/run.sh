@@ -113,6 +113,7 @@ main() {
   run_validate_metadata_contract_tests
   run_validate_optional_inert_fields_tests
   run_documentation_example_coverage_test
+  run_sidebar_pdf_reading_order_agreement_test
   run_emoji_showcase_example_test
   run_documentation_skill_test
   run_consumer_extension_tests

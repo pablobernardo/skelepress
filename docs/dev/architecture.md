@@ -202,7 +202,7 @@ skelepress/
 ```
 
 The nine templates are eight selectable book styles plus the article
-`default.tex`; `docs/books.md#built-in-book-styles` says what each style is for
+`default.tex`; `docs/dev/books.md#built-in-book-styles` says what each style is for
 and what paper it targets. A style name (`book-kdp-6x9`) selects the shipped
 file, a path selects a consumer-owned one; `template_runtime.py` owns both
 rules.
@@ -239,7 +239,7 @@ The shipped templates use the existing title and top-level heading marks in two
 bounded 8pt header regions; only those repeated strings are abbreviated with
 `truncate`. The book class uses chapters, the default article uses sections,
 and numbered/starred headings share the exception policy documented in
-[usage](usage.md#pdf-running-headers). Neither template changes its default-off
+[usage](../user/usage.md#pdf-running-headers). Neither template changes its default-off
 layout, class or hierarchy. Consumer-owned templates implement the variable
 themselves and are never rewritten; EPUB receives no header metadata.
 
@@ -250,7 +250,7 @@ the renderer reuses the predicate, package lookup and error surface before
 execution creates output. This is a narrow guard, not a new global doctor run:
 absent/false, custom templates, EPUB-only and dry-run execution are unchanged.
 It is not waivable with `runtime.strict: false`. See
-[dependencies](dependencies.md).
+[dependencies](../user/dependencies.md).
 
 `skelepress render -c <config> --dry-run [--json]` computes a pure plan
 (nothing is written or created) with `plan_version: 1`, containing the
@@ -289,7 +289,7 @@ in EPUB as well: the navigation document reuses headings, and a link there must
 carry text. Visual Apple Books acceptance is separate from structural archive
 verification. The singular `output.format` was an unreleased
 prototype and is replaced, not supported as a second alias; see
-[migration](migration.md).
+[migration](../user/migration.md).
 
 The plan is a conformance contract: four recorded cases in `tests/conformance/`
 cover minimal settings, metadata precedence, explicit chapter order, and custom
@@ -339,7 +339,7 @@ and configuration compatibility rules in `AGENTS.md`.
 | D8 | Release postponed during the work and cut as **2.0.0**: a major release, because the output file name, the default typesetting language and the update path changed. Creating the tag triggers `release.yml`, a path no pull request exercises. |
 | D9 | The repository is English, including this file and `odd/`; only the catalogs are translated. |
 | D10 | Every action is pinned to a commit SHA with its tag in a comment. Dependabot tracks the `github-actions` ecosystem weekly, so the pins do not rot; a tag is a mutable pointer, and these workflows handle the token that publishes releases. |
-| D11 | `mermaid-cli` is a **tested** version, not an enforced one: 10.9.1 is what the toolkit installs and CI renders with, any other version is accepted when `doctor` renders its test diagram, and this repository never pins a user's system-wide install. See `docs/dependency-policy.md`. |
+| D11 | `mermaid-cli` is a **tested** version, not an enforced one: 10.9.1 is what the toolkit installs and CI renders with, any other version is accepted when `doctor` renders its test diagram, and this repository never pins a user's system-wide install. See `docs/dev/dependency-policy.md`. |
 | D12 | `pandoc.metadata_file` is optional: the legacy side file stays supported and wins when present, but a configuration can now carry the cover through `document.*`, plus `document.language`, `document.titlepage` and a free-form `document.metadata` map. The file name still comes from `document.title`, so no consumer's output is renamed. |
 | D13 | Relative assets resolve from `project.base_dir`, never from the directory the command was invoked in. Every job appends `base_dir` **last** to the pandoc resource path, so a declared `pandoc.resource_path` keeps its priority and existing resolution is only widened. A relative `cover-image` is resolved against `base_dir` before Pandoc sees it, because neither the EPUB writer nor LaTeX's `\includegraphics` reads the resource path; both branches share the same resolver. The plan keeps `cwd: null` as D6 requires: this is a resolution rule, not a plan shape change. No EPUB plan carries the generated `\clearpage`, which is LaTeX-only markup. |
 | D14 | Missing Unicode symbols in PDFs are fixed as a glyph-only, template-level fallback. In the XeLaTeX/LuaLaTeX branch, exactly the six symbols of #83 (`☐ ☑ ☒ ✅ ❌ ⚠`) are mapped to GNU FreeSerif when it exists, looked up by standard file name first (`FreeSerif.ttf`, TeX Live) and then by family name (`FreeSerif`, fontconfig/luaotfload, e.g. Debian's `fonts-freefont-ttf`). The mapping applies in prose, inline code, untagged fenced code and highlighted fenced code. The prose and code font selections, the pdfLaTeX branch and the emoji filter are untouched: code stays textual and the symbols render as monochrome FreeSerif text glyphs, not as color-emoji images, so the fallback does not depend on the emoji filter; when the filter is enabled, it substitutes SVG in prose and leaves code alone (`Code`/`CodeBlock`), so in code contexts the fallback still applies. The mapping reaches fenced code because the six characters remain active inside fancyvrb's `Verbatim`/`Highlighting` environments, so their `newunicodechar` mappings execute there too; a consuming template that neutralizes those characters inside its verbatim environments loses the mapping; `tests/integration/unicode-symbols.sh` checks this, and it is optional and not part of `make gate`. The `newunicodechar` package is guarded together with the font: a TeX installation without either degrades instead of failing. The emoji presentation selector (U+FE0F), as in the issue's `⚠️`, is consumed only immediately after a mapped glyph, never globally. PDF text extraction keeps the base symbols but not the selector (`⚠️` extracts as `⚠`), so exact Unicode-sequence copy fidelity is not claimed. Without the font, rendering degrades to the previous behavior including the Missing-character diagnostics. No configuration contract or CLI change. |
@@ -348,7 +348,7 @@ and configuration compatibility rules in `AGENTS.md`.
 | D17 | The seven selectable book styles (3.3.0) are opt-in templates, not a new contract. `book-novel`, `book-manual` and five KDP trim sizes are additional `.tex` files chosen by `pandoc.template` or `skelepress book --template`; the default template selection, `version: 1` and existing publications are unchanged, so the toolkit version moves and the contract version does not. The KDP styles are editable starting points, not print-platform certification. |
 | D18 | EPUB Mermaid diagrams get a legible background (3.3.1) inside the default path, not as a new option. For EPUB/HTML output with no explicit `filters.mermaid.background` in the configuration, `filters/mermaid.lua` renders the PNG with a light background baked in, because readers such as Apple Books override the document stylesheet in dark mode and a CSS card cannot be relied on. The effective background is part of the output file name, so the PDF path and the EPUB path never share a cached image. An explicit `filters.mermaid.background` is honoured in every format, and `transparent` remains the escape hatch. This is a visible, non-breaking behavior change with contract version `1` unchanged. |
 | D19 | Cross-chapter link fragments resolve to the target section (3.5.0), not by reproducing Pandoc's `auto_identifiers` algorithm, which is fragile across versions and duplicates. The target heading receives an explicit id derived from the chapter file and the heading text via the toolkit's own `slugify`, deduplicated by the renderer because Pandoc does not deduplicate explicit ids. A fragment naming no heading falls back to the chapter anchor with a visible localized note instead of pointing at nothing, and the note follows `document.language` rather than the operator's environment. Chapter-only links, fenced-code examples, non-selected paths and no-cross-reference output are unchanged. |
-| D20 | A serialized work declares which volume it is per volume (3.5.0): optional `volume` (integer position, 1-based) and `volume_label` (free text) in a volume's `manifest.yaml`, exposed as the `volume` and `volume_label` pandoc metadata variables so templates print them without spending `subtitle` or hardcoding. The fields are deliberately not in `series.yaml`'s shared defaults — an ordinal differs for every volume, and a volume built from its own directory does not read `series.yaml` — so a series-level `volume` is a contract error. Where a series build can see both sides, a declared `volume` that does not equal the volume's position in `series.yaml`'s `volumes` list fails with a message naming the volume, the declared value and the expected position, turning the realistic stale-copy mistake into a loud error; `volume_label` stays free text and is never validated. New optional fields, no contract version change: publications that declare neither behave byte-identically. |
+| D21 | The web documentation (3.6.0 candidate) is a VitePress site whose `srcDir` is the repository's `docs/` tree, so the Markdown guides stay the single source of truth and nothing is duplicated. Node is contained as a dev-only dependency: everything lives in `site/` (npm, lockfile committed, `devDependencies` only), no runtime path reads `site/`, and the release artifact never carries Node. The VitePress sidebar in `site/.vitepress/config.mts` is the one canonical reading order; the PDF example derives its `explicit_files` from it and a test fails when web and PDF diverge. Deployment is one isolated Pages workflow that never runs in the gate and never gates a release. |
 
 ## How we got here
 
@@ -382,6 +382,6 @@ invariants that future changes must preserve:
       `tests/integration/l3-mermaid-project/`), and this criterion is stated
       in `AGENTS.md` as a delivery criterion, but adoption by external
       consuming repositories cannot be verified from this repository alone.
-- [x] Consumer installation and CLI use documented (`docs/install.md`,
-      `docs/usage.md`); future breaking changes require an explicit migration
+- [x] Consumer installation and CLI use documented (`docs/user/install.md`,
+      `docs/user/usage.md`); future breaking changes require an explicit migration
       guide under `AGENTS.md`.

@@ -327,7 +327,7 @@ YAML
   rm -f "$out_file"
 }
 
-# docs/dependency-policy.md declares Python 3.9 as the floor. The test that proves
+# docs/dev/dependency-policy.md declares Python 3.9 as the floor. The test that proves
 # a render works there only runs on a machine that has 3.9 — macOS, and the weekly
 # job — so a pull request on Linux would not notice a 3.10-only construct coming
 # back. This scans the source instead, which runs everywhere.

@@ -26,7 +26,7 @@ the actual release candidate still need to run and be recorded.
   change reaches a consumer other than the maintainer. The 3.0.0 clean break
   leaves the schema shape and configuration contract version unchanged.
 - [ ] **Dependencies pinned**: action SHAs and the images and tool versions in
-  `docs/dependency-policy.md` match CI.
+  `docs/dev/dependency-policy.md` match CI.
 
 ## Candidate acceptance checks
 
@@ -50,7 +50,7 @@ perform for the release, not claims that a future candidate has passed:
   with `git status`, and treat the checkout, not the machine, as the input.
 - [ ] **Clean install**: install the candidate artifact in a clean managed layout,
   confirm `skelepress --version`, and run `doctor` and `validate-config`. Follow
-  `docs/install.md`; use disposable state rather than an everyday installation.
+  `docs/user/install.md`; use disposable state rather than an everyday installation.
 - [ ] **Compatible upgrades**: from the previous published version, exercise the
   updater against the candidate artifact; confirm checksum verification, the
   installed version and the managed `current` pointer. Check rollback on a
