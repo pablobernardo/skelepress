@@ -147,6 +147,7 @@ main() {
   run_epub_mermaid_dark_mode_card_test
   run_chapter_link_rewrite_test
   run_chapter_fragment_link_test
+  run_chapter_fragment_self_link_rename_test
   run_chapter_fragment_missing_heading_test
   run_chapter_fragment_duplicate_heading_test
   run_chapter_fragment_author_id_and_fence_test

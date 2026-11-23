@@ -615,11 +615,17 @@ followed only by spaces or tabs on its line. A shorter or mixed
     return fenced
 
 
+# A bare same-chapter anchor link. Unlike SIBLING_LINK it carries no file
+# path: Pandoc resolves it against the current document's own auto ids.
+SELF_LINK = re.compile(r"\]\(#([^)\s]+)\)")
+
+
 def rewrite_sibling_links(
     text: str,
     markers: dict[str, str],
     fragment_ids: dict[str, dict[str, str]] | None = None,
     missing_note: str = "",
+    self_ids: dict[str, str] | None = None,
 ) -> str:
     """Point a link at an in-document anchor instead of a file the merge removes.
 
@@ -628,8 +634,15 @@ def rewrite_sibling_links(
     a reader-visible note, so the degradation is visible, not silent. Fenced
     code is left alone: a chapter that documents the link syntax must not have
     its example rewritten.
+
+    A same-chapter self-link (](#slug)) keeps Pandoc's auto id, which still
+    exists — unless the target heading is one whose explicit derived id this
+    very run injects, because an explicit id replaces the auto id and the bare
+    link would dangle (issue #241). When self_ids carries the chapter's own
+    mapping, such a self-link follows the rename like any cross-chapter link.
     """
     fragment_ids = fragment_ids or {}
+    self_ids = self_ids or {}
 
     def replace(match: re.Match[str]) -> str:
         name = Path(match.group(1)).name
@@ -657,7 +670,15 @@ def rewrite_sibling_links(
         if index in fenced:
             rewritten.append(line)
             continue
-        rewritten.append(SIBLING_LINK.sub(replace, line))
+        line = SIBLING_LINK.sub(replace, line)
+        if self_ids:
+            # Only a slug this run renames needs the follow; every other
+            # bare anchor still resolves to Pandoc's own auto id.
+            line = SELF_LINK.sub(
+                lambda m: f"](#{self_ids[m.group(1)]})" if m.group(1) in self_ids else m.group(0),
+                line,
+            )
+        rewritten.append(line)
     return "".join(rewritten)
 
 
@@ -818,7 +839,10 @@ def merged_markdown(
     for index, raw_path in enumerate(chapters):
         text = texts[index]
         if markers:
-            text = rewrite_sibling_links(text, markers, fragment_ids, missing_note)
+            text = rewrite_sibling_links(
+                text, markers, fragment_ids, missing_note,
+                fragment_ids.get(Path(raw_path).name),
+            )
             # Explicit ids are only planned when a fragment actually resolves;
             # injecting ids for planned slugs that the chapter does not own
             # would fabricate anchors the links cannot use.

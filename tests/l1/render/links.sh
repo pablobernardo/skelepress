@@ -93,6 +93,41 @@ run_chapter_fragment_link_test() {
   rm -f "$out"
 }
 
+# A same-chapter self-link to a heading that the cross-chapter resolver renames
+# (issue #241) must follow the rename: the explicit id replaces Pandoc's auto
+# id, so a bare (](#slug)) link inside the renamed-target chapter would dangle.
+run_chapter_fragment_self_link_rename_test() {
+  if ! command -v pandoc >/dev/null 2>&1; then
+    echo "SKIP chapter fragment self-link rename (pandoc not available)"
+    return 0
+  fi
+
+  local sandbox out epub md ch2 code=0
+  sandbox="$(new_epub_sandbox)"
+  out="$(mktemp)"
+  epub="${sandbox}/work/out/epub-guide-manual.epub"
+  md="${sandbox}/work/out/epub-guide-manual.md"
+  ch2="${sandbox}/ch2.xhtml"
+
+  printf '# First Chapter\n\nDetails: [Section A](chapter-2.md#section-a).\n' >"${sandbox}/work/chapters/chapter-1.md"
+  printf '# Second Chapter\n\nIntro: [Section A](#section-a).\n\n## Section A\n\nBody.\n' >"${sandbox}/work/chapters/chapter-2.md"
+  write_epub_config "${sandbox}/skelepress.config.yaml" epub "EPUB Sandbox Guide" es true
+
+  (
+    cd "${sandbox}/work" && "${sandbox}/bin/skelepress" render -c "${sandbox}/skelepress.config.yaml"
+  ) >"$out" 2>&1 || code=$?
+  assert_exit_code "0" "$code" "EPUB renders with a self-link to a renamed heading"
+  assert_contains "$md" '\]\(#ch-chapter-2-section-a\)' "the self-link follows the cross-chapter rename"
+  assert_not_contains "$md" '\]\(#section-a\)' "no bare auto-id link survives the rename"
+
+  unzip -p "$epub" EPUB/text/ch002.xhtml >"$ch2" 2>/dev/null
+  assert_contains "$ch2" 'id="ch-chapter-2-section-a"' "the renamed target id exists in the chapter"
+  assert_not_contains "$ch2" 'href="#section-a"' "no dangling fragment survives in the EPUB"
+
+  rm -rf "$sandbox"
+  rm -f "$out"
+}
+
 # A fragment naming no existing heading degrades visibly, not silently: the
 # link falls back to the chapter anchor and the reader sees a localized note.
 run_chapter_fragment_missing_heading_test() {
