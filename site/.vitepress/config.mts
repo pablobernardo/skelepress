@@ -34,15 +34,15 @@ export default defineConfig({
   // Brand identity belongs to the toolkit itself, not to either manual: the
   // logo shows in the navbar and the brand page ships as its own entry.
   themeConfig: {
-    // Themeable pair: the dark wordmark is unreadable on the dark theme and
-    // the white one on the light one, so the theme decides. The wordmark is
-    // the text itself, hence siteTitle stays off; alt carries "Skelepress".
+    // The square symbol survives the navbar's ~24px height; the wordmark's
+    // embedded text degrades there. The site name is real HTML text next to
+    // it: crisp at any zoom and accessible to screen readers.
     logo: {
-      light: '/brand/logo/skelepress-logo-dark.svg',
-      dark: '/brand/logo/skelepress-logo-white.svg',
-      alt: 'Skelepress'
+      light: '/brand/symbol/skelepress-symbol.svg',
+      dark: '/brand/symbol/skelepress-symbol-white.svg',
+      alt: 'Skelepress symbol'
     },
-    siteTitle: false,
+    siteTitle: 'Skelepress',
     nav: [
       { text: 'User guide', link: '/user/install', activeMatch: '/user/' },
       { text: 'Developer guide', link: '/dev/architecture', activeMatch: '/dev/' },
