@@ -95,6 +95,15 @@ L2. T1 execution evidence: the plan normally resolves chapters as absolute
     `# yamllint disable-line` (a `disable-next-line` on its own line inside a
     step failed for this version); the two Pages actions use it because the
     full SHA pin exceeds the line budget.
+L7. Navbar/hero identity round (`b716553`): per maintainer decision, the
+    navbar pairs the square symbol (themeable pair) with a real
+    "Skelepress" HTML title (the wide wordmark degrades at navbar height
+    and siteTitle: false had removed the compensating text), and the landing
+    hero drops the image slot so the name renders as the theme's large
+    heading — a 940:230 wordmark shrank in that right-hand slot on wide
+    screens. The wordmark keeps its places: repo README, brand gallery,
+    PDF. Gate 1040/0; live check confirmed symbol pair + text title +
+    hero name.
 L6. Favicon/identity round (`76e9c74`): theme-aware logo pair (dark wordmark
     on light theme, white on dark, alt="Skelepress") in navbar and hero, the
     navbar site title dropped next to the wordmark, the ICO raster shipped as
