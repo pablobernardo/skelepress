@@ -19,22 +19,24 @@ input:
   chapters_dir: "docs"
   glob: "*.md"
   order: natural
-  # Reading order, following docs/README.md: use the toolkit, then maintain it.
-  # `explicit_files` wins over `glob`, so this list decides. A test fails if a
-  # document under docs/ is missing from it, which is what keeps a hand-written
-  # order from going stale. README.md navigates the tree on GitHub and
-  # index.md is the web-site landing page (site/, VitePress); neither is PDF
-  # content, so both stay out of this list.
+  # Reading order, derived from the VitePress sidebar — the ONE canonical
+  # order, defined in site/.vitepress/config.mts. A test in tests/l1/docs.sh
+  # fails when this list and the sidebar diverge, so change the sidebar first
+  # and mirror it here. `explicit_files` wins over `glob`, so this list decides;
+  # a test also fails if a document under docs/ is missing from it.
+  # README.md navigates the tree on GitHub and index.md is the web-site landing
+  # page (site/, VitePress); neither is PDF content, so both stay out of this
+  # list.
   explicit_files:
     - "user/install.md"
     - "user/dependencies.md"
     - "user/usage.md"
-    - "dev/books.md"
     - "user/migration.md"
     - "dev/architecture.md"
     - "dev/releasing.md"
     - "dev/dependency-policy.md"
     - "dev/i18n.md"
+    - "dev/books.md"
 
 output:
   formats: [pdf, epub]

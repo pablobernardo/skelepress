@@ -356,6 +356,57 @@ print("\n".join(sorted({"docs/" + path.split("docs/", 1)[-1] if "docs/" in path 
   fi
 }
 
+# The VitePress sidebar in site/.vitepress/config.mts is the ONE canonical
+# reading order for the documentation. The PDF example must derive its
+# explicit_files order from that same list: web and PDF may never diverge.
+# The brand page is an asset gallery, not part of the reading order, so it is
+# the one sidebar link allowed to be absent from the PDF.
+run_sidebar_pdf_reading_order_agreement_test() {
+  local sidebar planned
+
+  # Extract sidebar links in file order: `link: '/user/install'` ->
+  # docs/user/install.md. Pure text parsing keeps the test free of Node, which
+  # stays dev-only.
+  sidebar="$(awk '/^    sidebar: \{/{flag=1; next} /^    \},?$/{flag=0} flag' \
+    "${ROOT_DIR}/site/.vitepress/config.mts" \
+    | sed -n "s/^.*link: '\/\([^']*\)'.*$/\1/p" \
+    | grep -v '^dev/brand/$' \
+    | sed 's#$#.md#; s#^#docs/#')"
+
+  # The documentation example declares two formats, so the plan is a version-2
+  # envelope; the first job is the PDF, whose chapter list carries the
+  # explicit_files order.
+  planned="$(SKELEPRESS_LANG=en "$CLI" render -c "${ROOT_DIR}/examples/documentation/skelepress.config.yaml" \
+    --dry-run --json 2>/dev/null \
+    | "${REAL_PYTHON3}" -c '
+import json
+import sys
+
+plan = json.load(sys.stdin)
+jobs = plan["jobs"] if "jobs" in plan else [plan]
+seen = set()
+out = []
+for chapter in jobs[0]["chapters"]:
+    rel = chapter.split("/docs/", 1)[-1]
+    if rel not in seen:
+        seen.add(rel)
+        out.append("docs/" + rel)
+print("\n".join(out))
+' 2>/dev/null)" || planned=""
+
+  if [[ -n "$sidebar" && "$sidebar" == "$planned" ]]; then
+    pass "the PDF reading order agrees with the site sidebar"
+  else
+    fail "the PDF reading order diverges from the site sidebar:
+--- sidebar (canonical) ---
+${sidebar:-<empty>}
+--- PDF example (explicit_files) ---
+${planned:-<empty>}
+--- diff ---
+$(diff <(printf '%s\n' "$sidebar") <(printf '%s\n' "$planned") || true)"
+  fi
+}
+
 run_emoji_showcase_example_test() {
   if ! command -v pandoc >/dev/null 2>&1; then
     echo "SKIP emoji showcase contexts (pandoc not available)"
