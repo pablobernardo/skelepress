@@ -1,0 +1,58 @@
+---
+name: docs
+
+# Isolated deployment workflow for the documentation site (site/, VitePress).
+# It never runs in the gate and never gates a release: releases are cut by
+# release.yml and verified by ci.yml, which do not read site/ at all.
+# Pages deployment is decided by the GitHub Pages settings (deploy from this
+# workflow, GitHub Actions source).
+
+"on":
+  push:
+    branches:
+      - main
+    paths:
+      - "docs/**"
+      - "site/**"
+      - ".github/workflows/docs.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+      # Node comes from the hosted runner image (Node >= 20, meets VitePress
+      # 1.x requirements). The lockfile makes npm ci reproduce the pinned tree.
+      - name: Install site dependencies
+        run: npm ci
+        working-directory: site
+      - name: Build the documentation site
+        run: npm run build
+        working-directory: site
+      # actions/upload-pages-artifact v3.0.1 (full SHA pin exceeds the budget)
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa  # yamllint disable-line
+        with:
+          path: site/.vitepress/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      # actions/deploy-pages v4.0.5
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e

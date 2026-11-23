@@ -3,11 +3,13 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "predev": "node scripts/ensure-docs-link.mjs",
     "dev": "vitepress dev",
+    "prebuild": "node scripts/ensure-docs-link.mjs",
     "build": "vitepress build",
     "preview": "vitepress preview"
   },
   "devDependencies": {
-    "vitepress": "^1.6.3"
+    "vitepress": "1.6.3"
   }
 }

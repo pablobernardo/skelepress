@@ -10,13 +10,20 @@ import { defineConfig } from 'vitepress'
 // fails when the two diverge. Change the reading order here, then update the
 // example to match.
 export default defineConfig({
-  srcDir: '../../docs',
-  srcExcludes: ['README.md'],
+  srcDir: '../docs',
+  srcExclude: ['README.md'],
+  // docs/README.md navigates the repository on GitHub: its ../ links point at
+  // files outside srcDir by design and are not site content.
+  ignoreDeadLinks: [/^(\.\/)?\.\.\//],
+  // Project Pages deployment: https://pablobernardo.github.io/skelepress/
+  base: '/skelepress/',
   lang: 'en-US',
   title: 'Skelepress',
   description:
     'Agnostic, versioned Pandoc toolkit: PDF and EPUB from one declarative configuration.',
-  head: [['link', { rel: 'icon', type: 'image/svg+xml', href: '/dev/brand/icons/favicon.svg' }]],
+  head: [
+    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/skelepress/dev/brand/icons/favicon.svg' }]
+  ],
   themeConfig: {
     siteTitle: 'Skelepress',
     nav: [

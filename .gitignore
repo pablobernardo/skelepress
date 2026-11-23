@@ -22,3 +22,5 @@ examples/.output/
 site/node_modules/
 site/.vitepress/dist/
 site/.vitepress/cache/
+# Site build: docs/node_modules is a created symlink to site/node_modules
+/docs/node_modules
