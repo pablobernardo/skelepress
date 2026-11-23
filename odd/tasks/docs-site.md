@@ -95,6 +95,13 @@ L2. T1 execution evidence: the plan normally resolves chapters as absolute
     `# yamllint disable-line` (a `disable-next-line` on its own line inside a
     step failed for this version); the two Pages actions use it because the
     full SHA pin exceeds the line budget.
+L4. Delivery evidence: PR #239 merged into main at `7e03fc4` after remote CI
+    green (L1 ubuntu, security scans; manual L2/L3 skipped as designed). The
+    first Pages run failed at deploy (404) because Pages was not enabled with
+    the GitHub Actions source; enabled with `build_type=workflow` via the API
+    and the deploy rerun green. Live site verified at
+    https://pablobernardo.github.io/skelepress/ (HTTP 200 on the landing,
+    /user/install.html and /dev/architecture.html, hero content present).
 L3. Review evidence: the branch-wide candidate exceeded the native reviewer
     context budget (81 files), so review ran per work-unit slice in detached
     worktrees. Findings applied as ordinary engineering: Pages/id-token
