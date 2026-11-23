@@ -24,3 +24,5 @@ site/.vitepress/dist/
 site/.vitepress/cache/
 # Site build: docs/node_modules is a created symlink to site/node_modules
 /docs/node_modules
+# Site build: docs/public/brand is a refreshed copy of docs/brand for VitePress
+/docs/public/
