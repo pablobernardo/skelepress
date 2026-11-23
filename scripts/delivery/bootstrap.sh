@@ -162,7 +162,7 @@ install_linux() {
 
   if [[ -z "${pkg_manager}" ]]; then
     echo "❌ $(t "bootstrap.error.no_pkg_manager" "No supported package manager detected (apt-get, dnf, yum, pacman, zypper, apk).")"
-    echo "   $(t "bootstrap.error.manual_install" "Install dependencies manually as documented in docs/install.md")"
+    echo "   $(t "bootstrap.error.manual_install" "Install dependencies manually as documented in docs/user/install.md")"
     return 1
   fi
 
@@ -268,7 +268,7 @@ verify_mermaid_browser() {
   echo "⚠️  $(t "bootstrap.mermaid.no_browser" "mermaid-cli is installed but has no browser to render with")"
   echo "   $(t "bootstrap.mermaid.hint1" "Fix A: npx puppeteer browsers install chrome-headless-shell")"
   echo "   $(t "bootstrap.mermaid.hint2" "Fix B: export PUPPETEER_EXECUTABLE_PATH=/path/to/chrome")"
-  echo "   $(t "bootstrap.mermaid.see_docs" "See docs/install.md: the two options are alternatives, do not hardcode the cache path")"
+  echo "   $(t "bootstrap.mermaid.see_docs" "See docs/user/install.md: the two options are alternatives, do not hardcode the cache path")"
   return 0
 }
 
@@ -327,7 +327,7 @@ main() {
         local msg
         msg="$(t "bootstrap.error.unsupported_os" "System not supported by automatic bootstrap: {os}")"
         echo "❌ $(interp "$msg" "os" "${os}")"
-        echo "   $(t "bootstrap.error.manual_install" "Install dependencies manually as documented in docs/install.md")"
+        echo "   $(t "bootstrap.error.manual_install" "Install dependencies manually as documented in docs/user/install.md")"
         ;;
     esac
 
