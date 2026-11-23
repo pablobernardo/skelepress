@@ -95,6 +95,12 @@ L2. T1 execution evidence: the plan normally resolves chapters as absolute
     `# yamllint disable-line` (a `disable-next-line` on its own line inside a
     step failed for this version); the two Pages actions use it because the
     full SHA pin exceeds the line budget.
+L8. Copyable install shortcut (`4a15f0a`): maintainer-approved theme override
+    renders the installation guide's one-liner in a copy box under the hero
+    actions (`home-hero-actions-after` slot, HeroInstallSnippet.vue with
+    theme CSS variables); the `$` prompt is decorative and never copied, and
+    the button flashes "Copied!". VitePress env.d.ts added for the SFC shim.
+    Gate 1040/0; live check confirmed the snippet and the command.
 L7. Navbar/hero identity round (`b716553`): per maintainer decision, the
     navbar pairs the square symbol (themeable pair) with a real
     "Skelepress" HTML title (the wide wordmark degrades at navbar height
