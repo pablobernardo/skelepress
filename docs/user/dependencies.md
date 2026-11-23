@@ -28,6 +28,6 @@ a copied consumer template remains consumer-owned.
 TeX Live and other distributions can provide the package through their normal
 package management. Follow the distribution's documentation if it is missing;
 the toolkit does not change a host installation. The broader installation and
-version policy remains in [dependency policy](dependency-policy.md).
+version policy remains in [dependency policy](../dev/dependency-policy.md).
 
 See [running-header layout and page exceptions](usage.md#pdf-running-headers).

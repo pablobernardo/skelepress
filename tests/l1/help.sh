@@ -25,7 +25,7 @@ render|Render a validated configuration to PDF or EPUB
 book|Validate manifests and build volumes or series
 EOF
   assert_contains "$out" "skelepress book --help" "help points to working detailed book help"
-  assert_contains "$out" "docs/usage.md" "help points to other command documentation"
+  assert_contains "$out" "docs/user/usage.md" "help points to other command documentation"
   local alias alias_out
   alias_out="$(mktemp)"
   for alias in help -h; do

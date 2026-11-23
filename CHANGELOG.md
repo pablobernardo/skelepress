@@ -508,7 +508,7 @@ The project follows semantic versioning and keeps two versioned contracts:
   files remain if another format fails; the command returns nonzero. EPUB-only
   requests need no implicit TeX engine; explicit runtime requirements apply.
   This replaces the unreleased singular `format` field; see
-  [migration](docs/migration.md). Multi-output JSON plans use version 2 (#94).
+  [migration](docs/user/migration.md). Multi-output JSON plans use version 2 (#94).
 - Visible emoji compatibility samples in the ohmyfake example's heading,
   paragraph, list and table, with regression coverage for those contexts (#93).
 - An optional installable Agent Skill for configuring, checking and reviewing
@@ -570,7 +570,7 @@ migration.
 
 The first release since 1.1.3, and a major one because **defaults changed**: the
 output file name, the typesetting language and the update path. Every one of them
-has its section in `docs/migration.md`. The configuration contract version stays
+has its section in `docs/user/migration.md`. The configuration contract version stays
 at `1`: no key was removed or made stricter, so existing files keep validating.
 
 ### Added

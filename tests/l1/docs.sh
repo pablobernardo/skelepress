@@ -332,10 +332,15 @@ import sys
 
 plan = json.load(sys.stdin)
 jobs = plan["jobs"] if "jobs" in plan else [plan]
-print("\n".join(sorted({path.split("/")[-1] for job in jobs for path in job["chapters"]})))
+print("\n".join(sorted({"docs/" + path.split("docs/", 1)[-1] if "docs/" in path else path for job in jobs for path in job["chapters"]})))
 ' 2>/dev/null)" || planned=""
 
-  expected="$(cd "${ROOT_DIR}/docs" && ls -1 *.md | grep -v '^README\.md$' | sort)"
+  # The guides live in docs/user/ and docs/dev/; README.md navigates the tree on
+  # GitHub and index.md is the web-site landing page (site/, VitePress): neither
+  # is PDF content, so both stay out of the expected set.
+  expected="$(cd "${ROOT_DIR}/docs" \
+    && find . -name '*.md' ! -name 'README.md' ! -name 'index.md' \
+    | sed 's|^\./||; s|^|docs/|' | sort)"
   missing="$(comm -13 <(printf '%s\n' "$planned" | sort) <(printf '%s\n' "$expected" | sort) | tr -d ' ')"
 
   if [[ -z "$missing" ]]; then

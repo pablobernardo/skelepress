@@ -18,3 +18,7 @@ examples/.output/
 /.output/
 # Default book output when invoked from the repository root
 /.skelepress/
+# Documentation site (dev-only, VitePress): dependencies and build output
+site/node_modules/
+site/.vitepress/dist/
+site/.vitepress/cache/

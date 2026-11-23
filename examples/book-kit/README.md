@@ -10,7 +10,7 @@ The model itself is documented once, not here: the shipped tool's reference
 ([`scripts/tools/bookkit/README.md`](https://github.com/pablobernardo/skelepress/blob/main/scripts/tools/bookkit/README.md))
 is the contract — what a book project and a volume are, the folder
 convention, the entry rules and the generated mode files — and
-[`docs/books.md`](../../docs/books.md) is the narrative. This page says what
+[`docs/dev/books.md`](../../docs/dev/books.md) is the narrative. This page says what
 this example demonstrates and how to run it.
 
 ## Run it

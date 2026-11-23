@@ -16,7 +16,7 @@ coupling.
 This file defines the **stable** rules of the project.
 
 Track pending work in issues and verification evidence in pull requests.
-Architecture decisions live in `docs/architecture.md`; release history lives in
+Architecture decisions live in `docs/dev/architecture.md`; release history lives in
 `CHANGELOG.md`. Do not duplicate that changing state in a separate summary.
 
 Write repository task notes, including `odd/tasks/`, as technical summaries in
@@ -57,7 +57,7 @@ for conversational or private material before staging or publishing them.
 ## Where things live
 
 The full picture, with the render pipeline and the reasons behind it, is
-`docs/architecture.md`. What an agent needs to know before touching anything:
+`docs/dev/architecture.md`. What an agent needs to know before touching anything:
 
 - **Entry point**: `bin/skelepress` (bash). Every user-facing string comes from
   `i18n/locales/`; see the language policy above.
@@ -100,7 +100,7 @@ Three rules that are not visible in the schema:
   `VERSION`; see the breaking change policy below.
 ## CLI surface
 
-`skelepress --help` prints the commands and `docs/usage.md` documents them. The
+`skelepress --help` prints the commands and `docs/user/usage.md` documents them. The
 CLI is a contract for humans, CI and integrations, so adding a command is free
 while changing or removing one follows the breaking change policy below.
 ## Breaking change policy
@@ -140,9 +140,9 @@ Before writing code:
 
 - Stable toolkit rules: `AGENTS.md`
 - Pending work and verification evidence: issues and pull requests
-- Architecture and trade-offs: `docs/architecture.md`
-- CLI installation and integration: `docs/install.md`
-- Examples for consumers: `examples/` and `docs/usage.md`
+- Architecture and trade-offs: `docs/dev/architecture.md`
+- CLI installation and integration: `docs/user/install.md`
+- Examples for consumers: `examples/` and `docs/user/usage.md`
 - Contributor workflow and checks: `CONTRIBUTING.md`
 - Security trust model and review guidance: `.github/SECURITY.md`
 

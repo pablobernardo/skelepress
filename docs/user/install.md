@@ -82,7 +82,7 @@ This command runs `scripts/delivery/bootstrap.sh`, which:
 - creates the `skelepress` symlink in `~/.local/bin`,
 - runs `doctor` to verify the environment.
 
-Note: critical dependency versions are managed in `docs/dependency-policy.md`.
+Note: critical dependency versions are managed in `docs/dev/dependency-policy.md`.
 
 Useful options:
 
@@ -132,7 +132,7 @@ Install at least:
 - a TeX engine (`xelatex` or `lualatex` or `pdflatex`)
 - `python3` — **3.9 or newer**; `skelepress doctor` refuses an older
   interpreter, naming the version it found and the required minimum
-  (`docs/dependency-policy.md` records why 3.9 is the line)
+  (`docs/dev/dependency-policy.md` records why 3.9 is the line)
 - YAML parser: **PyYAML** for Python or **Ruby's stdlib YAML**
 - `curl`
 - `mmdc` (Mermaid CLI)
@@ -142,7 +142,7 @@ Install at least:
   (or without the `newunicodechar` package, guarded the same way and shipped by
   standard TeX distributions), rendering still succeeds and those glyphs are
   dropped with the usual Missing-character warnings; see
-  `docs/dependency-policy.md`.
+  `docs/dev/dependency-policy.md`.
 
 Quick reference for the Mermaid CLI:
 

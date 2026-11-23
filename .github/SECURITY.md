@@ -51,5 +51,5 @@ Recommendations:
 - Prefer shell-free APIs (`subprocess.run([...])`, `shutil.which`, and so on).
 - Load YAML safely with `yaml.safe_load` (Python) or `YAML.safe_load` (Ruby).
 - Validate command names and filter paths before executing configuration input.
-- Review bootstrap and CI dependencies against `docs/dependency-policy.md`.
+- Review bootstrap and CI dependencies against `docs/dev/dependency-policy.md`.
 - Add a security regression test whenever a vulnerability is fixed.

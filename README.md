@@ -13,8 +13,8 @@ Agnostic toolkit for generating PDFs and EPUBs with Pandoc via a CLI (`skelepres
 
 ## What it does
 
-- **PDF and EPUB from one configuration.** Declare the chapters once and render a typeset PDF, a reflowable EPUB3, or both in a single invocation — see the [usage guide](docs/usage.md).
-- **Books with built-in styles.** `skelepress book` turns a manifest — one volume or a multi-volume series — into a book, with eight shipped styles from A4 to KDP trim sizes — see the [books guide](docs/books.md#built-in-book-styles).
+- **PDF and EPUB from one configuration.** Declare the chapters once and render a typeset PDF, a reflowable EPUB3, or both in a single invocation — see the [usage guide](docs/user/usage.md).
+- **Books with built-in styles.** `skelepress book` turns a manifest — one volume or a multi-volume series — into a book, with eight shipped styles from A4 to KDP trim sizes — see the [books guide](docs/dev/books.md#built-in-book-styles).
 - **Quick drafts without a configuration.** `skelepress draft notas.md` renders loose Markdown through the same pipeline, so a throwaway PDF needs no `skelepress.config.yaml`.
 - **Checked before it renders.** `skelepress doctor` verifies the toolchain and `skelepress validate-config` applies the schema, so a bad configuration never reaches Pandoc.
 
@@ -38,12 +38,12 @@ bash install.sh
 ```
 
 Then `skelepress doctor` checks that `pandoc`, a TeX engine and `mmdc` are where the
-toolkit expects them. System dependencies are in [the installation guide](docs/install.md).
+toolkit expects them. System dependencies are in [the installation guide](docs/user/install.md).
 
 ## First render and main commands
 
 Start with a `skelepress.config.yaml` for your repository; the
-[examples](docs/usage.md#examples-in-this-repository) show complete configurations
+[examples](docs/user/usage.md#examples-in-this-repository) show complete configurations
 and the documents they render.
 
 ```bash
@@ -52,7 +52,7 @@ skelepress validate-config -c skelepress.config.yaml  # validate a configuration
 skelepress render -c skelepress.config.yaml           # produce the PDF
 ```
 
-`skelepress --help` lists every command; [the usage guide](docs/usage.md)
+`skelepress --help` lists every command; [the usage guide](docs/user/usage.md)
 documents them, including CI integration for consuming repositories.
 
 ## Optional agent skill
@@ -60,16 +60,16 @@ documents them, including CI integration for consuming repositories.
 The [documentation-to-PDF skill](skills/skelepress-documentation/SKILL.md) uses the
 Agent Skills format to guide compatible agents through existing Markdown,
 configuration, preflight and PDF review.
-See [skill installation](docs/install.md#optional-agent-skill); it does not install
+See [skill installation](docs/user/install.md#optional-agent-skill); it does not install
 the toolkit or its system dependencies.
 
 ## Documentation
 
 The full index, with one line per document and the question it answers, is
 [`docs/README.md`](docs/README.md). The three starting points are
-[`docs/install.md`](docs/install.md),
-[`docs/usage.md`](docs/usage.md) and
-[`docs/architecture.md`](docs/architecture.md).
+[`docs/user/install.md`](docs/user/install.md),
+[`docs/user/usage.md`](docs/user/usage.md) and
+[`docs/dev/architecture.md`](docs/dev/architecture.md).
 
 ## Contributing
 

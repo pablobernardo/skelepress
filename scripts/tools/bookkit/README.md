@@ -118,9 +118,9 @@ sections do not replace it. The default article template uses top-level sections
 instead. EPUB jobs get no header argument or metadata.
 
 The enabled shipped PDF layout requires `truncate.sty`, checked by doctor and
-by render before output creation; see [dependencies](../../../docs/dependencies.md).
+by render before output creation; see [dependencies](../../../docs/user/dependencies.md).
 Custom templates stay consumer-owned and implement the template variable
-themselves; see the [page policy and adoption guide](../../../docs/usage.md#pdf-running-headers).
+themselves; see the [page policy and adoption guide](../../../docs/user/usage.md#pdf-running-headers).
 
 ### `chapters: ordered`
 
@@ -262,7 +262,7 @@ template name or a template path:
   generated configurations as-is, and the validator and the renderer resolve
   it inside the installation. The eight styles, their paper sizes and what each
   is for are tabulated in
-  [the built-in book styles](../../../docs/books.md#built-in-book-styles).
+  [the built-in book styles](../../../docs/dev/books.md#built-in-book-styles).
 - anything else is a **path to a book-class LaTeX template of your own** —
   relative to the working directory, or absolute — and the tool fails before
   building anything when the file does not exist. Use this form when your book

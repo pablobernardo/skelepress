@@ -50,7 +50,7 @@ evidence. Release preparation must explicitly request and inspect both jobs.
 The template's default prose and mono faces do not contain the six ballot and
 warning symbols of #83 (`☐ ☑ ☒ ✅ ❌ ⚠`). The template maps exactly those glyphs,
 and only those glyphs, to GNU FreeSerif when the font exists (D14 in
-`docs/architecture.md`). This font is an **optional** dependency: the toolkit,
+`docs/dev/architecture.md`). This font is an **optional** dependency: the toolkit,
 `bootstrap.sh` and ordinary CI do not install or download it. The opt-in
 `run_release_acceptance` profile installs `fonts-freefont-ttf` only in its
 disposable VM to exercise symbol rendering and retain review evidence. It does
@@ -222,9 +222,9 @@ So the contract is the smoke test, not the number:
   version to compare against when reporting a bug.
 - **Any other version is accepted** if `skelepress doctor` renders its test
   diagram. `doctor` reports the version it found, and on failure prints the two
-  fixes from `docs/install.md`.
+  fixes from `docs/user/install.md`.
 - **Do not pin a user's system-wide install from this repository.** The
-  remediation for a browserless `mermaid-cli` is documented in `docs/install.md`,
+  remediation for a browserless `mermaid-cli` is documented in `docs/user/install.md`,
   and `make bootstrap` only warns, because downloading a browser is the user's
   decision.
 
@@ -252,7 +252,7 @@ pointing here for exactly that reason.
 1. Update the pinned version in bootstrap/workflows.
 2. Run `tests/run.sh`.
 3. Run the security workflow (`security.yml`).
-4. Update `CHANGELOG.md` (Unreleased) and, when the process itself changes, `docs/releasing.md`.
+4. Update `CHANGELOG.md` (Unreleased) and, when the process itself changes, `docs/dev/releasing.md`.
 
 ## Acceptance criteria
 
