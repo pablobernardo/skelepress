@@ -13,7 +13,10 @@ export default defineConfig({
   srcDir: '../docs',
   srcExclude: ['README.md'],
   // docs/README.md navigates the repository on GitHub: its ../ links point at
-  // files outside srcDir by design and are not site content.
+  // files outside srcDir by design and are not site content. The pattern is
+  // regex-wide: it exempts EVERY relative parent-directory link in the docs
+  // tree, not only README.md's, so dead-link checking stays meaningful for
+  // links that start inside srcDir.
   ignoreDeadLinks: [/^(\.\/)?\.\.\//],
   // Project Pages deployment: https://pablobernardo.github.io/skelepress/
   base: '/skelepress/',

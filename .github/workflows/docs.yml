@@ -19,8 +19,6 @@ name: docs
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
   group: pages
@@ -31,6 +29,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+        with:
+          persist-credentials: false
       # Node comes from the hosted runner image (Node >= 20, meets VitePress
       # 1.x requirements). The lockfile makes npm ci reproduce the pinned tree.
       - name: Install site dependencies
@@ -48,6 +48,11 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    # Deployment credentials live only on the deploy job, which the github-pages
+    # environment wraps: the build job must never hold pages/OIDC permissions.
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

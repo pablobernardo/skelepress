@@ -7,6 +7,7 @@
     "dev": "vitepress dev",
     "prebuild": "node scripts/ensure-docs-link.mjs",
     "build": "vitepress build",
+    "prepreview": "node scripts/ensure-docs-link.mjs",
     "preview": "vitepress preview"
   },
   "devDependencies": {
