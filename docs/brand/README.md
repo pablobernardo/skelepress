@@ -23,6 +23,26 @@ This is a **vector reconstruction of the approved visual direction**, not an exa
 - `icons/`: raster sizes and favicon formats; small sizes omit the tiny page-corner detail for legibility.
 - `guidelines/`: construction artwork and overview image.
 
+## Previews
+
+Each asset on the background it is designed for — the white variants sit on
+navy, the standard ones on pale gray. The tiles are built with inline CSS
+backgrounds instead of `<img>` tags: VitePress compiles HTML image sources
+as bundler imports, and the assets live outside the site's bundler root.
+
+| Asset | Preview |
+| --- | --- |
+| Logo (light surfaces) | <span style="display:inline-block;width:280px;height:76px;padding:12px;background:#E2E8F0 url('/skelepress/brand/logo/skelepress-logo-dark.svg') no-repeat center/contain;border-radius:8px"></span> |
+| Logo (dark surfaces) | <span style="display:inline-block;width:280px;height:76px;padding:12px;background:#0F172A url('/skelepress/brand/logo/skelepress-logo-white.svg') no-repeat center/contain;border-radius:8px"></span> |
+| Symbol (color) | <span style="display:inline-block;width:66px;height:84px;padding:10px;background:url('/skelepress/brand/symbol/skelepress-symbol.svg') no-repeat center/contain;border-radius:8px"></span> |
+| Symbol (white) | <span style="display:inline-block;width:66px;height:84px;padding:10px;background:#0F172A url('/skelepress/brand/symbol/skelepress-symbol-white.svg') no-repeat center/contain;border-radius:8px"></span> |
+| Symbol (mono) | <span style="display:inline-block;width:66px;height:84px;padding:10px;background:#E2E8F0 url('/skelepress/brand/symbol/skelepress-symbol-mono.svg') no-repeat center/contain;border-radius:8px"></span> |
+| Favicon sizes | <span style="display:inline-block;width:48px;height:62px;padding:6px;background:url('/skelepress/brand/icons/icon-64.png') no-repeat center/contain"></span> <span style="display:inline-block;width:40px;height:52px;padding:6px;background:url('/skelepress/brand/icons/icon-32.png') no-repeat center/contain"></span> <span style="display:inline-block;width:34px;height:46px;padding:6px;background:url('/skelepress/brand/icons/icon-16.png') no-repeat center/contain"></span> |
+| Construction | <span style="display:inline-block;width:200px;height:110px;padding:8px;background:url('/skelepress/brand/guidelines/construction.svg') no-repeat center/contain;border-radius:8px"></span> |
+
+The raster icons carry their own transparent canvas, so no background tint is
+applied to them.
+
 ## Usage
 
 - Prefer SVG for web, documentation and scalable graphics.
@@ -43,6 +63,6 @@ The SVG files are the editable masters. PNG and ICO files are derived outputs. K
 
 ```html
 <p align="center">
-  <img src="docs/brand/logo/skelepress-logo.svg" alt="Skelepress" width="360">
+  <img v-pre src="docs/brand/logo/skelepress-logo.svg" alt="Skelepress" width="360">
 </p>
 ```

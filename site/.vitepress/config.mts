@@ -11,15 +11,20 @@ import { defineConfig } from 'vitepress'
 // example to match.
 export default defineConfig({
   srcDir: '../docs',
-  srcExclude: ['README.md'],
+  srcExclude: ['README.md', 'public/**'],
   // Project Pages deployment: https://pablobernardo.github.io/skelepress/
   base: '/skelepress/',
   lang: 'en-US',
   title: 'Skelepress',
   description:
     'Agnostic, versioned Pandoc toolkit: PDF and EPUB from one declarative configuration.',
+  // Favicon: Safari ignores SVG favicons, so the ICO raster ships as the
+  // alternative icon. The absolute-with-base path is intentional: VitePress
+  // does not rewrite head links, and a page-relative href would break on
+  // nested pages.
   head: [
-    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/skelepress/brand/icons/favicon.svg' }]
+    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/skelepress/brand/icons/favicon.svg' }],
+    ['link', { rel: 'alternate icon', href: '/skelepress/brand/icons/favicon.ico', sizes: 'any' }]
   ],
   // VitePress renders a directory's README.md as README.html, not as the
   // clean directory URL, so the brand entry is rewritten to /brand/.
@@ -29,8 +34,15 @@ export default defineConfig({
   // Brand identity belongs to the toolkit itself, not to either manual: the
   // logo shows in the navbar and the brand page ships as its own entry.
   themeConfig: {
-    logo: '/brand/logo/skelepress-logo-dark.svg',
-    siteTitle: 'Skelepress',
+    // Themeable pair: the dark wordmark is unreadable on the dark theme and
+    // the white one on the light one, so the theme decides. The wordmark is
+    // the text itself, hence siteTitle stays off; alt carries "Skelepress".
+    logo: {
+      light: '/brand/logo/skelepress-logo-dark.svg',
+      dark: '/brand/logo/skelepress-logo-white.svg',
+      alt: 'Skelepress'
+    },
+    siteTitle: false,
     nav: [
       { text: 'User guide', link: '/user/install', activeMatch: '/user/' },
       { text: 'Developer guide', link: '/dev/architecture', activeMatch: '/dev/' },
