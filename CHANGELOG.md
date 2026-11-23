@@ -7,6 +7,12 @@ The project follows semantic versioning and keeps two versioned contracts:
 - `VERSION` for the toolkit version
 - `skelepress.config.yaml -> version` for the configuration contract
 
+## [Unreleased]
+
+### Added
+
+- Web documentation site built with VitePress over the existing `docs/` Markdown: the guides move into `docs/user/` (install, dependencies, usage, migration) and `docs/dev/` (architecture, releasing, dependency-policy, i18n, books, brand), `docs/` stays the single source of truth, and `site/.vitepress/config.mts` holds the one canonical navigation whose order the PDF example mirrors (a test fails when web and PDF diverge). Node is a dev-only dependency: everything lives in `site/` with npm, the release artifact never carries it, and deployment is one isolated GitHub Pages workflow that does not run in the gate (#docs-site).
+
 ## [3.5.0] - 2026-11-22
 
 ### Added

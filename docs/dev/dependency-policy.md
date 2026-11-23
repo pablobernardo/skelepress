@@ -202,6 +202,31 @@ What would close it: a parity test that loads every fixture through both parsers
 in the same environment, run where PyYAML is installed. Until then, prefer quoted
 scalars in configuration examples and fixtures.
 
+## Node: dev-only (documentation site)
+
+The web documentation (`site/`, VitePress) introduces a Node dependency, and
+its containment is a deliberate decision (D21 in `docs/dev/architecture.md`):
+
+- **Never shipped.** The release tarball and every runtime path are untouched:
+  no script, filter, template or test reads `site/`. Node is needed only to
+  build or preview the site locally and in the Pages workflow.
+- **Dev-only by layout.** Everything lives in `site/package.json` with
+  `devDependencies` only; `site/node_modules` and the build output are
+  gitignored.
+- **Package manager: npm.** The repository ships `site/package-lock.json` and
+  the Pages workflow installs with `npm ci`. npm needs no global tool beyond
+  Node itself, which hosted runners already provide, and this is a single
+  dev-only package where a second lockfile format would add surface without
+  benefit. The build scripts create a relative symlink
+  `docs/node_modules -> ../site/node_modules` before every run (pages live
+  outside the npm root, and Node resolves dependencies by walking up from the
+  importing file); it is a link, not a copy, and it is gitignored.
+
+- `vitepress@1.6.3`
+  - Usage: `site/package.json` (exact pin, `devDependencies`), build/preview
+    scripts, `.github/workflows/docs.yml`. Updated like any other pinned
+    dependency: bump, `npm install` in `site/`, review the diff, rebuild.
+
 ## Pinned critical dependencies
 
 - `@mermaid-js/mermaid-cli@10.9.1`
