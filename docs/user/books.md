@@ -176,7 +176,7 @@ template: design/volume-3.tex
 ```
 
 A bare name — no path separator and no dot — is one of
-the built-in book styles. Anything else is a path to
+[the built-in book styles](#built-in-book-styles). Anything else is a path to
 your own book-class LaTeX template, relative to the directory holding the file
 that declares it (the series directory for `series.yaml`, the volume directory
 for `manifest.yaml`) and required to exist, so a typo fails before anything is
