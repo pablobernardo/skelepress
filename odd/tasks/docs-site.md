@@ -95,6 +95,18 @@ L2. T1 execution evidence: the plan normally resolves chapters as absolute
     `# yamllint disable-line` (a `disable-next-line` on its own line inside a
     step failed for this version); the two Pages actions use it because the
     full SHA pin exceeds the line budget.
+L5. Post-merge maintainer review round (two commits, `d6883eb` and `7d61027`):
+    brand returned to `docs/brand/` (identity surface, not a dev-manual page;
+    raw-HTML image references the move had broken point at real files again),
+    books moved to `docs/user/` between usage and migration (RED observed in
+    the sidebar-PDF test, then GREEN — the example's explicit_files followed
+    the canonical order as designed), the site gained the navbar logo, hero
+    logo and a Brand nav entry at the clean /brand/ URL (rewrites: VitePress
+    renders a directory README.md as README.html), and brand assets serve
+    through a refreshed copy under docs/public/brand because VitePress 1.6.x
+    copies static assets only from srcDir/public and ignores a configured
+    publicDir. Gate 1040/0 before each push; live site re-verified (brand
+    page, logo and favicon all HTTP 200).
 L4. Delivery evidence: PR #239 merged into main at `7e03fc4` after remote CI
     green (L1 ubuntu, security scans; manual L2/L3 skipped as designed). The
     first Pages run failed at deploy (404) because Pages was not enabled with
