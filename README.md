@@ -88,7 +88,7 @@ This acknowledgement does not imply official affiliation or endorsement by Gentl
 
 ## License
 
-MIT. Releases up to 1.1.3 were published under Apache 2.0; see `CHANGELOG.md`.
+MIT.
 
 ## Author
 

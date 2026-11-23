@@ -262,7 +262,7 @@ Check whether there is a new stable version of the toolkit:
 ```bash
 skelepress update --check
 skelepress update
-skelepress update --to v1.2.3
+skelepress update --to v3.4.3
 skelepress update --install-dir <path>
 ```
 
@@ -274,7 +274,7 @@ the published checksum, before extraction. This confirms verification, not
 installation success; a later extraction or installation step can still fail.
 `--check` and `--dry-run` do not verify downloaded artifacts or print this line.
 
-`update --to <tag>` installs a specific version (for example `v1.2.3`).
+`update --to <tag>` installs a specific version (for example `v3.4.3`).
 
 Layout managed by the updater (default paths):
 
