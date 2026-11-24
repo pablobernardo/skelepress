@@ -161,6 +161,7 @@ main() {
   run_multi_format_export_test
   run_plan_conformance_tests
   run_bookkit_accented_slug_test
+  run_bookkit_series_prefix_test
   run_book_default_output_test
   run_book_running_headers_test
   run_bookkit_tests

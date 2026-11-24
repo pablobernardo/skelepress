@@ -15,23 +15,32 @@ The project follows semantic versioning and keeps two versioned contracts:
   fragment resolver renames no longer dangles: the self-link follows the
   renamed explicit id like any cross-chapter link, so the EPUB validates
   (#241, regression found by EPUBCheck RSC-012 during the 3.5.1 acceptance).
+  The self-link removed from `docs/user/books.md` for 3.5.1 is back.
 - A bookkit project whose title carries accented Latin characters now gets
   the documented generated name: the slug transliterates (`Informe Ñandú` →
   `informe-nandu`) instead of silently dropping the accented characters
-  (`informe-and`, #243). The implementation now follows the rule
-  `docs/user/usage.md` has always documented.
+  (#243). The generated name follows the rule `docs/user/usage.md` has
+  always documented.
+- A **series** volume's generated file name now identifies its series:
+  `<series-slug>-vol-<n>-<title-slug>` (e.g. `the-riverbank-club-vol-2-the-`
+  `lantern-field-20261124.pdf`), composed from the series directory slug and
+  the volume's 1-based position, so one series's artifacts sort together and
+  are glob-friendly (`the-riverbank-club-vol-2-*`). Single-volume projects
+  keep the title-only name, and both rules honor the transliteration above
+  (#243).
 
 ### Compatibility
 
-- The accented-title slug naming is a behavior change for bookkit projects
-  whose `title` carries accents: a freshly built volume now names its output
-  directory and files with the transliterated slug instead of the truncated
-  one, so a `book` run after the upgrade writes to a new output location and
-  leaves prior builds where they were. Configurations already generated (or
-  saved) keep their recorded `file_prefix` and render as before; to preserve
-  a specific legacy name, declare `file_prefix` (or the volume's
-  `output.file_prefix`) explicitly. No CLI, configuration-contract or schema
-  change.
+- The composed series prefix changes where a freshly built series volume
+  writes its output: the new name replaces the title-only one and prior
+  builds stay where they were. Configurations already generated (or saved)
+  keep their recorded `file_prefix` and render as before; to keep a specific
+  name, declare `file_prefix` explicitly. The accented-title naming change
+  scopes to titles with accents for the same reason. No CLI,
+  configuration-contract or schema change. Updating from 3.5.1 is recommended
+  for anyone rendering EPUBs whose chapters cross-link with fragments or
+  building books with accented titles or series; otherwise it can wait for
+  the next scheduled update.
 
 ## [3.5.1] - 2026-11-23
 
