@@ -85,7 +85,7 @@ Validated against `scripts/tools/bookkit/manifest.schema.json`.
 | --- | --- |
 | `manifest_version` | Required integer, `1`. |
 | `profile` | Required string, `book` — the only profile that exists. Any other value is rejected. |
-| `title` | Required, non-empty. Names the volume and, by the toolkit's slug rule, the PDF file. |
+| `title` | Required, non-empty. Names the volume and, by the toolkit's slug rule, the output file: a single-volume project's file is `<title-slug>`, a series volume's is `<series-slug>-vol-<n>-<title-slug>` (the series slug from the series directory name, `n` the volume's 1-based position), so series artifacts sort together and identify their series without the folder tree. |
 | `subtitle`, `date` | Optional; passed through to the document. |
 | `isbn` | Optional; passed to pandoc as the `isbn` metadata variable so a consumer's own template can print it. |
 | `audience`, `description` | Optional; passed as `document.metadata` entries in the generated configuration. |
