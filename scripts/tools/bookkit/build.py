@@ -416,6 +416,18 @@ def volume_output_dir(out_root: Path, project: Path, volume_name: str, is_series
     return project_out / volume_name if is_series else project_out
 
 
+def volume_prefix(project: Path, position: int) -> str:
+    """The composed file_prefix opener for one series volume.
+
+    A series volume's file name must sort with its series and identify it
+    without the folder tree, so the generated prefix opens with the series
+    slug and the 1-based volume ordinal — the same value \\#230's cross-check
+    validates and templates receive as ``$volume$``. Single-volume projects
+    keep the title-only prefix, so their naming does not change.
+    """
+    return f"{slugify(project.name)}-vol-{position}-"
+
+
 def output_formats(merged: dict) -> list[str]:
     return merged.get("formats") or ["pdf"]
 
@@ -451,6 +463,7 @@ def build_volume(
     out_volume_dir: Path,
     template: str | None,
     suffix: str | None,
+    prefix_slug: str,
 ) -> tuple[Path, str | None]:
     """Write the reusable config and prepare an invocation-specific render config."""
 
@@ -589,7 +602,7 @@ def build_volume(
     def config_text(output_suffix: str) -> str:
         return emit_config(
             merged, title, volume_dir, out_volume_dir, explicit_files,
-            template_used, formats, output_suffix,
+            template_used, formats, output_suffix, prefix_slug,
         )
 
     config_path.write_text(config_text(DATE_SUFFIX), encoding="utf-8")
@@ -635,6 +648,7 @@ def emit_config(
     template: str,
     formats: list[str],
     suffix: str,
+    prefix_slug: str = "",
 ) -> str:
     """One standard skelepress.config.yaml per volume, emitted as canonical text.
 
@@ -642,6 +656,11 @@ def emit_config(
     byte-identical whichever parser read the manifests.
     """
     slug = slugify(title)
+    # A series volume's generated file name must sort with its series and
+    # identify it without the folder tree, so the prefix opens with the
+    # composed series-vol-n opener and the title slug closes it. A
+    # single-volume project keeps the title-only name.
+    file_prefix = f"{prefix_slug}{slug}" if prefix_slug else slug
     # A TeX engine is a PDF requirement (LATEX_ONLY_FORMAT): when no PDF is
     # requested the generated configuration must not make preflight demand one
     # for the other formats.
@@ -703,7 +722,7 @@ def emit_config(
             "output:",
             f"  formats: [{', '.join(formats)}]",
             f"  dir: {quoted(relpath(out_volume_dir, volume_dir))}",
-            f"  file_prefix: {quoted(slug)}",
+            f"  file_prefix: {quoted(file_prefix)}",
             f"  suffix: {quoted(suffix)}",
             "  keep_merged_markdown: false",
             "",
@@ -848,7 +867,7 @@ def main() -> None:
 
     # Contract validation first, for every project, before anything is built:
     # a manifest that fails validation never reaches the build.
-    plans: list[tuple[Path, str, Path, dict, dict, bool, str | None]] = []
+    plans: list[tuple[Path, str, Path, dict, dict, bool, str | None, int]] = []
     for project, template in projects:
         series_path = project / "series.yaml"
         if series_path.is_file():
@@ -870,10 +889,10 @@ def main() -> None:
                         f"series '{project.name}': volume '{volume_name}' declares "
                         f"volume {declared_volume}, expected {position}"
                     )
-                plans.append((project, volume_name, volume_dir, series, manifest, True, template))
+                plans.append((project, volume_name, volume_dir, series, manifest, True, template, position))
         else:
             manifest = load_contract(project / "manifest.yaml", MANIFEST_SCHEMA)
-            plans.append((project, project.name, project, {}, manifest, False, template))
+            plans.append((project, project.name, project, {}, manifest, False, template, 0))
 
     if not args.check and not CLI.is_file():
         die(f"skelepress CLI not found: {CLI}")
@@ -882,22 +901,24 @@ def main() -> None:
     suffix = None
     if not args.check:
         destinations = []
-        for project, volume_name, _, defaults, manifest, is_series, _ in plans:
+        for project, volume_name, _, defaults, manifest, _, _, position in plans:
             title = manifest.get("title")  # Titles are per-volume, never inherited.
             if isinstance(title, str) and title.strip():
-                out_dir = volume_output_dir(out_root, project, volume_name, is_series)
+                out_dir = volume_output_dir(out_root, project, volume_name, bool(position))
                 formats = output_formats(merge_defaults(manifest, defaults))
-                destinations.append((out_dir / slugify(title), formats))
+                opener = f"{slugify(project.name)}-vol-{position}-" if position else ""
+                destinations.append((out_dir / f"{opener}{slugify(title)}", formats))
         # Each volume renders in its own process. Freeze one suffix here so
         # neither a partial collision nor a clock boundary splits a generation.
         suffix = generation_suffix(destinations, datetime.now())
 
     failures: list[str] = []
-    for project, volume_name, volume_dir, defaults, manifest, is_series, explicit_template in plans:
+    for project, volume_name, volume_dir, defaults, manifest, is_series, explicit_template, position in plans:
         out_volume_dir = volume_output_dir(out_root, project, volume_name, is_series)
         print(f"==> {project.name}/{volume_name}")
         config_path, render_config = build_volume(
-            manifest, volume_name, volume_dir, defaults, out_volume_dir, explicit_template, suffix
+            manifest, volume_name, volume_dir, defaults, out_volume_dir, explicit_template, suffix,
+            f"{slugify(project.name)}-vol-{position}-" if is_series else "",
         )
         print(f"    config: {relpath(config_path, Path.cwd())}")
 

@@ -32,6 +32,45 @@ run_bookkit_accented_slug_test() {
   rm -rf "$scratch"
 }
 
+# A series volume's generated file_prefix composes the series slug, the
+# volume ordinal and the title slug (series-slug-vol-n-title-slug), so file
+# names sort with their series and identify it without the folder tree;
+# a single-volume project keeps the title-only prefix.
+run_bookkit_series_prefix_test() {
+  local scratch code=0 v1 v2 single
+  scratch="$(mktemp -d)"
+  mkdir -p "$scratch/home" "$scratch/projects/series/volume-1" "$scratch/projects/series/volume-2" \
+    "$scratch/projects/single"
+  printf '%s\n' 'manifest_version: 1' 'profile: book' 'title: "The First Summer"' \
+    'chapters: [chapter.md]' >"$scratch/projects/series/volume-1/manifest.yaml"
+  printf '%s\n' 'manifest_version: 1' 'profile: book' 'title: "The Lantern Field"' \
+    'chapters: [chapter.md]' >"$scratch/projects/series/volume-2/manifest.yaml"
+  printf '%s\n' 'manifest_version: 1' 'profile: book' 'title: "Lone Volume"' \
+    'chapters: [chapter.md]' >"$scratch/projects/single/manifest.yaml"
+  printf 'Cuerpo.\n' >"$scratch/projects/series/volume-1/chapter.md"
+  printf 'Cuerpo.\n' >"$scratch/projects/series/volume-2/chapter.md"
+  printf 'Cuerpo.\n' >"$scratch/projects/single/chapter.md"
+  printf '%s\n' 'manifest_version: 1' 'volumes: [volume-1, volume-2]' >"$scratch/projects/series/series.yaml"
+
+  set +e
+  (cd "$scratch" && HOME="$scratch/home" SKELEPRESS_LANG=en \
+    "$CLI" book --check "$scratch/projects/series" "$scratch/projects/single") \
+    >"$scratch/stdout" 2>"$scratch/stderr"
+  code=$?
+  set -e
+  assert_exit_code "0" "$code" "book --check succeeds across a series and a single project"
+  v1="$scratch/.skelepress/series/volume-1/skelepress.config.yaml"
+  v2="$scratch/.skelepress/series/volume-2/skelepress.config.yaml"
+  single="$scratch/.skelepress/single/skelepress.config.yaml"
+  assert_contains "$v1" 'file_prefix: "series-vol-1-the-first-summer"' \
+    "the first series volume composes series, ordinal and title"
+  assert_contains "$v2" 'file_prefix: "series-vol-2-the-lantern-field"' \
+    "the second series volume composes series, ordinal and title"
+  assert_contains "$single" 'file_prefix: "lone-volume"' \
+    "a single-volume project keeps the title-only prefix"
+  rm -rf "$scratch"
+}
+
 run_book_default_output_test() {
   local scratch code mode root project config
   scratch="$(mktemp -d)"
@@ -184,18 +223,20 @@ SH
       if cmp -s \
         <(grep -E '^    \[ok\] .*\.pdf$' "$scratch/$generation.stdout") \
         <(printf '    [ok] .skelepress/series/%s\n' \
-          'one/book-one-20261120.pdf' "one/book-one-$day.pdf" "two/book-two-$day.pdf"); then
+          'one/book-one-20261120.pdf' "one/series-vol-1-book-one-$day.pdf" \
+          "two/series-vol-2-book-two-$day.pdf"); then
         pass "book preserves its sorted PDF listing when there is no filename collision"
       else
         fail "book must list both yesterday's PDF and today's new PDFs in the original order"
       fi
     fi
     for volume in one two; do
+      case "$volume" in one) ord=1 ;; two) ord=2 ;; esac
       assert_contains "$scratch/$generation.stdout" \
-        "^    \\[ok\\] \\.skelepress/series/$volume/book-$volume-$suffix\\.pdf$" \
+        "^    \\[ok\\] \\.skelepress/series/$volume/series-vol-$ord-book-$volume-$suffix\\.pdf$" \
         "book reports the $generation generation's PDF for $volume"
       for format in pdf epub; do
-        if cmp -s "$scratch/.skelepress/series/$volume/book-$volume-$suffix.$format" \
+        if cmp -s "$scratch/.skelepress/series/$volume/series-vol-$ord-book-$volume-$suffix.$format" \
           <(printf '%s\n' "$generation"); then
           pass "the $generation generation writes one shared suffix to $volume.$format"
         else
@@ -205,7 +246,7 @@ SH
     done
     if [[ "$generation" == first ]]; then
       # Only volume one has a collision when the next series build starts.
-      rm -f "$scratch/.skelepress/series/two/book-two-$day."{pdf,epub}
+      rm -f "$scratch/.skelepress/series/two/series-vol-2-book-two-$day."{pdf,epub}
     fi
   done
 
@@ -225,10 +266,10 @@ SH
     pass "the next-day render has empty stderr"
   fi
   for format in pdf epub; do
-    assert_contains "$scratch/reuse.stdout" "book-one-20261122\.$format$" \
+    assert_contains "$scratch/reuse.stdout" "series-vol-1-book-one-20261122\.$format$" \
       "the next-day render reports the new date for $format"
-    if cmp -s "$first_volume/book-one-20261122.$format" <(printf 'reuse\n') &&
-      cmp -s "$first_volume/book-one-$day-150234-0002.$format" <(printf 'third\n'); then
+    if cmp -s "$first_volume/series-vol-1-book-one-20261122.$format" <(printf 'reuse\n') &&
+      cmp -s "$first_volume/series-vol-1-book-one-$day-150234-0002.$format" <(printf 'third\n'); then
       pass "the reused config writes a new $format without replacing the prior build"
     else
       fail "the reused config must add a next-day $format and preserve the previous build"
@@ -245,8 +286,9 @@ SH
     [[ "$generation" != second ]] || suffix="$day-150234"
     for volume in one two; do
       [[ "$generation/$volume" != first/two ]] || continue
+      case "$volume" in one) ord=1 ;; two) ord=2 ;; esac
       for format in pdf epub; do
-        if cmp -s "$scratch/.skelepress/series/$volume/book-$volume-$suffix.$format" \
+        if cmp -s "$scratch/.skelepress/series/$volume/series-vol-$ord-book-$volume-$suffix.$format" \
           <(printf '%s\n' "$generation"); then
           pass "book preserves the $generation generation's $volume.$format"
         else
