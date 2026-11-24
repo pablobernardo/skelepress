@@ -7,6 +7,18 @@ The project follows semantic versioning and keeps two versioned contracts:
 - `VERSION` for the toolkit version
 - `skelepress.config.yaml -> version` for the configuration contract
 
+## [Unreleased]
+
+### Fixed
+
+- A single-volume target inside a series (`skelepress book <series>/volume-2`)
+  now joins the series contract: the parent's `series.yaml` supplies the
+  volume's position, so the generated name carries the composed
+  `<series-slug>-vol-<n>-` opener exactly as building the whole series
+  produces, and the #230 ordinal cross-check applies. A standalone project
+  (no `series.yaml` in the parent, or its parent series does not list the
+  directory) keeps the title-only name (#247).
+
 ## [3.5.2] - 2026-11-24
 
 ### Fixed

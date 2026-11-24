@@ -71,6 +71,42 @@ run_bookkit_series_prefix_test() {
   rm -rf "$scratch"
 }
 
+# A single-volume target inside a series (skelepress book <series>/volume-2)
+# joins the series contract: the parent's series.yaml supplies its position,
+# so the composed prefix matches what building the whole series produces
+# (issue #247). A genuinely standalone project stays title-only.
+run_bookkit_single_target_in_series_test() {
+  local scratch code=0 target standalone
+  scratch="$(mktemp -d)"
+  mkdir -p "$scratch/home" "$scratch/projects/series/volume-1" "$scratch/projects/series/volume-2" \
+    "$scratch/projects/other"
+  printf '%s\n' 'manifest_version: 1' 'profile: book' 'title: "The First Summer"' \
+    'chapters: [chapter.md]' >"$scratch/projects/series/volume-1/manifest.yaml"
+  printf '%s\n' 'manifest_version: 1' 'profile: book' 'title: "The Lantern Field"' \
+    'chapters: [chapter.md]' >"$scratch/projects/series/volume-2/manifest.yaml"
+  printf '%s\n' 'manifest_version: 1' 'profile: book' 'title: "Unrelated Project"' \
+    'chapters: [chapter.md]' >"$scratch/projects/other/manifest.yaml"
+  printf 'Cuerpo.\n' >"$scratch/projects/series/volume-2/chapter.md"
+  printf 'Cuerpo.\n' >"$scratch/projects/other/chapter.md"
+  printf '%s\n' 'manifest_version: 1' 'volumes: [volume-1, volume-2]' >"$scratch/projects/series/series.yaml"
+
+  set +e
+  (cd "$scratch" && HOME="$scratch/home" SKELEPRESS_LANG=en \
+    "$CLI" book --check "$scratch/projects/series/volume-2" "$scratch/projects/other") \
+    >"$scratch/stdout" 2>"$scratch/stderr"
+  code=$?
+  set -e
+  assert_exit_code "0" "$code" "book --check succeeds for a single target inside a series"
+  target="$scratch/.skelepress/series/volume-2/skelepress.config.yaml"
+  standalone="$scratch/.skelepress/other/skelepress.config.yaml"
+  assert_contains "$target" 'file_prefix: "series-vol-2-the-lantern-field"' \
+    "a single target inside a series composes the series opener"
+  assert_file_exists "$target" "the single target writes into the series-nested layout"
+  assert_contains "$standalone" 'file_prefix: "unrelated-project"' \
+    "a standalone project outside the series keeps the title-only prefix"
+  rm -rf "$scratch"
+}
+
 run_book_default_output_test() {
   local scratch code mode root project config
   scratch="$(mktemp -d)"
