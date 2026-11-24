@@ -7,6 +7,15 @@ The project follows semantic versioning and keeps two versioned contracts:
 - `VERSION` for the toolkit version
 - `skelepress.config.yaml -> version` for the configuration contract
 
+## [Unreleased]
+
+### Fixed
+
+- A same-chapter self-link (`](#heading)`) to a heading that the cross-chapter
+  fragment resolver renames no longer dangles: the self-link follows the
+  renamed explicit id like any cross-chapter link, so the EPUB validates
+  (#241, regression found by EPUBCheck RSC-012 during the 3.5.1 acceptance).
+
 ## [3.5.1] - 2026-11-23
 
 ### Added
