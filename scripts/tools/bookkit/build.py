@@ -891,6 +891,32 @@ def main() -> None:
                     )
                 plans.append((project, volume_name, volume_dir, series, manifest, True, template, position))
         else:
+            parent_series = project.parent / "series.yaml"
+            # A single-volume target inside a series joins the series contract
+            # (issue #247): launchers that build one volume at a time still get
+            # the composed name, so a volume's artifacts identify their series
+            # no matter which entry point built them. The parent's series.yaml
+            # must actually list this directory; anything else is a genuinely
+            # standalone project and keeps the title-only name.
+            position = 0
+            if parent_series.is_file():
+                series = load_contract(parent_series, SERIES_SCHEMA)
+                names = [str(name) for name in series.get("volumes", [])]
+                if project.name in names:
+                    position = names.index(project.name) + 1
+                    manifest = load_contract(project / "manifest.yaml", MANIFEST_SCHEMA)
+                    # The same #230 cross-check the series shape applies: a
+                    # declared ordinal is meaningful only where both sides are
+                    # visible, and here they are.
+                    declared_volume = manifest.get("volume")
+                    if isinstance(declared_volume, int) and not isinstance(declared_volume, bool) \
+                            and declared_volume != position:
+                        die(
+                            f"series '{project.parent.name}': volume '{project.name}' declares "
+                            f"volume {declared_volume}, expected {position}"
+                        )
+                    plans.append((project.parent, project.name, project, series, manifest, True, template, position))
+                    continue
             manifest = load_contract(project / "manifest.yaml", MANIFEST_SCHEMA)
             plans.append((project, project.name, project, {}, manifest, False, template, 0))
 
