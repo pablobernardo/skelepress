@@ -6,6 +6,32 @@
 # requiring a real PDF or EPUB typesetting run.
 
 # Independent manifests pin the output-root contract without example coupling.
+# An accented volume title transliterates into output.file_prefix, matching
+# the documented generated-name rule (Informe Ñandú -> informe-nandu), not a
+# dropped-character slug (issue #243).
+run_bookkit_accented_slug_test() {
+  local scratch project code=0
+  scratch="$(mktemp -d)"
+  mkdir -p "$scratch/home" "$scratch/projects/single"
+  printf '%s\n' 'manifest_version: 1' 'profile: book' 'title: "Informe Ñandú"' \
+    'chapters: [chapter.md]' >"$scratch/projects/single/manifest.yaml"
+  printf 'Cuerpo.\n' >"$scratch/projects/single/chapter.md"
+
+  set +e
+  (cd "$scratch" && HOME="$scratch/home" SKELEPRESS_LANG=en \
+    "$CLI" book --check "$scratch/projects/single") \
+    >"$scratch/stdout" 2>"$scratch/stderr"
+  code=$?
+  set -e
+  assert_exit_code "0" "$code" "book --check succeeds with an accented title"
+  local config="$scratch/.skelepress/single/skelepress.config.yaml"
+  assert_contains "$config" 'file_prefix: "informe-nandu"' \
+    "the generated file_prefix transliterates the accented title"
+  assert_not_contains "$config" '"informe-nand"' \
+    "the accented character is not silently dropped"
+  rm -rf "$scratch"
+}
+
 run_book_default_output_test() {
   local scratch code mode root project config
   scratch="$(mktemp -d)"

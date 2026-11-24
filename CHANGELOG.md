@@ -15,6 +15,23 @@ The project follows semantic versioning and keeps two versioned contracts:
   fragment resolver renames no longer dangles: the self-link follows the
   renamed explicit id like any cross-chapter link, so the EPUB validates
   (#241, regression found by EPUBCheck RSC-012 during the 3.5.1 acceptance).
+- A bookkit project whose title carries accented Latin characters now gets
+  the documented generated name: the slug transliterates (`Informe Ñandú` →
+  `informe-nandu`) instead of silently dropping the accented characters
+  (`informe-and`, #243). The implementation now follows the rule
+  `docs/user/usage.md` has always documented.
+
+### Compatibility
+
+- The accented-title slug naming is a behavior change for bookkit projects
+  whose `title` carries accents: a freshly built volume now names its output
+  directory and files with the transliterated slug instead of the truncated
+  one, so a `book` run after the upgrade writes to a new output location and
+  leaves prior builds where they were. Configurations already generated (or
+  saved) keep their recorded `file_prefix` and render as before; to preserve
+  a specific legacy name, declare `file_prefix` (or the volume's
+  `output.file_prefix`) explicitly. No CLI, configuration-contract or schema
+  change.
 
 ## [3.5.1] - 2026-11-23
 

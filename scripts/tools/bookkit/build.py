@@ -44,6 +44,7 @@ import os
 import re
 import subprocess
 import sys
+import unicodedata
 from datetime import datetime
 from pathlib import Path, PurePosixPath
 from tempfile import mkstemp
@@ -98,10 +99,17 @@ def warn(message: str) -> None:
 
 
 def slugify(value: str) -> str:
-    """Lowercase, ASCII, single dashes; the toolkit's own naming rule."""
+    """Lowercase, ASCII, single dashes; the toolkit's own naming rule.
 
-    decomposed = value.encode("ascii", "ignore").decode("ascii").lower()
-    return re.sub(r"[^a-z0-9]+", "-", decomposed).strip("-") or "volume"
+    NFKD decomposition first, like the renderer's slugify (scripts/runtime/
+    render-native.py): accented Latin letters transliterate to their base
+    letter (Informe Ñandú -> informe-nandu, as docs/user/usage.md documents)
+    instead of being silently dropped by a raw ASCII encode.
+    """
+
+    decomposed = unicodedata.normalize("NFKD", value)
+    ascii_only = decomposed.encode("ascii", "ignore").decode("ascii").lower()
+    return re.sub(r"[^a-z0-9]+", "-", ascii_only).strip("-") or "volume"
 
 
 def quoted(value: str) -> str:
