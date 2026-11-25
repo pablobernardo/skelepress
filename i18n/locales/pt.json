@@ -5,6 +5,7 @@
   "cli.error.preflight_not_found": "Script preflight executável não encontrado: {path}",
   "cli.error.unknown_arg": "Argumento desconhecido: {arg}",
   "cli.error.config_required": "Você deve informar -c <skelepress.config.yaml>",
+  "cli.error.formats_value_required": "--formats [-f] requer uma lista separada por vírgulas: pdf, epub, html",
   "cli.error.unknown_command": "Comando desconhecido: {command}",
   "cli.help.commands": "Comandos:",
   "cli.help.details": "Para os argumentos de book, execute 'skelepress book --help'. Para as opções dos outros comandos, consulte docs/user/usage.md.",

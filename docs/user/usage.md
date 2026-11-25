@@ -480,7 +480,24 @@ skelepress render -c skelepress.config.yaml --dry-run
 skelepress render -c skelepress.config.yaml --dry-run --json
 ```
 
-`--dry-run` prints the human-readable plan (chapters in effective order, merged markdown, output PDF and the pandoc invocation) and **writes nothing**: it creates no directories, generates no merged markdown, prepares no emojis and invokes no pandoc.
+Override the formats for one invocation, without editing the configuration. The
+value is a comma-separated list validated against the same enum as
+`output.formats` (pdf, epub, html); it wins for this run only, and `doctor`
+applies the same override when checking the union of dependencies, so a single
+HTML render never asks for the declared PDF engine:
+
+```bash
+skelepress render -c skelepress.config.yaml --formats html
+skelepress render -c skelepress.config.yaml -f epub,html
+skelepress doctor -c skelepress.config.yaml --formats html
+```
+
+`-f` is the accepted short form, matching the flag conventions of the CLI.
+
+Note: a declared `pandoc.template` stays a PDF decision; an override selecting
+`html` keeps the reader shell rules described above.
+
+`--dry-run` prints the human-readable plan (chapters in effective order, merged markdown, output PDF and the pandoc invocation) and **writes nothing**: it creates no directories, generates no merged markdown, prepares no emojis and invokes no pandoc. With `--formats`, the plan reflects the override exactly as a full render would.
 
 `--dry-run --json` emits the same plan as JSON on stdout (the validation banner goes to stderr, so stdout stays clean) with this shape:
 

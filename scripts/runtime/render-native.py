@@ -228,12 +228,33 @@ def toolkit_version(root_dir: Path) -> str:
     return value
 
 
+def override_formats_from_env() -> list[str] | None:
+    """The --formats override the CLI forwarded, validated against the enum.
+
+    The CLI accepts the flag and passes it through the environment, so the
+    renderer and any reader of the effective selection agree without parsing
+    the argument themselves. An empty value is the absence of an override.
+    """
+    raw = os.environ.get("SKELEPRESS_FORMATS", "").strip()
+    if not raw:
+        return None
+    values = [part.strip() for part in raw.split(",") if part.strip()]
+    invalid = [part for part in values if part not in FORMAT_CHOICES]
+    if invalid or not values:
+        die(t("render.error.format_invalid", "Invalid 'output.formats' value: {value}. Supported values: {supported}",
+              value=raw, supported=", ".join(FORMAT_CHOICES)))
+    return list(dict.fromkeys(values))
+
+
 def build_plan(cfg_user: dict, cfg_path: Path, root_dir: Path) -> dict:
     """Preserve single-format plans; use an ordered v2 job list for multiple outputs."""
     formats = cfg_user.get("output", {}).get("formats", [FORMAT_PDF])
     if not isinstance(formats, list) or not formats or any(f not in FORMAT_CHOICES for f in formats):
         die(t("render.error.format_invalid", "Invalid 'output.formats' value: {value}. Supported values: {supported}",
               value=formats, supported=", ".join(FORMAT_CHOICES)))
+    override = override_formats_from_env()
+    if override is not None:
+        formats = override
     formats = list(dict.fromkeys(formats))
     jobs = [build_single_plan(cfg_user, cfg_path, root_dir, name) for name in formats]
     return jobs[0] if len(jobs) == 1 else {"plan_version": 2, "jobs": jobs}

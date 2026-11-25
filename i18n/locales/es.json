@@ -5,6 +5,7 @@
   "cli.error.preflight_not_found": "No se encontró preflight ejecutable: {path}",
   "cli.error.unknown_arg": "Argumento no reconocido: {arg}",
   "cli.error.config_required": "Debes indicar -c <skelepress.config.yaml>",
+  "cli.error.formats_value_required": "--formats [-f] necesita una lista separada por comas: pdf, epub, html",
   "cli.error.unknown_command": "Comando desconocido: {command}",
   "cli.help.commands": "Comandos:",
   "cli.help.details": "Para los argumentos de book, ejecuta 'skelepress book --help'. Para las opciones de los demás comandos, consulta docs/user/usage.md.",

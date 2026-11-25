@@ -68,9 +68,9 @@ ${usage_title}
   skelepress update
   skelepress update --to vX.Y.Z
   skelepress update --install-dir <path>
-  skelepress doctor [-c <skelepress.config.yaml>]
+  skelepress doctor [-c <skelepress.config.yaml>] [--formats|-f <list>]
   skelepress validate-config -c <skelepress.config.yaml>
-  skelepress render -c <skelepress.config.yaml> [--dry-run] [--json]
+  skelepress render -c <skelepress.config.yaml> [--dry-run] [--json] [--formats|-f <list>]
   skelepress draft <file.md> [more.md...] [-t <title>] [-o <output.pdf>]
   skelepress book [args...]
 
@@ -993,6 +993,15 @@ run_render_plan() {
   SKELEPRESS_LANG="$CLI_LANG" python3 "$ROOT_DIR/scripts/runtime/render-native.py" "$config_path" "$ROOT_DIR" "$plan_flag"
 }
 
+# The --formats override forwards through the environment: renderer and
+# preflight read the same effective selection without re-parsing arguments.
+forward_formats_env() {
+  local formats_override="${1:-}"
+  if [[ -n "$formats_override" ]]; then
+    export SKELEPRESS_FORMATS="$formats_override"
+  fi
+}
+
 run_draft() {
   # Synthesize the minimal valid draft configuration, validate it against the
   # schema, then run the same single renderer the render command uses. The
@@ -1188,10 +1197,20 @@ main() {
       ;;
     doctor)
       local config=""
+      local formats_override=""
       while [[ $# -gt 0 ]]; do
         case "$1" in
           -c|--config)
             config="$2"
+            shift 2
+            ;;
+          --formats|-f)
+            if [[ -z "${2:-}" ]]; then
+              echo "❌ $(t "cli.error.formats_value_required" "--formats requires a comma-separated list: pdf, epub, html")"
+              exit 1
+            fi
+            [[ -n "$formats_override" ]] && { echo "❌ $(interp "$(t "draft.error.repeated_option" "Repeated option: {option}")" "option" "--formats")"; exit 1; }
+            formats_override="$2"
             shift 2
             ;;
           *)
@@ -1203,6 +1222,7 @@ main() {
             ;;
         esac
       done
+      forward_formats_env "$formats_override"
       run_doctor "$config"
       ;;
     validate-config)
@@ -1233,6 +1253,7 @@ main() {
       local config=""
       local dry_run=false
       local json_output=false
+      local formats_override=""
       while [[ $# -gt 0 ]]; do
         case "$1" in
           -c|--config)
@@ -1246,6 +1267,15 @@ main() {
           --json)
             json_output=true
             shift
+            ;;
+          --formats|-f)
+            if [[ -z "${2:-}" ]]; then
+              echo "❌ $(t "cli.error.formats_value_required" "--formats requires a comma-separated list: pdf, epub, html")"
+              exit 1
+            fi
+            [[ -n "$formats_override" ]] && { echo "❌ $(interp "$(t "draft.error.repeated_option" "Repeated option: {option}")" "option" "--formats")"; exit 1; }
+            formats_override="$2"
+            shift 2
             ;;
           *)
             local msg
@@ -1261,6 +1291,8 @@ main() {
         echo "❌ $(t "cli.error.config_required" "You must provide -c <skelepress.config.yaml>")"
         exit 1
       fi
+
+      forward_formats_env "$formats_override"
 
       if [[ "$json_output" == true ]]; then
         validate_config_file "$config" >&2

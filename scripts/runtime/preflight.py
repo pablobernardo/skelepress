@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import os
 import re
 import shutil
 import subprocess
@@ -409,6 +410,18 @@ def main() -> None:
                 declared_formats = output.get("formats")
                 if isinstance(declared_formats, list):
                     output_formats = declared_formats
+
+    # The --formats CLI override wins over the configuration, so the doctor
+    # checks exactly the dependency union the coming render needs. Validation
+    # matches the renderer: undeclared names fail, not silently drop.
+    raw_override = os.environ.get("SKELEPRESS_FORMATS", "").strip()
+    if raw_override:
+        values = [part.strip() for part in raw_override.split(",") if part.strip()]
+        allowed = {FORMAT_PDF, "epub", "html"}
+        invalid = [part for part in values if part not in allowed]
+        if invalid or not values:
+            fail(f"❌ {t('render.error.format_invalid', 'Invalid \'output.formats\' value: {value}. Supported values: {supported}', value=raw_override, supported=', '.join(sorted(allowed)))}")
+        output_formats = list(dict.fromkeys(values))
 
     needs_tex = FORMAT_PDF in output_formats
     # A python3 below the declared minimum cannot run the renderer, so this is
