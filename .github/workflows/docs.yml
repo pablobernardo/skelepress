@@ -41,7 +41,7 @@ jobs:
         working-directory: site
       # actions/upload-pages-artifact v3.0.1 (full SHA pin exceeds the budget)
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa  # yamllint disable-line
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9  # yamllint disable-line
         with:
           path: site/.vitepress/dist
 
