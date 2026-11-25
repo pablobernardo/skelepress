@@ -108,6 +108,11 @@ PY
   rm -rf "$root" "$out"
 
   # A real html render through the override produces the artifact.
+  if ! command -v pandoc >/dev/null 2>&1; then
+    echo "SKIP --formats html real render (pandoc not available)"
+    rm -rf "$root" "$out"
+    return 0
+  fi
   root="$(mktemp -d)"
   html_formats_fixture "$root"
   out="$(mktemp)"
