@@ -210,7 +210,9 @@ renderer applies the value in the middle column when they are absent:
 | `pandoc.top_level_division` | absent: Pandoc's own choice | the template typesets top-level headings differently from Pandoc's default |
 | `pandoc.running_headers` | `false` (no argument emitted) | a PDF template opts into book/chapter running headers |
 | `output.file_prefix` | a slug of `document.title` | always |
-| `output.formats` | `[pdf]` | you want EPUB or multiple formats |
+| `output.formats` | `[pdf]` | you want EPUB, HTML or multiple formats |
+| `output.html` (whole section) | the reader shell applied | the HTML target is selected and you want the writer's bare output |
+| `output.html.reader` | `true` | you want a bare HTML file with Pandoc's default template instead of the toolkit reader |
 
 A filter that is disabled does not need its settings: `enabled: false` is a
 complete declaration. That is why the documentation example, which renders no
@@ -363,6 +365,48 @@ compat:
    with the chapter across formats and reordering, unlike raw `\clearpage`,
    which is invisible in HTML/EPUB. A heading marked for a break after another
    break never ships a blank page.
+
+### The HTML format and its reader
+
+`html` is a third value for `output.formats`:
+
+```yaml
+output:
+  formats: [html]
+```
+
+One render produces one self-contained `.html` file: CSS and the reader script
+travel inside the artifact, `--embed-resources` inlines images as data URIs, and
+nothing outside the file is needed to read it. The document text is complete
+from the start, so browser search covers the whole book.
+
+The reader shell is a navigation aid, not a page engine. There is no pagination:
+Pandoc's `--section-divs` gives every chapter its own section, a sticky sidebar
+lists the table of contents with the active chapter highlighted, and a pager
+offers the previous and next chapter. On a narrow window the sidebar steps aside
+and the document reads as a normal web page. Dark colours follow the
+`prefers-color-scheme` media query, and printing produces a plain continuous
+document.
+
+The reader script is optional by design: without JavaScript the file is still a
+complete book, navigable with the sidebar links. Images are marked
+`loading="lazy"` and `decoding="async"` through the always-on HTML filter, so a
+reader moving around a large book does not pay for every diagram up front.
+
+Three boundaries are worth knowing:
+
+- `pandoc.template` is a LaTeX asset, so it only applies to the PDF. The HTML
+  target always uses the toolkit reader template, and a configured template is
+  answered with a note in the render output.
+- `output.html.reader: false` keeps the single-file behaviour but hands the
+  document to Pandoc's default HTML template instead of the reader shell.
+- `--embed-resources` needs Pandoc 2.19 or newer; `skelepress doctor` states the
+  toolkit's tested baseline, and renders with older Pandoc fail loudly rather
+  than producing a file that references paths it does not carry.
+
+The artifact's page positions are its own visual layout and do not correspond
+to the PDF's pagination: navigation is by chapter, which is the structure the
+three formats share.
 
 ### PDF running headers
 

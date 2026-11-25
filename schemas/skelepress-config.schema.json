@@ -68,7 +68,7 @@
                   "file": { "type": "string", "minLength": 1 },
                   "formats": {
                     "type": "array", "minItems": 1,
-                    "items": { "type": "string", "enum": ["pdf", "epub"] }
+                    "items": { "type": "string", "enum": ["pdf", "epub", "html"] }
                   }
                 }
               }
@@ -87,7 +87,15 @@
         "suffix": { "type": "string", "minLength": 1 },
         "formats": {
           "type": "array", "minItems": 1,
-          "items": { "type": "string", "enum": ["pdf", "epub"] }
+          "items": { "type": "string", "enum": ["pdf", "epub", "html"] }
+        },
+        "html": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["reader"],
+          "properties": {
+            "reader": { "type": "boolean" }
+          }
         },
         "keep_merged_markdown": { "type": "boolean" }
       }

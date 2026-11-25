@@ -14,7 +14,7 @@
   "cli.help.command.update": "Check for or install a toolkit release.",
   "cli.help.command.doctor": "Check dependencies before rendering.",
   "cli.help.command.validate-config": "Validate a configuration against its schema.",
-  "cli.help.command.render": "Render a validated configuration to PDF or EPUB.",
+  "cli.help.command.render": "Render a validated configuration to PDF, EPUB or HTML.",
   "cli.help.command.book": "Validate manifests and build volumes or series.",
   "cli.help.command.help": "Show this help.",
   "book.help.description": "Build volumes or series from manifest.yaml and series.yaml, generate standard configurations and render them through skelepress.",
@@ -95,6 +95,7 @@
   "render.fragment.section_not_found": "(missing section)",
   "render.output.pdf": "Output PDF: {path}",
   "render.output.epub": "Output EPUB: {path}",
+  "render.output.html": "Output HTML: {path}",
   "render.command.exec": "Running: {command}",
   "render.plan.title": "Render plan (dry run, nothing written)",
   "render.plan.command": "Command: {command}",
@@ -212,5 +213,7 @@
   "draft.error.output_required": "-o requires an output path.",
   "draft.info.synthesized": "Synthesized draft configuration written to {path}",
   "draft.info.rendering": "Rendering draft: {output}",
-  "draft.error.output_missing": "Draft rendered but the output file is missing."
+  "draft.error.output_missing": "Draft rendered but the output file is missing.",
+  "render.output.html": "Output HTML: {path}",
+  "render.error.html_template_conflict": "A configured pandoc.template only applies to PDF: the HTML target uses the toolkit reader template."
 }

@@ -3,8 +3,8 @@ layout: home
 
 hero:
   name: Skelepress
-  text: PDF and EPUB from one configuration
-  tagline: An agnostic, versioned Pandoc toolkit — declare your chapters once, render a typeset PDF, a reflowable EPUB3, or both in a single invocation.
+  text: PDF, EPUB and HTML from one configuration
+  tagline: An agnostic, versioned Pandoc toolkit — declare your chapters once, render a typeset PDF, a reflowable EPUB3, a self-contained HTML reader, or any combination in a single invocation.
   actions:
     - theme: brand
       text: Get started
@@ -20,7 +20,7 @@ features:
   - title: One configuration
     details: A validated YAML file describes the document, the inputs, the outputs and the filters. No hardcoded paths, no scripts to maintain.
   - title: One renderer
-    details: A single native renderer turns a validated configuration into a PDF, an EPUB, or both, with a verifiable render plan.
+    details: A single native renderer turns a validated configuration into a PDF, an EPUB, a self-contained HTML reader, or all of them, with a verifiable render plan.
   - title: Books built in
     details: Eight shipped book styles, from A4 to KDP trim sizes, driven by simple manifests.
 ---

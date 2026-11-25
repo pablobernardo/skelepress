@@ -7,6 +7,28 @@ The project follows semantic versioning and keeps two versioned contracts:
 - `VERSION` for the toolkit version
 - `skelepress.config.yaml -> version` for the configuration contract
 
+## [Unreleased]
+
+### Added
+
+- `html` as a third value for `output.formats`: one self-contained HTML file
+  with a reader shell — sidebar table of contents with the active-chapter
+  highlight, previous/next chapter pager, dark mode via the system preference
+  and a print stylesheet. The artifact embeds its images as data URIs, so it
+  needs nothing from the project tree; the document text is complete from the
+  start, so browser search covers the whole book. There is no pagination: the
+  reader navigates by chapter, the structure the three formats share.
+- `output.html.reader` (default `true`): switching it off hands the document to
+  Pandoc's default HTML template instead of the toolkit reader shell.
+- `filters/lazy-images.lua`, always on for HTML: images are marked
+  `loading="lazy"` and `decoding="async"` in the HTML target; other formats are
+  unchanged.
+
+### Changed
+
+- `skelepress render` help text and the localized `Output:` label now include
+  the HTML target alongside PDF and EPUB. Configurations are unchanged.
+
 ## [3.5.3] - 2026-11-24
 
 ### Fixed

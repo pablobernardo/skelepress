@@ -14,7 +14,7 @@
   "cli.help.command.update": "Comprobar o instalar una versión del toolkit.",
   "cli.help.command.doctor": "Comprobar las dependencias antes de renderizar.",
   "cli.help.command.validate-config": "Validar una configuración contra su esquema.",
-  "cli.help.command.render": "Renderizar una configuración validada a PDF o EPUB.",
+  "cli.help.command.render": "Renderizar una configuración validada a PDF, EPUB o HTML.",
   "cli.help.command.book": "Validar manifiestos y generar volúmenes o series.",
   "cli.help.command.help": "Mostrar esta ayuda.",
   "book.help.description": "Construye volúmenes o series a partir de manifest.yaml y series.yaml, genera configuraciones estándar y las renderiza mediante skelepress.",
@@ -95,6 +95,7 @@
   "render.fragment.section_not_found": "(sección no encontrada)",
   "render.output.pdf": "PDF de salida: {path}",
   "render.output.epub": "EPUB de salida: {path}",
+  "render.output.html": "HTML de salida: {path}",
   "render.command.exec": "Ejecutando: {command}",
   "render.plan.title": "Plan de render (dry run, no se escribe nada)",
   "render.plan.command": "Comando: {command}",
@@ -212,5 +213,7 @@
   "draft.error.output_required": "-o necesita una ruta de salida.",
   "draft.info.synthesized": "Configuración de borrador sintetizada escrita en {path}",
   "draft.info.rendering": "Renderizando borrador: {output}",
-  "draft.error.output_missing": "El borrador se renderizó pero falta el fichero de salida."
+  "draft.error.output_missing": "El borrador se renderizó pero falta el fichero de salida.",
+  "render.output.html": "HTML de salida: {path}",
+  "render.error.html_template_conflict": "El pandoc.template configurado solo aplica al PDF: el destino HTML usa la plantilla de lector del toolkit."
 }

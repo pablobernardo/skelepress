@@ -76,11 +76,17 @@ PLAN_VERSION = 1
 
 FORMAT_PDF = "pdf"
 FORMAT_EPUB = "epub"
-FORMAT_CHOICES = (FORMAT_PDF, FORMAT_EPUB)
+FORMAT_HTML = "html"
+FORMAT_CHOICES = (FORMAT_PDF, FORMAT_EPUB, FORMAT_HTML)
 
 # EPUB records BCP 47 language tags, not babel names.
 EPUB_LANGS = {"en": "en", "es": "es", "pt": "pt", "gl": "gl"}
 DEFAULT_EPUB_LANGUAGE = "en"
+
+# The HTML reader is a toolkit asset like the .tex styles: one path below the
+# templates/ directory, never a builtin name a .tex configuration could select.
+# It is resolved directly to keep the PDF template namespace clean.
+HTML_READER_TEMPLATE = "templates/reader.html"
 
 MISSING_SVG = (
     """<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 16 16\">\n"
@@ -277,6 +283,8 @@ def build_single_plan(cfg_user: dict, cfg_path: Path, root_dir: Path, format_nam
 
     base_dir_path = (cfg_path.parent / str(base_dir)).resolve()
     stem = file_stem(document, output)
+    # HTML-only plan details; an empty dict keeps PDF/EPUB plans byte-identical.
+    html_plan_side_effects: dict = {}
     suffix = resolve_suffix(output.get("suffix"))
 
     chapters_dir = base_dir_path / str(input_cfg.get("chapters_dir", "chapters"))
@@ -321,6 +329,11 @@ def build_single_plan(cfg_user: dict, cfg_path: Path, root_dir: Path, format_nam
     raw_user_pandoc = cfg_user.get("pandoc")
     user_pandoc_cfg = raw_user_pandoc if isinstance(raw_user_pandoc, dict) else {}
     user_template_raw = str(user_pandoc_cfg.get("template", "")).strip()
+
+    # The HTML target is decided by its output.html section: the reader shell is
+    # the default, and the template it uses is always the toolkit's own.
+    output_html_cfg = output.get("html") if isinstance(output.get("html"), dict) else {}
+    html_reader = bool(output_html_cfg.get("reader", True))
 
     if user_template_raw:
         if template_runtime.is_bare_name(user_template_raw):
@@ -385,6 +398,8 @@ def build_single_plan(cfg_user: dict, cfg_path: Path, root_dir: Path, format_nam
     cmd = ["pandoc", str(md_out)]
     # EPUB is not typeset: a TeX engine and the LaTeX template are PDF-only, and
     # pandoc leaves pdf_engine unused for it (the field stays required for now).
+    # HTML is not typeset either: the reader template replaces the LaTeX one, and
+    # a consumer's pandoc.template (a .tex asset) cannot speak to the HTML writer.
     if format_name == FORMAT_PDF:
         cmd.extend([
             f"--pdf-engine={pandoc.get('pdf_engine', 'xelatex')}",
@@ -408,6 +423,33 @@ def build_single_plan(cfg_user: dict, cfg_path: Path, root_dir: Path, format_nam
             )
         if top_level_division_argument:
             cmd.append(top_level_division_argument)
+
+    elif format_name == FORMAT_HTML:
+        html_template_path: Path | None = None
+        html_template_note = False
+        if html_reader:
+            # A declared template is a .tex asset: it cannot render HTML. The
+            # pure plan records the note; execution prints it.
+            html_template_note = user_template_raw != ""
+            html_template_path = root_dir / HTML_READER_TEMPLATE
+            if not html_template_path.is_file():
+                die(
+                    t(
+                        "render.error.html_reader_template_missing",
+                        "The HTML reader template is missing from the toolkit: {path}",
+                        path=html_template_path,
+                    )
+                )
+        # One self-contained artifact: section divs give the template the
+        # chapter structure it navigates, and embed-resources inlines images as
+        # data URIs, so the reading copy needs nothing from the project tree.
+        cmd.extend(["-s", "--section-divs"])
+        if html_reader and html_template_path is not None:
+            cmd.append(f"--template={html_template_path}")
+        cmd.append("--embed-resources")
+        # HTML only: image work is deferred to the moment the reader gets there.
+        cmd.append(f"--lua-filter={root_dir / 'filters/lazy-images.lua'}")
+        html_plan_side_effects = {"html": {"reader": html_reader, "template_note": html_template_note}}
 
     if emoji_enabled:
         cmd.append(f"--lua-filter={root_dir / 'filters/emoji.lua'}")
@@ -482,6 +524,18 @@ def build_single_plan(cfg_user: dict, cfg_path: Path, root_dir: Path, format_nam
         if cover_image is not None:
             cmd.extend(["--metadata", f"cover-image={cover_image}"])
         cmd.extend(["-o", str(artifact_out)])
+    elif format_name == FORMAT_HTML:
+        # The HTML writer reads metadata, not LaTeX variables: same precedence
+        # as the EPUB branch, with document.language carried as the lang code.
+        if metadata_path is not None and metadata_path.exists():
+            cmd.append(f"--metadata-file={metadata_path}")
+        else:
+            for field in DOCUMENT_VAR_FIELDS:
+                value = document.get(field)
+                if isinstance(value, str) and value.strip():
+                    cmd.extend(["--metadata", f"{field}={value}"])
+        cmd.extend(["--metadata", f"lang={EPUB_LANGS.get(language, DEFAULT_EPUB_LANGUAGE)}"])
+        cmd.extend(["-o", str(artifact_out)])
     else:
         uses_metadata_file = metadata_path is not None and metadata_path.exists()
         # The image cover is a PDF page too, not just an EPUB artifact: resolve
@@ -542,6 +596,7 @@ def build_single_plan(cfg_user: dict, cfg_path: Path, root_dir: Path, format_nam
             "keep_merged_markdown": keep_merged_markdown,
             "clearpage_between_h1": insert_clearpage,
             "heading_break_level": heading_break_level,
+            **html_plan_side_effects,
             "emoji": {
                 "enabled": emoji_enabled,
                 "dir": str(emoji_dir),
@@ -892,7 +947,11 @@ def artifact_target(plan: dict) -> tuple[str, str]:
 
 
 def output_label_key(format_name: str) -> str:
-    return "render.output.epub" if format_name == FORMAT_EPUB else "render.output.pdf"
+    if format_name == FORMAT_EPUB:
+        return "render.output.epub"
+    if format_name == FORMAT_HTML:
+        return "render.output.html"
+    return "render.output.pdf"
 
 
 def execute_plan(plan: dict) -> int:
@@ -928,6 +987,13 @@ def execute_single_plan(plan: dict) -> int:
     md_out = Path(target["markdown"])
     artifact_out = Path(artifact_raw)
     side_effects = plan["side_effects"]
+    html_effects = side_effects.get("html") or {}
+    if html_effects.get("template_note"):
+        # Recorded by the pure plan when a configured pandoc.template cannot
+        # speak to the HTML writer; execution prints it beside the command.
+        print(
+            f"⚠️  {t('render.error.html_template_conflict', 'A configured pandoc.template only applies to PDF: the HTML target uses the toolkit reader template.')}"
+        )
 
     md_out.parent.mkdir(parents=True, exist_ok=True)
     md_out.write_text(
