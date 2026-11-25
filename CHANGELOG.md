@@ -28,6 +28,11 @@ The project follows semantic versioning and keeps two versioned contracts:
 
 - `skelepress render` help text and the localized `Output:` label now include
   the HTML target alongside PDF and EPUB. Configurations are unchanged.
+- `skelepress render --formats <list>` and `skelepress doctor --formats <list>`
+  override the configured `output.formats` for one invocation: a comma-separated
+  list validated against the same enum, applied to the plan and to doctor's
+  union-of-dependencies check, so regenerating one format no longer requires
+  editing the configuration (#254).
 
 ## [3.5.3] - 2026-11-24
 

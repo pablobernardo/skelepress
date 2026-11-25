@@ -249,7 +249,7 @@ run_chapter_fragment_empty_fragment_test() {
   assert_exit_code "0" "$code" "an empty fragment degrades instead of failing the render"
   assert_contains "$md" '\]\(#ch-chapter-2\)' "an empty fragment falls back to the chapter anchor"
   assert_contains "$md" '## Section A' "the target chapter content survives"
-  assert_not_contains "$md" '\](chapter-2.md#\)' "no dead file link survives the merge"
+  assert_not_contains "$md" '\]\(chapter-2\.md#\)' "no dead file link survives the merge"
 
   rm -rf "$sandbox"
   rm -f "$out"

@@ -28,9 +28,11 @@ Pagination was analyzed and explicitly rejected during scoping; a Kindle format 
 | T5 | S1,S3,S5,S8 | inline | `tests/integration/check-html-format.py` (8 cases) registered; conformance case `html.yaml` + expectation; two test expectations updated with the product change (help description, rerun case count) | (wave-1 commit) |
 | T6 | S8,S10 | inline | Docs: `usage.md` HTML section, optional-settings table, `index.md`, CHANGELOG Unreleased, 4 locale catalogs | (wave-1 commit) |
 
-Wave 2 scope (tracked in issues after the wave-1 commit): manual light/dark toggle, local chapter-scoped
-search, `content-visibility: auto` polish, visual refinement from artifact feedback, optional `<details>`
-mobile TOC. Related CLI follow-up: `render --formats` override (issue filed separately).
+Wave 2 scope (issue #253): manual light/dark toggle, local chapter-scoped
+search, `content-visibility: auto` polish, visual refinement from artifact
+feedback, optional `<details>` mobile TOC. Related CLI follow-up:
+`render --formats` override (issue #254), proposed as its own `feat(cli)`
+commit after the wave-1 commit (`fd35be8`).
 
 ## Log
 
@@ -41,4 +43,6 @@ mobile TOC. Related CLI follow-up: `render --formats` override (issue filed sepa
 - L5: User accepted the consolidated proposal (single self-contained file, section navigation, own stylesheet, minimal optional JS).
 - L6: Launch authorized with the S11 restriction and a plan summary delivered; two-wave plan accepted.
 - L7: Wave 1 implemented on `feat/html-output`. Evidence: `check-html-format.py` 8/8 (plan shape, reader-off, template note, format gating, real-pandoc artifact structure); conformance 5/5 cases; `check-docs` OK; help tests 15/15 after expectation update; full L1 suite 1058 PASS / 0 FAIL. Example artifact rendered from `examples/manual` for review.
-- L8: User authorized the wave-1 commit and asked for issues to track the pending work (wave 2 scope, `--formats` override).
+- L8: User authorized the wave-1 commit and asked for issues to track the pending work. The commit was made as `fd35be8` on `feat/html-output` (728 insertions, 19 files); issues #253 (reader wave 2) and #254 (`--formats` override) were filed. No push made; the branch stays local until the user decides.
+- L9: Full L1 suite green after wave 1: 1058 PASS / 0 FAIL. Two test expectations were updated with the product change (the help description in tests/l1/help.sh and the conformance rerun count, which is always cases+1).
+- L10: #254 implemented on the same branch as its own commit, RED first (6-case suite in tests/l1/render/formats-override.sh, 5 failing), then GREEN. Design: the CLI flag forwards through SKELEPRESS_FORMATS; the renderer validates against the format enum and dedupes; preflight applies the same override to its dependency-union check. Differential check confirmed no-override behavior is unchanged and invalid values fail with the localized contract message. Docs (usage.md, README, help text), CHANGELOG and 4 catalogs updated. Two incidental test fixes ride along, both verified: formats-override.sh exit codes now captured under the orchestrator's set -e (the missing capture aborted the whole suite on expected failures), and tests/l1/render/links.sh carried a broken grep pattern since #242 that made a not-contains assertion silently pass (grep errored and the assertion counted it as clean); fixed and confirmed the pattern now actually detects the dead link. Final suite: 1064 PASS / 0 FAIL. Commit: separate feat(cli) per the two-unit rule.

@@ -50,6 +50,7 @@ and the documents they render.
 skelepress doctor                              # check the local toolchain
 skelepress validate-config -c skelepress.config.yaml  # validate a configuration
 skelepress render -c skelepress.config.yaml           # produce the PDF
+skelepress render -c skelepress.config.yaml --formats html  # or one format for this run
 ```
 
 `skelepress --help` lists every command; [the usage guide](docs/user/usage.md)
