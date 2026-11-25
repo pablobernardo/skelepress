@@ -21,7 +21,7 @@ locale|Show or save the CLI language
 update|Check for or install a toolkit release
 doctor|Check dependencies before rendering
 validate-config|Validate a configuration against its schema
-render|Render a validated configuration to PDF or EPUB
+render|Render a validated configuration to PDF, EPUB or HTML
 book|Validate manifests and build volumes or series
 EOF
   assert_contains "$out" "skelepress book --help" "help points to working detailed book help"

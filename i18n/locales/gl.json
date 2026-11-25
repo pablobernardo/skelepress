@@ -14,7 +14,7 @@
   "cli.help.command.update": "Comprobar ou instalar unha versión do toolkit.",
   "cli.help.command.doctor": "Comprobar as dependencias antes de renderizar.",
   "cli.help.command.validate-config": "Validar unha configuración contra o seu esquema.",
-  "cli.help.command.render": "Renderizar unha configuración validada a PDF ou EPUB.",
+  "cli.help.command.render": "Renderizar unha configuración validada a PDF, EPUB ou HTML.",
   "cli.help.command.book": "Validar manifestos e xerar volumes ou series.",
   "cli.help.command.help": "Mostrar esta axuda.",
   "book.help.description": "Constrúe volumes ou series a partir de manifest.yaml e series.yaml, xera configuracións estándar e renderízaas mediante skelepress.",
@@ -212,5 +212,7 @@
   "draft.error.output_required": "-o precisa unha ruta de saída.",
   "draft.info.synthesized": "Configuración de borrador sintetizada escrita en {path}",
   "draft.info.rendering": "Renderizando borrador: {output}",
-  "draft.error.output_missing": "O borrador renderizouse pero falta o ficheiro de saída."
+  "draft.error.output_missing": "O borrador renderizouse pero falta o ficheiro de saída.",
+  "render.output.html": "HTML de saída: {path}",
+  "render.error.html_template_conflict": "O pandoc.template configurado só se aplica ao PDF: o destino HTML usa a plantilla de lector do toolkit."
 }

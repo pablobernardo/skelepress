@@ -66,7 +66,7 @@ with tempfile.TemporaryDirectory(prefix="plan-conformance-") as directory:
     result = run(tree, "--update")
     rerun = run(tree)
     check(result.returncode == 0 and rerun.returncode == 0
-          and "5 case(s) conform" in rerun.stdout,
+          and f"{len(cases) + 1} case(s) conform" in rerun.stdout,
           "update regenerates expectations and relocated cases conform")
     payload = json.loads(expected.read_text())
     expected.write_text(json.dumps(dict(reversed(list(payload.items())))))

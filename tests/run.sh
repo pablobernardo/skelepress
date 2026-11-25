@@ -159,6 +159,7 @@ main() {
   run_chapter_fragment_tilde_closer_test
   run_chapter_fragment_pdf_destination_test
   run_multi_format_export_test
+  run_html_format_test
   run_plan_conformance_tests
   run_bookkit_accented_slug_test
   run_bookkit_series_prefix_test

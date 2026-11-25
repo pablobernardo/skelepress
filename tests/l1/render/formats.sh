@@ -12,3 +12,14 @@ run_multi_format_export_test() {
   fi
   rm -f "$out"
 }
+
+run_html_format_test() {
+  local out code=0
+  out="$(mktemp)"
+  "${REAL_PYTHON3}" "${ROOT_DIR}/tests/integration/check-html-format.py" >"$out" 2>&1 || code=$?
+  assert_exit_code "0" "$code" "html format plan shape and real reader artifact checks"
+  if [[ "$code" != "0" ]]; then
+    tail -80 "$out"
+  fi
+  rm -f "$out"
+}
