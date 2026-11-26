@@ -7,9 +7,9 @@ legacy pruned). Deliverable: one PR; release unaffected (docs-only feature).
 
 ## Specs
 
-S1. Maintainer decision (verbatim intent): the maintainer wants a **VitePress**
-    site — "no crees que es más elegante vitepress aunque nos meta dependencia
-    de node?" — with the toolkit's dependency cost **contained**: Node is
+S1. Maintainer decision: a **VitePress** site, with the toolkit's dependency
+    cost **contained** (elegant docs despite introducing Node):
+    Node is
     dev-only (maintainer + docs CI), never shipped in the release tarball, and
     recorded in `docs/dependency-policy.md` as such.
 S2. Layout (agreed): a self-contained `site/` directory holding `package.json`

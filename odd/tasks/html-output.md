@@ -129,11 +129,11 @@ pager next advances overview -> installation; drawer present; zero page errors.
 
 ## Log
 
-- L1: User considered additional output formats beyond PDF and EPUB (Kindle, HTML with simulated page-turning or a compiled docs site).
-- L2: After pros/cons analysis the user discarded Kindle.
-- L3: User decided navigation should be by sections, dropping pagination.
-- L4: Follow-up on loading decided: full text in one file, lazy images; per-chapter fetching rejected as complexity attacking the wrong weight.
-- L5: User accepted the consolidated proposal (single self-contained file, section navigation, own stylesheet, minimal optional JS).
+- L1: Additional output formats beyond PDF and EPUB were requested for evaluation (Kindle, HTML with simulated page-turning or a compiled docs site).
+- L2: Kindle was discarded after the pros/cons analysis.
+- L3: Section navigation replaced simulated pagination by decision.
+- L4: Loading follow-up decided: full text in one file, lazy images; per-chapter fetching rejected as complexity attacking the wrong weight.
+- L5: The consolidated proposal was accepted (single self-contained file, section navigation, own stylesheet, minimal optional JS).
 - L6: Launch authorized with the S11 restriction and a plan summary delivered; two-wave plan accepted.
 - L7: Wave 1 implemented on `feat/html-output`. Evidence: `check-html-format.py` 8/8 (plan shape, reader-off, template note, format gating, real-pandoc artifact structure); conformance 5/5 cases; `check-docs` OK; help tests 15/15 after expectation update; full L1 suite 1058 PASS / 0 FAIL. Example artifact rendered from `examples/manual` for review.
 - L8: User authorized the wave-1 commit and asked for issues to track the pending work (wave 2 scope, `--formats` override).
