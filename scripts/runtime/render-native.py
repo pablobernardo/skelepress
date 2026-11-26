@@ -7,6 +7,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import unicodedata
 from datetime import datetime
 from pathlib import Path
@@ -17,6 +18,12 @@ try:
 except Exception:  # imported as a module from elsewhere: fix the path
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     import template_runtime
+
+try:
+    import image_runtime
+except Exception:  # imported as a module from elsewhere: fix the path
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import image_runtime
 
 try:
     import top_level_division_runtime
@@ -355,6 +362,9 @@ def build_single_plan(cfg_user: dict, cfg_path: Path, root_dir: Path, format_nam
     # the default, and the template it uses is always the toolkit's own.
     output_html_cfg = output.get("html") if isinstance(output.get("html"), dict) else {}
     html_reader = bool(output_html_cfg.get("reader", True))
+    # Opt-in WebP conversion: converting by default would change every
+    # consumer's artifact and add a lossy step nobody asked for.
+    html_image_conversion = bool(output_html_cfg.get("image_conversion", False))
 
     if user_template_raw:
         if template_runtime.is_bare_name(user_template_raw):
@@ -470,7 +480,18 @@ def build_single_plan(cfg_user: dict, cfg_path: Path, root_dir: Path, format_nam
         cmd.append("--embed-resources")
         # HTML only: image work is deferred to the moment the reader gets there.
         cmd.append(f"--lua-filter={root_dir / 'filters/lazy-images.lua'}")
-        html_plan_side_effects = {"html": {"reader": html_reader, "template_note": html_template_note}}
+        # Swaps the paths of the images the execution-time conversion replaced.
+        # Without the env map the filter is a no-op, so it is only added when
+        # the option is on.
+        if html_image_conversion:
+            cmd.append(f"--lua-filter={root_dir / 'filters/webp-image.lua'}")
+        html_plan_side_effects = {
+            "html": {
+                "reader": html_reader,
+                "template_note": html_template_note,
+                "image_conversion": html_image_conversion,
+            }
+        }
 
     if emoji_enabled:
         cmd.append(f"--lua-filter={root_dir / 'filters/emoji.lua'}")
@@ -1047,6 +1068,42 @@ def execute_single_plan(plan: dict) -> int:
     env = os.environ.copy()
     env.update(plan["env"])
 
+    # WebP conversion reads the merged markdown (all targets in one place) and
+    # feeds the mapping to the Lua filter through the environment, so the plan
+    # stays pure: nothing depends on machine state until execution.
+    webp_work: tempfile.TemporaryDirectory[str] | None = None
+    webp_work_dir: Path | None = None
+    if html_effects.get("image_conversion"):
+        webp_work = tempfile.TemporaryDirectory(prefix="skelepress-webp-")
+        webp_work_dir = Path(webp_work.name)
+        resource_entries: list[str] = []
+        resource_flag = next((a for a in plan["pandoc"]["argv"] if a.startswith("--resource-path=")), None)
+        if resource_flag is not None:
+            resource_entries = resource_flag.split("=", 1)[1].split(os.pathsep)
+        mapping, skipped, capability_error = image_runtime.convert_images_for_html(
+            image_runtime.image_targets_in_markdown(md_out.read_text(encoding="utf-8")),
+            webp_work_dir,
+            Path(plan["config"]["base_dir"]),
+            [Path(entry) for entry in resource_entries],
+        )
+        if capability_error is not None:
+            print(
+                f"⚠️  {t('render.warn.webp_unavailable', 'WebP conversion is enabled but Pillow with WebP support is unavailable; the HTML embeds the original images. Install it with: python3 -m pip install Pillow')}"
+            )
+        else:
+            if skipped:
+                print(
+                    t(
+                        "render.info.webp_skipped",
+                        "   Not converted ({count}): {targets}",
+                        count=len(skipped),
+                        targets=", ".join(skipped[:5]) + (", …" if len(skipped) > 5 else ""),
+                    )
+                )
+            if mapping:
+                env.update(image_runtime.webp_map_environment(mapping, resource_entries))
+                print(f"✅ {t('render.info.webp_converted', 'Converted {count} image(s) to WebP for the HTML artifact', count=len(mapping))}")
+
     mermaid_failures = Path(side_effects["mermaid"]["dir"]) / "_failed.txt"
     if mermaid_failures.exists():
         mermaid_failures.unlink(missing_ok=True)
@@ -1057,6 +1114,10 @@ def execute_single_plan(plan: dict) -> int:
     print(f"▶ {t('render.command.exec', 'Running: {command}', command=' '.join(plan['pandoc']['argv']))}")
 
     result = subprocess.run(plan["pandoc"]["argv"], env=env)
+    if webp_work is not None:
+        # The WebP copies exist only for pandoc: the artifact embeds their
+        # bytes, so the working directory never outlives the render.
+        webp_work.cleanup()
     if result.returncode == 0 and not side_effects["keep_merged_markdown"]:
         md_out.unlink(missing_ok=True)
 

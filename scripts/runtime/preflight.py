@@ -25,6 +25,12 @@ except Exception:  # imported as a module from elsewhere: fix the path
     import template_runtime
     from schema_runtime import YamlError, load_yaml_with_python, load_yaml_with_ruby
 
+try:
+    import image_runtime
+except Exception:  # imported as a module from elsewhere: fix the path
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import image_runtime
+
 
 DEFAULT_REQUIRED = ["pandoc", "python3", "curl", "mmdc"]
 # The minimum interpreter the renderer runs on: the Python macOS ships
@@ -375,6 +381,7 @@ def main() -> None:
     mermaid_enabled = True
     output_formats = [FORMAT_PDF]
     needs_truncate = False
+    html_conversion_enabled = False
 
     if config_path:
         if not config_path.exists():
@@ -384,6 +391,18 @@ def main() -> None:
 
         if isinstance(cfg, dict):
             needs_truncate = running_headers_need_truncate(cfg, config_path)
+
+            output = cfg.get("output")
+            if isinstance(output, dict):
+                declared_formats = output.get("formats")
+                if isinstance(declared_formats, list):
+                    output_formats = declared_formats
+                # The WebP conversion is opt-in: only a config that asks for it
+                # makes the Pillow capability part of the dependency set. The
+                # format gate is applied after the CLI override below.
+                html_output = output.get("html")
+                if isinstance(html_output, dict) and bool(html_output.get("image_conversion", False)):
+                    html_conversion_enabled = True
             runtime = cfg.get("runtime")
             if isinstance(runtime, dict):
                 runtime_cmds = runtime.get("required_commands")
@@ -424,6 +443,7 @@ def main() -> None:
         output_formats = list(dict.fromkeys(values))
 
     needs_tex = FORMAT_PDF in output_formats
+    needs_webp = html_conversion_enabled and "html" in output_formats
     # A python3 below the declared minimum cannot run the renderer, so this is
     # not waivable by runtime.strict=false: without an interpreter there is no
     # render to continue with.
@@ -470,6 +490,12 @@ def main() -> None:
     missing = missing + missing_engine
     if missing_package:
         missing.append("truncate.sty")
+
+    # The capability is probed the same way the renderer probes it: a subprocess
+    # so no Pillow import warning can pollute doctor output. Lax mode may waive
+    # it because the render degrades to the original images with a note.
+    if needs_webp and image_runtime.pillow_webp_missing() is not None:
+        missing.append(t("doctor.missing.webp", "Pillow with WebP support for HTML image conversion (python3 -m pip install Pillow)"))
     mermaid_error = None
     if mermaid_enabled and "mmdc" in required and command_exists("mmdc"):
         mermaid_error = mermaid_smoke_check()

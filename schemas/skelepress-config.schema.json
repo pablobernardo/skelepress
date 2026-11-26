@@ -92,9 +92,9 @@
         "html": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["reader"],
           "properties": {
-            "reader": { "type": "boolean" }
+            "reader": { "type": "boolean" },
+            "image_conversion": { "type": "boolean" }
           }
         },
         "keep_merged_markdown": { "type": "boolean" }

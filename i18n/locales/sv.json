@@ -215,5 +215,9 @@
   "draft.info.synthesized": "Syntetiserad utkastkonfiguration skriven till {path}",
   "draft.info.rendering": "Renderar utkast: {output}",
   "draft.error.output_missing": "Utkastet renderades men utdatafilen saknas.",
-  "render.error.html_template_conflict": "En konfigurerad pandoc.template gäller endast för PDF: HTML-målet använder toolkitens reader-mall."
+  "render.error.html_template_conflict": "En konfigurerad pandoc.template gäller endast för PDF: HTML-målet använder toolkitens reader-mall.",
+  "render.warn.webp_unavailable": "WebP-konvertering är aktiverad men Pillow med WebP-stöd är inte tillgängligt; HTML:en bäddar in originalbilderna. Installera med: python3 -m pip install Pillow",
+  "render.info.webp_converted": "Konverterade {count} bild(er) till WebP för HTML-artefakten",
+  "render.info.webp_skipped": "   Ej konverterade ({count}): {targets}",
+  "doctor.missing.webp": "Pillow med WebP-stöd för HTML-bildkonvertering (python3 -m pip install Pillow)"
 }

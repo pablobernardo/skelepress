@@ -7,6 +7,20 @@ The project follows semantic versioning and keeps two versioned contracts:
 - `VERSION` for the toolkit version
 - `skelepress.config.yaml -> version` for the configuration contract
 
+## [Unreleased]
+
+### Added
+
+- Opt-in WebP conversion for the self-contained HTML artifact:
+  `output.html.image_conversion: true` re-encodes the declared PNG (lossless)
+  and JPEG (quality 85) images to WebP before `--embed-resources` inlines
+  them, so screenshot-heavy books stop paying base64's third again on every
+  image. Source files are never modified, SVG/GIF/WebP stay untouched, and a
+  copy that is not smaller keeps the original. The codec comes from Pillow
+  (`python3 -m pip install Pillow`); `skelepress doctor` checks it when the
+  option is enabled, and a render without it degrades with a note instead of
+  failing. Contract version stays `1`.
+
 ## [3.6.0] - 2026-11-26
 
 ### Added

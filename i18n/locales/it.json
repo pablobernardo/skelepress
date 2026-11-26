@@ -215,5 +215,9 @@
   "draft.info.synthesized": "Configurazione di bozza sintetizzata scritta in {path}",
   "draft.info.rendering": "Rendering della bozza: {output}",
   "draft.error.output_missing": "Bozza renderizzata ma manca il file di output.",
-  "render.error.html_template_conflict": "Un pandoc.template configurato si applica solo al PDF: la destinazione HTML usa il template del reader del toolkit."
+  "render.error.html_template_conflict": "Un pandoc.template configurato si applica solo al PDF: la destinazione HTML usa il template del reader del toolkit.",
+  "render.warn.webp_unavailable": "La conversione WebP è attiva ma Pillow con supporto WebP non è disponibile; l'HTML incorpora le immagini originali. Installalo con: python3 -m pip install Pillow",
+  "render.info.webp_converted": "Convertite {count} immagine/i in WebP per l'artefatto HTML",
+  "render.info.webp_skipped": "   Non convertite ({count}): {targets}",
+  "doctor.missing.webp": "Pillow con supporto WebP per la conversione delle immagini HTML (python3 -m pip install Pillow)"
 }
