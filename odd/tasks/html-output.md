@@ -55,6 +55,16 @@ mobile TOC. Related CLI follow-up: `render --formats` override (issue filed sepa
   suite 1065 PASS / 0 FAIL on the wave-2 tree; `reader: false` re-verified as
   bare HTML; example artifact re-rendered for review.
 
+## Fold-toggle alignment (wave 2, eighth iteration, reverted)
+
+An edge-aligned fold toggle (fixed spacer slot) with a capped search box was
+implemented and passed native review review-f6060114216e82b5 (three layout
+advisories recorded as future work), but the result mis-weighted the header:
+the toggle drifted toward the middle and the search box lost its reach. The
+user reverted the alignment; the reader keeps the toggle at the bar start
+with the search box stretching to the view/theme/credit controls. The
+review lineage stays closed; implementation notes remain in this record.
+
 ## Highlight-as-state (wave 2, seventh iteration)
 
 The view switch settled: one fixed stacked-sheets icon, and the button's
