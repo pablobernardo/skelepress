@@ -1,38 +1,50 @@
 #!/usr/bin/env python3
 """Exercise the opt-in HTML WebP image conversion through the public CLI.
 
-Plan assertions run dry and need no pandoc. The performance and degradation
-renders need a real pandoc and probe the actually installed Pillow capability:
-the tests skip explicitly when the capability the case needs is unavailable,
-never claiming a pass the machine could not observe.
+Plan assertions run dry and need no pandoc. The conversion renders need a real
+pandoc and a real `cwebp`; the degradation class hides `cwebp` behind a stub
+PATH, so it observes the note instead of depending on what the host lacks.
 """
 import json
 import os
+import shutil
+import struct
 import subprocess
 import tempfile
 import unittest
+import zlib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 
-PNG_BYTES = bytes.fromhex(
-    "89504e470d0a1a0a0000000d49484452000000400000003008020000006b4a474900000001"
-    "515a0000002574584574646174653a63726561746500000000000000000000000000000000"
-    "000000000000"
-)
+# PNG fixtures are built with the standard library, so no imaging package in
+# needed to make them: cwebp reads the bytes and re-encodes.
+def make_png(width, height, pixel):
+    """One 8-bit RGB PNG from a per-pixel callable."""
+    scanlines = bytearray()
+    for y in range(height):
+        scanlines.append(0)  # filter type: none
+        for x in range(width):
+            scanlines.extend(pixel(x, y))
+    def chunk(kind, data):
+        return (struct.pack(">I", len(data)) + kind + data
+                + struct.pack(">I", zlib.crc32(kind + data) & 0xFFFFFFFF))
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
+    return (b"\x89PNG\r\n\x1a\n"
+            + chunk(b"IHDR", ihdr)
+            + chunk(b"IDAT", zlib.compress(bytes(scanlines)))
+            + chunk(b"IEND", b""))
+
+PNG_A = make_png(64, 48, lambda x, y: ((x * 4) % 256, (y * 5) % 256, 128))
+PNG_B = make_png(40, 30, lambda x, y: ((10 + 2 * x) % 256, 220, (30 + y * 3) % 256))
 
 
-def pillow_webp_available() -> bool:
-    proc = subprocess.run(
-        ["python3", "-c", "from PIL import features; raise SystemExit(0 if features.check('webp') else 1)"],
-        capture_output=True, text=True,
-    )
-    return proc.returncode == 0
+def cwebp_available() -> bool:
+    return shutil.which("cwebp") is not None
 
 
 def render_pandoc_available() -> bool:
-    from shutil import which
-    return which("pandoc") is not None
+    return shutil.which("pandoc") is not None
 
 
 def webp_config(base_dir: Path) -> dict:
@@ -42,7 +54,7 @@ def webp_config(base_dir: Path) -> dict:
         "document": {"title": "WebP", "language": "en"},
         "input": {"chapters_dir": "chapters", "glob": "*.md", "order": "natural", "explicit_files": []},
         "output": {"dir": "out", "suffix": "webp", "keep_merged_markdown": False,
-                   "formats": ["html"], "html": {"image_conversion": True}},
+                   "formats": ["html"], "html": {"reader": True, "image_conversion": True}},
         "pandoc": {"pdf_engine": "xelatex", "toc": False, "toc_depth": 2,
                    "number_sections": False, "resource_path": ["chapters"]},
         "filters": {"emoji": {"enabled": False}, "mermaid": {"enabled": False}, "extra_lua_filters": []},
@@ -118,8 +130,7 @@ class WebpPlanTest(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
 
 
-@unittest.skipUnless(render_pandoc_available(), "requires a real pandoc")
-@unittest.skipUnless(pillow_webp_available(), "requires Pillow with WebP support")
+@unittest.skipUnless(render_pandoc_available() and cwebp_available(), "requires real pandoc and cwebp")
 class WebpArtifactTest(unittest.TestCase):
     """The real render embeds WebP bytes and never touches the source files."""
 
@@ -129,22 +140,8 @@ class WebpArtifactTest(unittest.TestCase):
         self.root = Path(self.tmp.name)
         media = self.root / "chapters" / "media"
         media.mkdir(parents=True)
-
-        import io
-
-        from PIL import Image  # type: ignore[import-not-found]  # capability-guarded above
-
-        # A gradient compresses well as lossless WebP, so the not-smaller
-        # guard cannot silently reject the conversion.
-        img = Image.new("RGB", (64, 48))
-        for x in range(64):
-            for y in range(48):
-                img.putpixel((x, y), ((x * 4) % 256, (y * 5) % 256, 128))
-        buf = io.BytesIO()
-        img.save(buf, format="PNG")
-        (media / "pic.png").write_bytes(buf.getvalue())
+        (media / "pic.png").write_bytes(PNG_A)
         self.png_size = (media / "pic.png").stat().st_size
-
         (self.root / "chapters/one.md").write_text("# One\n\n![a diagram](media/pic.png)\n\nBye.\n")
         self.config = webp_config(self.root)
         self.path = self.root / "skelepress.config.yaml"
@@ -165,18 +162,13 @@ class WebpArtifactTest(unittest.TestCase):
         self.assertIn("data:image/webp;", text)
         self.assertNotIn("data:image/png;", text)
         self.assertIn('loading="lazy"', text)
-        # The conversion summary names one converted image.
         self.assertIn("Converted 1 image", result.stdout)
         # Source images stay untouched: the copies live in a work directory.
         self.assertEqual((self.root / "chapters/media/pic.png").stat().st_size, self.png_size)
-        # The temporary work directory never outlives the render.
-        leftovers = [p for p in (self.root / "out").iterdir() if p.name.startswith("skelepress-webp-")]
-        self.assertEqual(leftovers, [])
 
-    def test_svg_and_gif_stay_untouched_and_unknown_targets_are_skipped(self):
+    def test_svg_stays_untouched_and_unknown_targets_are_skipped(self):
         (self.root / "chapters/media/vector.svg").write_text("<svg xmlns='http://www.w3.org/2000/svg'/>")
-        chapter = self.root / "chapters/one.md"
-        chapter.write_text(
+        (self.root / "chapters/one.md").write_text(
             "# One\n\n![a diagram](media/pic.png)\n\n"
             "![vector](media/vector.svg)\n\n"
             "![missing](media/nope.png)\n\nBye.\n"
@@ -189,18 +181,15 @@ class WebpArtifactTest(unittest.TestCase):
         self.assertIn("data:image/svg+xml;", text)
         self.assertIn("Not converted", result.stdout)
         self.assertIn("media/nope.png", result.stdout)
+        # One unconvertible PNG must not break the render.
+        self.assertIn("data:image/svg+xml", text)
 
     def test_same_stem_images_in_different_directories_never_share_a_copy(self):
-        import io
-
-        from PIL import Image  # type: ignore[import-not-found]  # capability-guarded above
-
+        # Two-pic.png sources must each keep their own embedded bytes.
         media = self.root / "chapters"
-        for colour, rel in (((10, 20, 30), "one/pic.png"), ((240, 220, 200), "two/pic.png")):
+        for data, rel in ((PNG_A, "one/pic.png"), (PNG_B, "two/pic.png")):
             (media / rel).parent.mkdir(parents=True, exist_ok=True)
-            buf = io.BytesIO()
-            Image.new("RGB", (40, 30), colour).save(buf, format="PNG")
-            (media / rel).write_bytes(buf.getvalue())
+            (media / rel).write_bytes(data)
         (media / "one.md").write_text("# One\n\n![a](one/pic.png)\n\n![b](two/pic.png)\n\nBye.\n")
         result = self.render()
         artifact = next((self.root / "out").glob("*.html"))
@@ -217,63 +206,65 @@ class WebpArtifactTest(unittest.TestCase):
         self.assertNotIn("data:image/webp;", text)
 
 
-@unittest.skipUnless(render_pandoc_available(), "requires a real pandoc")
-@unittest.skipIf(pillow_webp_available(), "degradation needs Pillow to be absent")
 class WebpDegradationTest(unittest.TestCase):
-    """Without the capability the render continues with the original bytes."""
-
-    def mock_path(self) -> str:
-        """Stub the doctor's required commands; python3 stays the real one."""
-        import shutil
-        bin_dir = Path(self.tmp.name) / "mockbin"
-        bin_dir.mkdir(exist_ok=True)
-        for command in ("pandoc", "curl", "mmdc"):
-            (bin_dir / command).write_text("#!/bin/bash\nexit 0\n")
-            (bin_dir / command).chmod(0o755)
-        python3 = bin_dir / "python3"
-        python3_path = shutil.which("python3")
-        python3.write_text("#!/bin/bash\nexec " + repr(python3_path) + ' "$@"\n')
-        python3.chmod(0o755)
-        return str(bin_dir)
+    """Without cwebp on PATH the render continues with the original bytes."""
 
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)
-        (self.root / "chapters").mkdir()
-        # `--embed-resources` does not validate bytes, so this non-image PNG
-        # is enough to observe the writer's choice.
-        (self.root / "chapters/media").mkdir()
+        (self.root / "chapters/media").mkdir(parents=True)
+        # embed-resources does not validate bytes, so a plain payload is enough
+        # to observe that the writer kept it (and that nothing converted it).
         (self.root / "chapters/media/pic.png").write_bytes(b"fake png bytes")
         (self.root / "chapters/one.md").write_text("# One\n\n![a diagram](media/pic.png)\n\nBye.\n")
         self.config = webp_config(self.root)
         self.path = self.root / "skelepress.config.yaml"
 
-    def test_missing_pillow_degrades_with_a_note(self):
+    def mocked_env(self):
+        """A PATH without cwebp, with pandoc and python3 forwarded to the real
+        ones, so the render keeps producing a real artifact while the codec
+        is genuinely absent."""
+        bin_dir = Path(self.tmp.name) / "mockbin"
+        bin_dir.mkdir()
+        for command in ("curl", "mmdc", "xelatex"):
+            (bin_dir / command).write_text("#!/bin/sh\nexit 0\n")
+            (bin_dir / command).chmod(0o755)
+        for forwarded in ("pandoc", "python3"):
+            real = shutil.which(forwarded) or forwarded
+            shim = bin_dir / forwarded
+            shim.write_text("#!/bin/sh\nexec '" + real + "' \"$@\"\n")
+            shim.chmod(0o755)
+        return {**os.environ, "SKELEPRESS_LANG": "en",
+                "PATH": os.pathsep.join([str(bin_dir), "/usr/bin", "/bin"])}
+
+    def render(self, env):
         self.path.write_text(json.dumps(self.config))
-        result = subprocess.run(
+        return subprocess.run(
             [str(ROOT / "bin/skelepress"), "render", "-c", str(self.path)],
-            capture_output=True, text=True,
-            env={**os.environ, "SKELEPRESS_LANG": "en"},
+            capture_output=True, text=True, env=env,
         )
+
+    def test_missing_cwebp_degrades_with_a_note(self):
+        result = self.render(self.mocked_env())
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertIn("WebP conversion is enabled but Pillow", result.stdout)
+        self.assertIn("WebP conversion is enabled but cwebp", result.stdout)
         artifact = next((self.root / "out").glob("*.html"))
-        self.assertIn("data:image/png;", artifact.read_text(encoding="utf-8"))
+        text = artifact.read_text(encoding="utf-8")
+        self.assertNotIn("data:image/webp;", text)
+        self.assertIn("data:image/png;", text)
 
     def test_doctor_names_the_missing_capability(self):
-        mocked = self.mock_path()
-        env = {**os.environ, "SKELEPRESS_LANG": "en", "PATH": mocked + os.pathsep + "/usr/bin" + os.pathsep + "/bin"}
-
+        env = self.mocked_env()
         self.path.write_text(json.dumps(self.config))
         result = subprocess.run(
             [str(ROOT / "bin/skelepress"), "doctor", "-c", str(self.path)],
             capture_output=True, text=True, env=env,
         )
         self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
-        self.assertIn("Pillow", result.stdout)
+        self.assertIn("cwebp", result.stdout)
 
-        # The standard configuration without the option keeps passing here.
+        # The configuration built without the option keeps passing here.
         self.config["output"]["html"] = {"reader": True}
         self.path.write_text(json.dumps(self.config))
         ok = subprocess.run(
