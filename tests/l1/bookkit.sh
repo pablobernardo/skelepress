@@ -342,10 +342,10 @@ run_bookkit_series_formats_template_test() {
   local scratch code seriesdir config_a config_b
   scratch="$(mktemp -d)"
   seriesdir="$scratch/projects/series"
-  mkdir -p "$seriesdir/volume-a" "$seriesdir/volume-b" "$seriesdir/volume-c" "$scratch/checkout"
+  mkdir -p "$seriesdir/volume-a" "$seriesdir/volume-b" "$seriesdir/volume-c" "$seriesdir/volume-d" "$scratch/checkout"
 
   printf '%s\n' 'manifest_version: 1' 'template: book-novel' \
-    'formats: [pdf, epub]' 'volumes: [volume-a, volume-b, volume-c]' >"$seriesdir/series.yaml"
+    'formats: [pdf, epub]' 'volumes: [volume-a, volume-b, volume-c, volume-d]' >"$seriesdir/series.yaml"
   printf '%s\n' 'manifest_version: 1' 'profile: book' 'title: "Formats One"' \
     'chapters: [chapter.md]' >"$seriesdir/volume-a/manifest.yaml"
   printf '# C\n\nOne.\n' >"$seriesdir/volume-a/chapter.md"
@@ -356,6 +356,9 @@ run_bookkit_series_formats_template_test() {
   printf '%s\n' 'manifest_version: 1' 'profile: book' 'title: "Formats Three"' \
     'formats: [epub]' 'chapters: [chapter.md]' >"$seriesdir/volume-c/manifest.yaml"
   printf '# C\n\nThree.\n' >"$seriesdir/volume-c/chapter.md"
+  printf '%s\n' 'manifest_version: 1' 'profile: book' 'title: "Formats Four"' \
+    'formats: [html]' 'chapters: [chapter.md]' >"$seriesdir/volume-d/manifest.yaml"
+  printf '# C\n\nFour.\n' >"$seriesdir/volume-d/chapter.md"
 
   set +e
   (cd "$scratch/checkout" && HOME="$scratch/no-home" SKELEPRESS_LANG=en \
@@ -417,6 +420,32 @@ run_bookkit_series_formats_template_test() {
     pass "an EPUB-only volume does not demand a TeX engine through runtime"
   fi
   assert_contains "$config_c" '  template: "book-novel"' "volume-c inherits the series template default"
+
+  # volume-d asks for html: the switch files stay gated away from it, the
+  # generated configuration demands no TeX engine, and the plan targets the
+  # reader artifact.
+  config_d="$scratch/checkout/.skelepress/series/volume-d/skelepress.config.yaml"
+  assert_file_exists "$config_d" "volume-d generates its configuration"
+  assert_contains "$config_d" 'formats: \[html\]' "volume-d keeps its declared html format"
+  if grep -q '^    - xelatex$' "$config_d"; then
+    fail "an HTML-only volume must not demand a TeX engine through runtime"
+  else
+    pass "an HTML-only volume does not demand a TeX engine through runtime"
+  fi
+
+  plan="$(mktemp)"
+  plan_log="$(mktemp)"
+  set +e
+  (cd "$scratch/checkout/.skelepress/series/volume-d" && SKELEPRESS_LANG=en \
+    "$CLI" render -c skelepress.config.yaml --dry-run --json) >"$plan" 2>"$plan_log"
+  plan_code=$?
+  set -e
+  assert_exit_code "0" "$plan_code" "the generated HTML-only configuration plans"
+  assert_json_expr "$plan" 'd["plan_version"] == 1' "the HTML-only volume plans a single job"
+  assert_json_expr "$plan" '"html" in d["pandoc"]["target"]' "the HTML-only plan targets the reader artifact"
+  assert_json_expr "$plan" 'not any(p.endswith("generated/00-mainmatter.md") for p in d["chapters"])' \
+    "the HTML-only plan carries no generated LaTeX switch file"
+  rm -f "$plan" "$plan_log"
 
   # --- a series-level template path resolves against the series directory --
   # The inherited value must not be re-resolved as if the volume declared it:

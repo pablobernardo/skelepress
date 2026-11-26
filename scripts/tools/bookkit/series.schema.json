@@ -38,7 +38,7 @@
     "formats": {
       "type": "array",
       "minItems": 1,
-      "items": { "type": "string", "enum": ["pdf", "epub"] },
+      "items": { "type": "string", "enum": ["pdf", "epub", "html"] },
       "description": "Optional shared output-formats request; a volume's formats override it. Values come from the renderer's accepted formats (pdf, epub). Default when absent: [pdf]."
     },
     "template": {
