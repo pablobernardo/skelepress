@@ -157,6 +157,9 @@ class HtmlArtifactTest(unittest.TestCase):
         text = artifact.read_text(encoding="utf-8")
         # One self-contained artifact: the stylesheet travels inside the file.
         self.assertIn("skelepress reader", text)
+        # The generated-with credit rides in the header and links the toolkit.
+        self.assertIn('class="credit"', text)
+        self.assertIn("github.com/pablobernardo/skelepress", text)
         self.assertIn('<html lang="en">', text)
         # Pandoc section divs and the populated sidebar TOC the reader navigates.
         self.assertIn("<section id=", text)
@@ -169,6 +172,56 @@ class HtmlArtifactTest(unittest.TestCase):
         # Nothing may reach back to the project tree: the artifact is all
         # the reader needs.
         self.assertNotIn("media/pic.png", text)
+
+    def test_wave2_reader_shell(self):
+        result = self.run_cli("render")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        artifact = self.root / "out/html-reader-test.html"
+        text = artifact.read_text(encoding="utf-8")
+        # Manual theme control: the toggle button and the attribute-based
+        # palette switch, with the stored choice surviving a reload.
+        self.assertIn("theme-toggle", text)
+        self.assertIn('data-theme="dark"', text)
+        self.assertIn("localStorage", text)
+        # The chapter search box is a real input, not just CSS.
+        self.assertIn('type="search"', text)
+        self.assertIn("aria-label=", text)
+        # The mobile drawer carries a second TOC container with its own id.
+        self.assertIn("toc-drawer", text)
+        self.assertIn('id="TOC-drawer"', text)
+        # Render deferral is guarded by a support query, never unconditional.
+        self.assertIn("@supports (content-visibility: auto)", text)
+        self.assertIn("contain-intrinsic-size", text)
+        # The reading bar is a full-width header above the layout: it comes
+        # before both the sidebar and the content, holding every control; the
+        # title itself lives over the reading column, not in the bar.
+        self.assertIn("reader-bar", text)
+        self.assertLess(text.index('reader-bar'), text.index('class="layout"'))
+        self.assertLess(text.index('reader-bar'), text.index('class="content-title"'))
+        # The sidebar toggle starts as a fold arrow with an accessible name.
+        self.assertIn('aria-label="Show or hide the side contents panel"', text)
+        # Navigation is per chapter: the script installs a pager at the end of
+        # each top-level section; no single document-ending pager exists.
+        self.assertNotIn('class="pager" hidden', text)
+        self.assertIn("installPager", text)
+        # Chapter mode is an explicit script-applied choice, and its hiding
+        # rules never apply when the script is absent.
+        self.assertIn("mode-toggle", text)
+        self.assertIn('aria-pressed="false"', text)
+        self.assertIn("main.chapter-mode > section[id]", text)
+        self.assertNotIn('class="chapter-mode"', text)
+        # Chapter mode is the default shape: the script applies it unless a
+        # stored scroll choice says otherwise.
+        self.assertIn('!== "scroll"', text)
+        # The search box takes keyboard rails: arrows walk the results.
+        self.assertIn("ArrowDown", text)
+        self.assertIn("ArrowUp", text)
+        # The view switch is one fixed stacked-sheets icon; the highlight
+        # (aria-pressed styling) carries the mode, not the icon.
+        self.assertIn('aria-label="Switch between chapter view and full view"', text)
+        self.assertIn("view-icon", text)
+        self.assertNotIn("view-icon view-full", text)
+        self.assertIn('.mode-toggle[aria-pressed="true"]', text)
 
     def test_reader_false_artifact_has_no_reader_shell(self):
         self.config["output"]["html"] = {"reader": False}

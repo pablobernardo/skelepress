@@ -7,8 +7,9 @@
 <title>$title$</title>
 $if(subtitle)$<meta name="description" content="$subtitle$">$endif$
 <style>
-/* skelepress reader — toolkit stylesheet, wave 1 (lite).
-   One custom-props palette, dark mode via prefers-color-scheme, no framework. */
+/* skelepress reader — toolkit stylesheet, wave 2.
+   One custom-props palette; the palette follows an explicit choice if the
+   reader has made one, and the system preference otherwise. No framework. */
 :root {
   --ink: #1f2933;
   --paper: #fdfdfc;
@@ -19,8 +20,11 @@ $if(subtitle)$<meta name="description" content="$subtitle$">$endif$
   --text-font: Georgia, "Times New Roman", serif;
   --code-font: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 }
+/* The manual choice is a data-theme attribute on <html>, set by the reader
+   script before the body renders (no flash); without script only the media
+   query answers. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --ink: #d5d9dd;
     --paper: #14181c;
     --accent: #8fb4e8;
@@ -28,6 +32,13 @@ $if(subtitle)$<meta name="description" content="$subtitle$">$endif$
     --code-bg: #1c2126;
   }
   img { opacity: .9; }
+}
+html[data-theme="dark"] {
+  --ink: #d5d9dd;
+  --paper: #14181c;
+  --accent: #8fb4e8;
+  --rule: #2c3238;
+  --code-bg: #1c2126;
 }
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
@@ -39,19 +50,23 @@ body {
 }
 /* ---- layout: a static sidebar on wide screens; the document flows first on
    narrow ones, where the reading experience does not depend on the TOC. ---- */
-.layout { display: grid; grid-template-columns: 280px 1fr; min-height: 100vh; }
+.layout { display: grid; grid-template-columns: 280px 1fr; min-height: calc(100vh - 3rem); }
 @media (max-width: 860px) {
   .layout { display: block; }
   .sidebar { display: none; }
 }
 .sidebar {
-  position: sticky; top: 0;
+  position: sticky; top: 3rem;
   max-height: 100vh; overflow-y: auto;
-  border-right: 1px solid var(--rule);
   padding: 1.4rem 1rem 3rem;
   font-family: var(--ui-font);
   font-size: .85rem;
 }
+/* Sidebar collapse is horizontal: the whole column folds away and the
+   content reclaims its width. A script-applied class on the layout; without
+   script the sidebar stays visible. */
+.layout.no-sidebar { grid-template-columns: 1fr; }
+.layout.no-sidebar .sidebar { display: none; }
 .masthead { margin-bottom: 1.2rem; }
 .masthead .title { font-size: 1rem; font-weight: 700; margin: 0 0 .15rem; }
 .masthead .subtitle { font-size: .8rem; color: var(--accent); margin: 0 0 .3rem; }
@@ -62,26 +77,128 @@ body {
 #TOC a { display: block; padding: .18rem .45rem; border-radius: 4px; color: inherit; text-decoration: none; }
 #TOC a:hover { background: var(--code-bg); }
 #TOC li.toc-active > a { background: var(--code-bg); color: var(--accent); font-weight: 600; }
+/* Reading bar: search and theme live above the content, in the column the
+   reader is actually in, so they survive the narrow-screen sidebar fold. */
+.content { min-width: 0; }
+.content > main, .content > .content-title { max-width: 56rem; margin: 0 auto; }
+.no-sidebar .content > main, .no-sidebar .content > .content-title { max-width: 66rem; }
+.reader-bar {
+  position: sticky; top: 0; z-index: 5;
+  display: flex; gap: .6rem; align-items: center;
+  padding: .7rem 1.25rem;
+  background: var(--paper);
+  border-bottom: 1px solid var(--rule);
+}
+.search { position: relative; flex: 1; }
+.search input {
+  width: 100%; box-sizing: border-box;
+  padding: .4rem .6rem;
+  border: 1px solid var(--rule); border-radius: 6px;
+  background: var(--paper); color: var(--ink);
+  font: .85rem var(--ui-font);
+}
+.search-results {
+  list-style: none; margin: .3rem 0 0; padding: .2rem .1rem;
+  position: absolute; top: 100%; left: 0; right: 0; z-index: 6;
+  display: none; max-height: 60vh; overflow-y: auto;
+  background: var(--paper); border: 1px solid var(--rule); border-radius: 6px;
+}
+.search.results-open .search-results { display: block; }
+.search-results li { margin: .15rem 0; }
+.search-results a { display: block; padding: .25rem .45rem; border-radius: 4px; text-decoration: none; color: inherit; font-family: var(--ui-font); font-size: .8rem; }
+.search-results a:hover, .search-results a:focus { background: var(--code-bg); }
+.search-results .match-chapter { font-weight: 600; }
+.search-results .match-extract { display: block; font-size: .75rem; opacity: .75; }
+.search-results .no-hits { opacity: .6; padding: .25rem .45rem; font-size: .8rem; }
+.reader-bar .sidebar-toggle,
+.reader-bar .mode-toggle,
+.reader-bar .theme-toggle {
+  padding: .4rem .7rem; white-space: nowrap;
+  border: 1px solid var(--rule); border-radius: 6px;
+  background: var(--paper); color: var(--ink);
+  font: .78rem var(--ui-font);
+  cursor: pointer;
+}
+.reader-bar .sidebar-toggle:hover, .reader-bar .mode-toggle:hover,
+.reader-bar .theme-toggle:hover { background: var(--code-bg); }
+.view-icon { display: block; }
+.reader-bar .sidebar-toggle { flex: 0 0 auto; }
+.credit {
+  flex: 0 0 auto;
+  color: var(--ink);
+  opacity: .6;
+  text-decoration: none;
+  display: inline-flex; align-items: center;
+}
+.credit:hover { opacity: 1; color: var(--accent); }
+.credit svg { display: block; }
+@media (max-width: 860px) {
+  .credit { display: none; }
+}
+/* The document title sits fixed over the reading column: it answers where
+   am I right where the reading happens, without loading the control bar. */
+.content-title {
+  position: sticky; top: 3.15rem; z-index: 4;
+  padding: .85rem 1.25rem .6rem;
+  margin: 0;
+  background: var(--paper);
+  text-align: center;
+}
+.content-title .ct-title {
+  display: block;
+  font: 1.25rem/1.25 var(--ui-font);
+  font-weight: 700;
+  color: var(--ink);
+}
+.content-title .ct-subtitle {
+  display: block;
+  font: .85rem/1.35 var(--ui-font);
+  color: var(--accent);
+  margin-top: .15rem;
+}
+.reader-bar .sidebar-toggle[aria-pressed="true"],
+.reader-bar .mode-toggle[aria-pressed="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--paper);
+}
 .skip-link {
   position: absolute; left: -999px;
 }
 .skip-link:focus { left: .5rem; top: .5rem; background: var(--paper); color: var(--accent); padding: .4rem .6rem; border: 1px solid var(--rule); z-index: 10; }
 /* ---- content ---- */
 main {
-  padding: 2.5rem 1.25rem 4rem;
-  max-width: 44rem;
+  padding: 1rem 1.25rem 4rem;
+  max-width: 56rem;
   margin: 0 auto;
 }
+.no-sidebar main { max-width: 66rem; }
 main > section.level1, main > section.page-break {
-  padding-top: 3.2rem;
+  padding-top: 2.2rem;
 }
 main > section:first-of-type { padding-top: 0; }
+/* Chapter mode is a script-applied choice: with it, one chapter is visible
+   at a time and the per-chapter pager navigates them. Native find-in-page
+   sees only the visible chapter in this mode; the reader-owned search box
+   still indexes the whole book. */
+main.chapter-mode > section[id] { display: none; }
+main.chapter-mode > section[id].chapter-current { display: block; }
+/* Long books: keep off-screen chapters unrendered until they approach the
+   viewport. The intrinsic size keeps the scrollbar stable before a section
+   has been laid out; browser find still reveals hidden sections. */
+@supports (content-visibility: auto) {
+  main > section.section-cv {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 1200px;
+  }
+}
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--ui-font);
   line-height: 1.25;
   color: var(--ink);
-  scroll-margin-top: 1.5rem;
+  scroll-margin-top: 3.5rem;
 }
+:target { scroll-margin-top: 3.5rem; }
 h1 { font-size: 1.7rem; margin: 0 0 1rem; }
 h2 { font-size: 1.25rem; margin: 1.8rem 0 .7rem; }
 h3 { font-size: 1.05rem; margin: 1.4rem 0 .5rem; }
@@ -106,8 +223,22 @@ hr { border: none; border-top: 1px solid var(--rule); margin: 2.5rem 0; }
 .pager a { text-decoration: none; }
 .pager a span.label { display: block; font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; opacity: .55; }
 .pager .next { margin-left: auto; text-align: right; }
+/* ---- mobile drawer: the <details> below carries the same TOC on narrow
+   screens with zero script; wide screens never render it. ---- */
+.toc-drawer { display: none; }
+details.toc-drawer { border: 1px solid var(--rule); border-radius: 8px; margin: 0 0 1.5rem; }
+details.toc-drawer summary {
+  cursor: pointer; padding: .7rem 1rem;
+  font: .8rem var(--ui-font); letter-spacing: .08em; text-transform: uppercase;
+  opacity: .75;
+}
+details.toc-drawer[open] summary { border-bottom: 1px solid var(--rule); }
+details.toc-drawer #TOC-drawer { padding: .8rem 1rem 1rem; font-family: var(--ui-font); font-size: .85rem; }
+@media (max-width: 860px) {
+  details.toc-drawer { display: block; }
+}
 @media print {
-  .sidebar, .pager, .skip-link { display: none !important; }
+  .sidebar, .pager, .skip-link, .reader-bar, details.toc-drawer { display: none !important; }
   .layout { display: block; }
   main { max-width: none; padding: 0; }
   a { color: inherit; text-decoration: none; }
@@ -116,6 +247,32 @@ hr { border: none; border-top: 1px solid var(--rule); margin: 2.5rem 0; }
 </head>
 <body>
 <a class="skip-link" href="#content">Skip to content</a>
+<header class="reader-bar">
+  <button type="button" class="sidebar-toggle" aria-pressed="false"
+    title="Show or hide the side contents panel" aria-label="Show or hide the side contents panel">‹</button>
+  <div class="search">
+    <input type="search" placeholder="Search chapters…" aria-label="Search chapters">
+    <ul class="search-results" aria-live="polite"></ul>
+  </div>
+  <button type="button" class="mode-toggle" aria-pressed="false"
+    title="Highlighted while the whole book is one view; unhighlighted reads chapter by chapter"
+    aria-label="Switch between chapter view and full view">
+    <svg class="view-icon" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5">
+      <rect x="4.5" y="1.5" width="9" height="11.5" rx="1"/>
+      <rect x="2.5" y="4" width="9" height="11.5" rx="1"/>
+      <rect x="0.5" y="6.5" width="9" height="11.5" rx="1"/>
+    </svg>
+  </button>
+  <button type="button" class="theme-toggle" aria-label="Toggle dark mode"
+     title="Toggle light or dark">◐</button>
+  <a class="credit" href="https://github.com/pablobernardo/skelepress"
+     aria-label="Generated with Skelepress — open the toolkit repository"
+     title="Generated with Skelepress" target="_blank" rel="noopener">
+    <svg width="17" height="17" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor">
+      <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A7.995 7.995 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/>
+    </svg>
+  </a>
+</header>
 <div class="layout">
   <nav class="sidebar" aria-label="Table of contents">
     <div class="masthead">
@@ -131,23 +288,37 @@ hr { border: none; border-top: 1px solid var(--rule); margin: 2.5rem 0; }
     </div>
     $endif$
   </nav>
-  <main id="content">
+  <div class="content">
+    <header class="content-title">
+      <span class="ct-title">$title$</span>
+      $if(subtitle)$<span class="ct-subtitle">$subtitle$</span>$endif$
+    </header>
+    <main id="content">
+    $if(toc)$
+    <details class="toc-drawer">
+      <summary>Contents</summary>
+      <div id="TOC-drawer">
+      $toc$
+      </div>
+    </details>
+    $endif$
 $body$
-    <nav class="pager" hidden aria-hidden="true">
-      <a class="prev" rel="prev" href=""><span class="label">Previous</span><span class="dest"></span></a>
-      <a class="next" rel="next" href=""><span class="label">Next</span><span class="dest"></span></a>
-    </nav>
-  </main>
+    </main>
+  </div>
 </div>
 <script>
 /* skelepress reader — optional enhancements. Without script the document is a
    complete, navigable book: the sidebar TOC links to every section. The script
-   adds the active-chapter highlight and the prev/next pager, both derived from
-   the top-level sections the PDF/EPUB treatments already split on. */
+   adds the theme recall, the active-chapter highlight, the prev/next pager and
+   the chapter search box, all derived from the top-level sections the PDF/EPUB
+   treatments already split on. */
 (function () {
   var chapters = Array.prototype.slice.call(
     document.querySelectorAll("#content > section[id]")
   );
+  /* Render deferral is a progressive enhancement: it only takes effect where
+     the browser supports it, and sections stay visible without script. */
+  chapters.forEach(function (section) { section.classList.add("section-cv"); });
   var links = Array.prototype.slice.call(document.querySelectorAll("#TOC a"));
   function linkFor(id) {
     var best = null;
@@ -157,6 +328,132 @@ $body$
       if (!best && hash !== "" && id.startsWith(hash)) best = a;
     });
     return best;
+  }
+  /* Theme recall. The choice is a data-theme attribute on <html>: "light"
+   cancels a dark system preference, "dark" forces dark on a light system,
+   and removed returns to the media query. Applied at parse time so the first
+   paint already carries the remembered choice. A failed storage read (a
+   file:// context that denies it) degrades to the system preference. */
+  try {
+    var savedTheme = localStorage.getItem("skelepress-theme");
+    if (savedTheme === "light" || savedTheme === "dark") {
+      document.documentElement.setAttribute("data-theme", savedTheme);
+    }
+  } catch (e) { /* storage unavailable: the system preference decides */ }
+  var toggle = document.querySelector(".theme-toggle");
+  if (toggle) {
+    toggle.addEventListener("click", function () {
+      var current = document.documentElement.getAttribute("data-theme");
+      var dark = current === "dark" || (current !== "light" &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches);
+      var next = dark ? "light" : "dark";
+      document.documentElement.setAttribute("data-theme", next);
+      try { localStorage.setItem("skelepress-theme", next); } catch (e) { /* in-memory only */ }
+    });
+  }
+  /* Chapter search: one case-insensitive scan per query over each chapter's
+   text content; results list the chapter title and a one-line extract, and a
+   click jumps to the chapter. The native find-in-page stays available and
+   sees the whole book; this box orders results by chapter order. */
+  var searchBox = document.querySelector(".search");
+  var searchInput = searchBox && searchBox.querySelector("input");
+  var searchResults = searchBox && searchBox.querySelector(".search-results");
+  if (searchInput && searchResults) {
+    var index = chapters.map(function (section) {
+      var heading = section.querySelector("h1, h2, h3");
+      return {
+        id: section.id,
+        title: heading ? heading.textContent : section.id,
+        text: section.textContent.replace(/\s+/g, " ")
+      };
+    });
+    /* A search hit lands on its chapter in chapter mode as well: the reader
+     stays on the book's own navigation rails regardless of the mode. */
+  searchResults.addEventListener("click", function () {
+    var mainEl = document.getElementById("content");
+    if (!mainEl || !mainEl.classList.contains("chapter-mode")) {
+      var hash = window.location.hash.slice(1);
+      var target = document.getElementById(hash);
+      var section = target && target.closest("section[id]");
+      if (section) showChapter(section.id, true);
+    }
+  });
+  /* Keyboard rails: ArrowDown/ArrowUp walk the results with the input
+     focused, Enter opens the highlighted one, Escape closes the panel. */
+  function resultLinks() {
+    return Array.prototype.slice.call(
+      searchResults.querySelectorAll("a")
+    );
+  }
+  function focusedIndex() {
+    return resultLinks().indexOf(document.activeElement);
+  }
+  searchInput.addEventListener("keydown", function (event) {
+    var links = resultLinks();
+    if (!links.length) return;
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      (links[focusedIndex() + 1] || links[0]).focus();
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      var at = focusedIndex();
+      (at > 0 ? links[at - 1] : searchInput).focus();
+    } else if (event.key === "Escape") {
+      searchInput.value = "";
+      searchBox.classList.remove("results-open");
+      searchInput.focus();
+    }
+  });
+  searchResults.addEventListener("keydown", function (event) {
+    var links = resultLinks();
+    var at = focusedIndex();
+    if (event.key === "ArrowDown" && at < links.length - 1) {
+      event.preventDefault();
+      links[at + 1].focus();
+    } else if (event.key === "ArrowUp") {
+      /* Every ArrowUp lands somewhere useful: one result back, or the
+         input itself once the first result is reached. */
+      event.preventDefault();
+      (at > 0 ? links[at - 1] : searchInput).focus();
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      searchInput.value = "";
+      searchBox.classList.remove("results-open");
+      searchInput.focus();
+    }
+  });
+  searchInput.addEventListener("input", function () {
+      var query = searchInput.value.trim().toLowerCase();
+      searchResults.innerHTML = "";
+      if (!query) { searchBox.classList.remove("results-open"); return; }
+      searchBox.classList.add("results-open");
+      var hits = 0;
+      index.forEach(function (chapter) {
+        var at = chapter.text.toLowerCase().indexOf(query);
+        if (at < 0) return;
+        hits += 1;
+        var li = document.createElement("li");
+        var a = document.createElement("a");
+        a.href = "#" + chapter.id;
+        var title = document.createElement("span");
+        title.className = "match-chapter";
+        title.textContent = chapter.title;
+        var extract = document.createElement("span");
+        extract.className = "match-extract";
+        var start = Math.max(0, at - 30);
+        extract.textContent = (start > 0 ? "…" : "") + chapter.text.slice(start, at + query.length + 60) + "…";
+        a.appendChild(title);
+        a.appendChild(extract);
+        li.appendChild(a);
+        searchResults.appendChild(li);
+      });
+      if (!hits) {
+        var li = document.createElement("li");
+        li.className = "no-hits";
+        li.textContent = "No chapter matches.";
+        searchResults.appendChild(li);
+      }
+    });
   }
   /* Active chapter in the sidebar. */
   if ("IntersectionObserver" in window) {
@@ -173,32 +470,178 @@ $body$
       });
       var active = current && linkFor(current);
       if (active && active.parentElement) active.parentElement.classList.add("toc-active");
-      updatePager(current);
     }, { rootMargin: "-10% 0px -75% 0px" });
     chapters.forEach(function (section) { observer.observe(section); });
   }
-  /* Prev/next pager between top-level chapters. */
-  var pager = document.querySelector(".pager");
-  function updatePager(currentId) {
-    if (!pager) return;
-    var index = chapters.findIndex(function (s) { return s.id === currentId; });
-    if (index < 0) { pager.hidden = true; return; }
-    pager.hidden = false;
-    var prev = chapters[index - 1], next = chapters[index + 1];
-    var prevA = pager.querySelector(".prev"), nextA = pager.querySelector(".next");
-    function fill(a, section) {
-      if (section) {
-        a.href = "#" + section.id;
-        var heading = section.querySelector("h1, h2, h3");
-        a.querySelector(".dest").textContent = heading ? heading.textContent : section.id;
+  /* A pager per top-level chapter: the navigation sits at the end of each
+     chapter's own content, not once at the document's end. Without script the
+     sidebar TOC still reaches every chapter. */
+  function installPager(section, index) {
+    var pager = document.createElement("nav");
+    pager.className = "pager";
+    pager.setAttribute("aria-label", "Chapter navigation");
+    function link(kind, target) {
+      var a = document.createElement("a");
+      a.className = kind;
+      a.rel = kind;
+      var label = document.createElement("span");
+      label.className = "label";
+      label.textContent = kind === "prev" ? "Previous" : "Next";
+      var dest = document.createElement("span");
+      dest.className = "dest";
+      a.appendChild(label);
+      a.appendChild(dest);
+      if (target) {
+        a.href = "#" + target.id;
+        var heading = target.querySelector("h1, h2, h3");
+        dest.textContent = heading ? heading.textContent : target.id;
       } else {
-        a.removeAttribute("href");
-        a.querySelector(".dest").textContent = "";
         a.classList.add("unavailable");
       }
+      return a;
     }
-    fill(prevA, prev);
-    fill(nextA, next);
+    pager.appendChild(link("prev", chapters[index - 1]));
+    pager.appendChild(link("next", chapters[index + 1]));
+    section.appendChild(pager);
+  }
+  /* A pager per top-level chapter, appended inside each section's own tail. */
+  chapters.forEach(function (section, index) {
+    installPager(section, index);
+  });
+
+  /* Horizontal sidebar collapse: the grid's first column folds to zero and
+     the content reclaims its width. A stored choice; storage failure keeps
+     the sidebar visible. */
+  var layout = document.querySelector(".layout");
+  var sidebarToggle = document.querySelector(".sidebar-toggle");
+  function setSidebar(visible) {
+    if (!layout) return;
+    layout.classList.toggle("no-sidebar", !visible);
+    if (sidebarToggle) sidebarToggle.setAttribute("aria-pressed", visible ? "false" : "true");
+  }
+  if (sidebarToggle && layout) {
+    /* On a narrow window the sidebar never shows as a column: the moveable
+       part is the contents drawer in the document, so the toggle drives that
+       instead. No script: the drawer still opens by its own summary. */
+    var narrowWindow = window.matchMedia("(max-width: 860px)");
+    function drawerBox() { return document.querySelector("details.toc-drawer"); }
+    function syncToggle() {
+      var pressed;
+      if (narrowWindow.matches) {
+        /* The drawer has no side to point at: the hamburger means menu. */
+        sidebarToggle.textContent = "☰";
+        var drawer = drawerBox();
+        pressed = !!(drawer && drawer.open);
+      } else {
+        /* The arrow points where the sidebar went: › when folded (invite it
+           back), ‹ when shown (fold it away). */
+        sidebarToggle.textContent = layout.classList.contains("no-sidebar") ? "›" : "‹";
+        pressed = layout.classList.contains("no-sidebar");
+      }
+      sidebarToggle.setAttribute("aria-pressed", pressed ? "true" : "false");
+    }
+    if (narrowWindow.addEventListener) narrowWindow.addEventListener("change", syncToggle);
+    sidebarToggle.addEventListener("click", function () {
+      if (narrowWindow.matches) {
+        var drawer = drawerBox();
+        if (drawer) drawer.open = !drawer.open;
+      } else {
+        var visibleNow = !layout.classList.contains("no-sidebar");
+        setSidebar(!visibleNow);
+        try { localStorage.setItem("skelepress-sidebar", visibleNow ? "visible" : "hidden"); } catch (e) { /* in-memory */ }
+      }
+      syncToggle();
+    });
+    try {
+      if (localStorage.getItem("skelepress-sidebar") === "hidden") setSidebar(false);
+    } catch (e) { /* in-memory */ }
+    syncToggle();
+  }
+
+  /* Chapter mode: one visible chapter at a time, driven by the per-chapter
+     pager or a hash jump. Off by default; the continuous book is the fallback. */
+  var mainEl = document.getElementById("content");
+  var modeToggle = document.querySelector(".mode-toggle");
+  function currentChapter() {
+    return chapters.filter(function (s) { return s.classList.contains("chapter-current"); })[0];
+  }
+  function showChapter(id, scroll) {
+    var hits = chapters.some(function (section) { return section.id === id; });
+    if (id && !hits) {
+      /* A stale id (renamed anchor, old artifact state) must never leave the
+         reader with nothing on screen. */
+      id = (chapters[0] || {}).id;
+    }
+    chapters.forEach(function (section) {
+      section.classList.toggle("chapter-current", section.id === id);
+    });
+    if (scroll) {
+      window.scrollTo({ top: 0 });
+    }
+    try { localStorage.setItem("skelepress-chapter-mode", id || ""); } catch (e) { /* in-memory */ }
+  }
+  function setChapterMode(on) {
+    if (!on) {
+      mainEl.classList.remove("chapter-mode");
+      chapters.forEach(function (s) { s.classList.remove("chapter-current"); });
+      return;
+    }
+    mainEl.classList.add("chapter-mode");
+    showChapter(chapterForHash() || (chapters[0] || {}).id, false);
+  }
+  function chapterForHash() {
+    if (!window.location.hash) return null;
+    var target = document.getElementById(window.location.hash.slice(1));
+    var section = target && target.closest("section[id]");
+    return section && chapters.indexOf(section) >= 0 ? section.id : null;
+  }
+  /* In chapter mode every in-page anchor navigates the visible chapter:
+     pager links, sidebar TOC entries, the mobile drawer and search results
+     are one delegated handler, so the sidebar keeps working while most
+     chapters are hidden. */
+  document.addEventListener("click", function (event) {
+    if (!mainEl.classList.contains("chapter-mode")) return;
+    var a = event.target.closest('a[href^="#"]');
+    if (!a) return;
+    var id = a.getAttribute("href").slice(1);
+    var target = id && document.getElementById(id);
+    var section = target && target.closest("section[id]");
+    var chapter = section && chapters.indexOf(section) >= 0 ? section.id : null;
+    if (!chapter) return;
+    event.preventDefault();
+    history.replaceState(null, "", "#" + chapter);
+    showChapter(chapter, true);
+    if (section.id !== chapter) {
+      /* An anchor inside a chapter: land on the sentence itself after the
+         chapter is visible. */
+      target.scrollIntoView();
+    }
+  });
+  /* Back and forward restore the chapter the hash names. */
+  window.addEventListener("hashchange", function () {
+    if (!mainEl.classList.contains("chapter-mode")) return;
+    showChapter(chapterForHash() || (chapters[0] || {}).id, true);
+  });
+  if (modeToggle) {
+    modeToggle.addEventListener("click", function () {
+      var on = !mainEl.classList.contains("chapter-mode");
+      setChapterMode(on);
+      /* The highlight marks the full view; chapter reading stays unlit. */
+      modeToggle.setAttribute("aria-pressed", on ? "false" : "true");
+      try { localStorage.setItem("skelepress-mode", on ? "chapters" : "scroll"); } catch (e) { /* in-memory */ }
+    });
+  }
+  /* Chapter mode is the default reading shape; a stored "scroll" choice
+     keeps the continuous book. Storage denial keeps the default. */
+  try {
+    if (localStorage.getItem("skelepress-mode") !== "scroll") setChapterMode(true);
+  } catch (e) {
+    setChapterMode(true);
+  }
+  /* The highlight marks the full view; chapter reading stays unlit. */
+  if (modeToggle) {
+    var chaptersOn = mainEl.classList.contains("chapter-mode");
+    modeToggle.setAttribute("aria-pressed", chaptersOn ? "false" : "true");
   }
 })();
 </script>

@@ -389,9 +389,19 @@ and the document reads as a normal web page. Dark colours follow the
 document.
 
 The reader script is optional by design: without JavaScript the file is still a
-complete book, navigable with the sidebar links. Images are marked
-`loading="lazy"` and `decoding="async"` through the always-on HTML filter, so a
-reader moving around a large book does not pay for every diagram up front.
+complete book, navigable with the sidebar links. With it, a full-width reading
+bar sits above everything and holds every control wherever the reader is: a
+panel toggle that folds the side contents away and back, a chapter search box
+listing matches in reading order, a theme toggle that overrides the system
+preference and remembers the choice, and a chapter/scroll mode switch. In scroll mode (the default) the book is one continuous document
+and a previous/next pager sits at the end of every chapter; in chapter mode
+only the current chapter is visible and the pager turns the chapters like
+pages — native find-in-page then only sees the visible chapter, while the
+reader's own search box still indexes the whole book. The mobile contents
+drawer completes navigation on narrow screens. Images are marked `loading="lazy"` and `decoding="async"` through the
+always-on HTML filter, so a reader moving around a large book does not pay for
+every diagram up front, and supported browsers keep off-screen chapters
+unrendered (`content-visibility`) until they approach the viewport.
 
 Three boundaries are worth knowing:
 
