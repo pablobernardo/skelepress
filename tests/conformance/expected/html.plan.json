@@ -50,6 +50,7 @@
     },
     "heading_break_level": 1,
     "html": {
+      "image_conversion": false,
       "reader": true,
       "template_note": false
     },

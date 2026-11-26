@@ -28,6 +28,7 @@ run_render_no_yaml_parser_hints_i18n_test() {
   cp "${ROOT_DIR}/scripts/runtime/top_level_division_runtime.py" "${sandbox}/scripts/runtime/top_level_division_runtime.py"
   cp "${ROOT_DIR}/scripts/runtime/render-native.py" "${sandbox}/scripts/runtime/render-native.py"
   cp "${ROOT_DIR}/scripts/runtime/prepare-emojis.py" "${sandbox}/scripts/runtime/prepare-emojis.py"
+  cp "${ROOT_DIR}/scripts/runtime/image_runtime.py" "${sandbox}/scripts/runtime/image_runtime.py"
   chmod +x "${sandbox}/scripts/runtime/validate-config.py" "${sandbox}/scripts/runtime/render-native.py" "${sandbox}/scripts/runtime/prepare-emojis.py"
   cp "${ROOT_DIR}/schemas/skelepress-config.schema.json" "${sandbox}/schemas/skelepress-config.schema.json"
   cp "${ROOT_DIR}/i18n/locales/es.json" "${sandbox}/i18n/locales/es.json"

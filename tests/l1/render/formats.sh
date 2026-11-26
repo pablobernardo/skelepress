@@ -23,3 +23,14 @@ run_html_format_test() {
   fi
   rm -f "$out"
 }
+
+run_webp_html_conversion_test() {
+  local out code=0
+  out="$(mktemp)"
+  "${REAL_PYTHON3}" "${ROOT_DIR}/tests/integration/check-webp-html.py" >"$out" 2>&1 || code=$?
+  assert_exit_code "0" "$code" "opt-in webp html conversion: plan shape, artifact, degradation and doctor"
+  if [[ "$code" != "0" ]]; then
+    tail -80 "$out"
+  fi
+  rm -f "$out"
+}

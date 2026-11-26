@@ -160,6 +160,7 @@ main() {
   run_chapter_fragment_pdf_destination_test
   run_multi_format_export_test
   run_html_format_test
+  run_webp_html_conversion_test
   run_render_formats_override_test
   run_plan_conformance_tests
   run_bookkit_accented_slug_test

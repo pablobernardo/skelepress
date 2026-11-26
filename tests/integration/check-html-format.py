@@ -64,7 +64,7 @@ class HtmlPlanTest(unittest.TestCase):
         joined = " ".join(argv)
         self.assertIn("--metadata title=Formats", joined)
         self.assertIn("--metadata lang=es", joined)
-        self.assertEqual(job["side_effects"]["html"], {"reader": True, "template_note": False})
+        self.assertEqual(job["side_effects"]["html"], {"reader": True, "template_note": False, "image_conversion": False})
         # The html job does not claim typesetting that only LaTeX can decide.
         self.assertNotIn("-V", argv)
 
@@ -76,7 +76,7 @@ class HtmlPlanTest(unittest.TestCase):
         self.config["output"]["html"] = {"reader": False}
         _, job = self.single_job("html")
         argv = job["pandoc"]["argv"]
-        self.assertEqual(job["side_effects"]["html"], {"reader": False, "template_note": False})
+        self.assertEqual(job["side_effects"]["html"], {"reader": False, "template_note": False, "image_conversion": False})
         self.assertFalse(any("reader.html" in flag for flag in argv), argv)
         self.assertIn("--section-divs", argv)
         self.assertIn("--embed-resources", argv)
