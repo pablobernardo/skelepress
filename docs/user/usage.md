@@ -213,6 +213,7 @@ renderer applies the value in the middle column when they are absent:
 | `output.formats` | `[pdf]` | you want EPUB, HTML or multiple formats |
 | `output.html` (whole section) | the reader shell applied | the HTML target is selected and you want the writer's bare output |
 | `output.html.reader` | `true` | you want a bare HTML file with Pandoc's default template instead of the toolkit reader |
+| `output.html.image_conversion` | `false` (images embedded as declared) | embedded screenshots or photos should travel as WebP |
 
 A filter that is disabled does not need its settings: `enabled: false` is a
 complete declaration. That is why the documentation example, which renders no
@@ -413,6 +414,41 @@ Three boundaries are worth knowing:
 - `--embed-resources` needs Pandoc 2.19 or newer; `skelepress doctor` states the
   toolkit's tested baseline, and renders with older Pandoc fail loudly rather
   than producing a file that references paths it does not carry.
+
+#### Lighter embedded images (`output.html.image_conversion`)
+
+Base64 inflates every embedded image by a third, so a book full of PNG
+screenshots pays for its own weight. With `image_conversion: true` the render
+converts the declared PNG/JPEG images to WebP before Pandoc inlines them:
+
+```yaml
+output:
+  html:
+    image_conversion: true
+```
+
+The rule favours fidelity: PNG images (screenshots, diagrams) are re-encoded
+lossless, so text edges survive; JPEG images are converted with lossy WebP at
+quality 85. A copy that is not smaller than its source stays untouched, as do
+SVG, GIF and already-WebP images. The source files are never modified — the
+WebP copies live in a working directory that Pandoc embeds and the render
+removes afterwards. When the render ends, the output lists how many images were
+converted and names anything it left alone.
+
+WebP is optional: Pillow (`python3 -m pip install Pillow`) provides the codec
+and `skelepress doctor` checks it whenever the configuration enables the
+option. Without it the render is not a failure: it continues embedding the
+original images and says so in a note.
+
+<!-- render: note on missing Pillow | ⚠️  WebP conversion is enabled but Pillow
+     with WebP support is unavailable; the HTML embeds the original images.
+     Install it with: python3 -m pip install Pillow -->
+
+The supported rule set is intentionally small: reference-style and HTML `<img>`
+image syntaxes are not converted (they keep their original bytes, never a
+render failure), and per-image quality configuration does not exist yet.
+
+
 
 The artifact's page positions are its own visual layout and do not correspond
 to the PDF's pagination: navigation is by chapter, which is the structure the
