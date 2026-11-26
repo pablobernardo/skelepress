@@ -134,6 +134,7 @@ install_macos() {
   has_cmd curl || missing+=(curl)
   has_cmd node || missing+=(node)
   has_cmd npm || missing+=(node)
+  has_cmd cwebp || missing+=(webp)
 
   if [[ ${#missing[@]} -gt 0 ]]; then
     log "$(t "bootstrap.install.homebrew_deps" "Installing Homebrew dependencies"): ${missing[*]}"
@@ -170,23 +171,23 @@ install_linux() {
   case "${pkg_manager}" in
     apt-get)
       run_cmd "sudo apt-get update"
-      run_cmd "sudo apt-get install -y pandoc python3 curl texlive-xetex nodejs npm"
+      run_cmd "sudo apt-get install -y pandoc python3 curl webp texlive-xetex nodejs npm"
       ;;
     dnf)
-      run_cmd "sudo dnf install -y pandoc python3 curl texlive-xetex nodejs npm"
+      run_cmd "sudo dnf install -y pandoc python3 curl libwebp-tools texlive-xetex nodejs npm"
       ;;
     yum)
-      run_cmd "sudo yum install -y pandoc python3 curl texlive-xetex nodejs npm"
+      run_cmd "sudo yum install -y pandoc python3 curl libwebp-tools texlive-xetex nodejs npm"
       ;;
     pacman)
-      run_cmd "sudo pacman -Sy --noconfirm pandoc python curl texlive-xetex nodejs npm"
+      run_cmd "sudo pacman -Sy --noconfirm pandoc python curl libwebp texlive-xetex nodejs npm"
       ;;
     zypper)
       run_cmd "sudo zypper --non-interactive refresh"
-      run_cmd "sudo zypper --non-interactive install pandoc python3 curl texlive-xetex nodejs npm"
+      run_cmd "sudo zypper --non-interactive install pandoc python3 curl libwebp-tools texlive-xetex nodejs npm"
       ;;
     apk)
-      run_cmd "sudo apk add pandoc python3 py3-pip curl texlive-full nodejs npm"
+      run_cmd "sudo apk add pandoc python3 py3-pip curl libwebp-tools texlive-full nodejs npm"
       ;;
   esac
 

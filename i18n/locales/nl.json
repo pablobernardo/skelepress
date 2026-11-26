@@ -216,8 +216,8 @@
   "draft.info.rendering": "Concept wordt gerenderd: {output}",
   "draft.error.output_missing": "Concept gerenderd maar het uitvoerbestand ontbreekt.",
   "render.error.html_template_conflict": "Een geconfigureerd pandoc.template geldt alleen voor PDF: het HTML-doel gebruikt de reader-template van de toolkit.",
-  "render.warn.webp_unavailable": "WebP-conversie is ingeschakeld, maar Pillow met WebP-ondersteuning is niet beschikbaar; de HTML sluit de originele afbeeldingen in. Installeer met: python3 -m pip install Pillow",
+  "render.warn.webp_unavailable": "WebP-conversie is ingeschakeld, maar cwebp is niet beschikbaar; de HTML sluit de originele afbeeldingen in. De bootstrap van de toolkit installeert het, of je pakketbeheerder: apt install webp / brew install webp",
   "render.info.webp_converted": "{count} afbeelding(en) naar WebP geconverteerd voor het HTML-artefact",
   "render.info.webp_skipped": "   Niet geconverteerd ({count}): {targets}",
-  "doctor.missing.webp": "Pillow met WebP-ondersteuning voor HTML-afbeeldingsconversie (python3 -m pip install Pillow)"
+  "doctor.missing.webp": "cwebp voor HTML-afbeeldingsconversie (geïnstalleerd door bootstrap, of je pakketbeheerder: apt install webp / brew install webp)"
 }

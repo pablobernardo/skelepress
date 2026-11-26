@@ -216,8 +216,8 @@
   "draft.info.rendering": "Renderer udkast: {output}",
   "draft.error.output_missing": "Udkast rendet, men outputfilen mangler.",
   "render.error.html_template_conflict": "En konfigureret pandoc.template gælder kun for PDF: HTML-målet bruger toolkitens reader-skabelon.",
-  "render.warn.webp_unavailable": "WebP-konvertering er aktiveret, men Pillow med WebP-understøttelse er ikke tilgængelig; HTML'en indlejrer de oprindelige billeder. Installér med: python3 -m pip install Pillow",
+  "render.warn.webp_unavailable": "WebP-konvertering er aktiveret, men cwebp er ikke tilgængelig; HTML'en indlejrer de oprindelige billeder. Toolkitets bootstrap installerer det, eller din pakkehåndtering: apt install webp / brew install webp",
   "render.info.webp_converted": "Konverterede {count} billede(r) til WebP til HTML-artefaktet",
   "render.info.webp_skipped": "   Ikke konverteret ({count}): {targets}",
-  "doctor.missing.webp": "Pillow med WebP-understøttelse til HTML-billedkonvertering (python3 -m pip install Pillow)"
+  "doctor.missing.webp": "cwebp til HTML-billedkonvertering (bootstrap installerer det, eller din pakkehåndtering: apt install webp / brew install webp)"
 }

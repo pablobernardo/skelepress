@@ -1,9 +1,10 @@
 """Optional WebP conversion for the HTML render.
 
-Pillow is an optional dependency: its wheels bundle libwebp, so
-`pip install Pillow` is enough on every platform. When it is absent the
-HTML render degrades with a note instead of failing; `skelepress doctor`
-is the surface that names the missing capability before a render.
+The codec is the system binary `cwebp` (packaged by apt as `webp`, brew as
+`webp`, pacman as `libwebp`, dnf/yum/apk as `libwebp-tools`; the toolkit's
+`bootstrap.sh` installs it). When it is absent the HTML render degrades with
+a note instead of failing; `skelepress doctor` is the surface that names the
+missing capability before a render.
 
 Conversion never mutates source images: the WebP copies land in a working
 directory owned by the render, and the original paths stay as declared.
@@ -13,6 +14,7 @@ from __future__ import annotations
 
 import hashlib
 import re
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -25,39 +27,10 @@ CONVERTIBLE_SUFFIXES = {".jpg", ".jpeg", ".png"}
 PNG_LOSSLESS_QUALITY = 90
 JPEG_QUALITY = 85
 
-# Pillow's webp encoder needs libwebp compiled in; wheels ship it, source
-# builds may not, so the codec itself is probed, not just the import.
-_MISSING_CAPABILITY = "python3-pillow-webp"
 
-
-def _probe_pillow_webp(code: str) -> str | None:
-    """Run a probe script in a python3 subprocess.
-
-    Returns the error string when the capability is missing, None when it is
-    present. A subprocess keeps any Pillow import warning out of render
-    output and out of this interpreter's state.
-    """
-    try:
-        proc = subprocess.run(
-            ["python3", "-c", code],
-            capture_output=True,
-            text=True,
-            timeout=15,
-        )
-    except (OSError, subprocess.SubprocessError) as e:
-        return str(e)
-    if proc.returncode == 0:
-        return None
-    reason = (proc.stderr or proc.stdout or "").strip().splitlines()
-    return reason[0].strip() if reason else _MISSING_CAPABILITY
-
-
-def pillow_webp_missing() -> str | None:
-    """Error string when Pillow with WebP support is unavailable, else None."""
-    return _probe_pillow_webp(
-        "from PIL import Image, features\n"
-        "raise SystemExit(0 if features.check('webp') else 1)\n"
-    )
+def cwebp_available() -> bool:
+    """The codec is a system command; no probe run is needed to know."""
+    return shutil.which("cwebp") is not None
 
 
 # Inline images only: `![alt](path)` and its empty-alt form. Reference-style
@@ -102,6 +75,18 @@ def _resolve_target(raw: str, base_dir: Path, resource_dirs: list[Path]) -> Path
     return None
 
 
+def _convert_one(source: Path, target: Path) -> None:
+    """One cwebp invocation: lossless PNG, lossy JPEG at the set quality."""
+    if source.suffix.lower() == ".png":
+        argv = ["cwebp", "-quiet", "-lossless", "-q", str(PNG_LOSSLESS_QUALITY), str(source), "-o", str(target)]
+    else:
+        argv = ["cwebp", "-quiet", "-q", str(JPEG_QUALITY), str(source), "-o", str(target)]
+    proc = subprocess.run(argv, capture_output=True, text=True, timeout=120)
+    if proc.returncode != 0:
+        detail = (proc.stderr or proc.stdout or "").strip().splitlines()
+        raise RuntimeError(detail[0] if detail else f"cwebp exited {proc.returncode}")
+
+
 def convert_images_for_html(
     sources: list[str],
     work_dir: Path,
@@ -113,15 +98,12 @@ def convert_images_for_html(
     Returns `(mapping, skipped, capability_error)`: the mapping from
     absolute original paths (posix strings) to WebP copy paths, the targets
     deliberately not converted (each with its reason), and the capability
-    error string when Pillow/WebP is missing (mapping and skipped are then
+    error string when `cwebp` is missing (mapping and skipped are then
     empty). A missing source, an unreadable file, or a WebP encode that
     saves nothing smaller is a skipped entry, never a render failure.
     """
-    error = pillow_webp_missing()
-    if error is not None:
-        return {}, [], error
-
-    from PIL import Image  # type: ignore[import-not-found]  # optional; the probe above proved it imports
+    if not cwebp_available():
+        return {}, [], "cwebp"
 
     seen: set[str] = set()
     mapping: dict[str, str] = {}
@@ -147,17 +129,8 @@ def convert_images_for_html(
         # One unique copy per source: same-stem sources must never share a target.
         digest = hashlib.sha256(absolute.encode("utf-8")).hexdigest()[:12]
         target = work_dir / f"{digest}-{source.name}.webp"
-        options = (
-            {"lossless": True, "quality": PNG_LOSSLESS_QUALITY}
-            if source.suffix.lower() == ".png"
-            else {"quality": JPEG_QUALITY}
-        )
         try:
-            opened = Image.open(source)
-            try:
-                opened.save(target, format="WEBP", **options)
-            finally:
-                opened.close()
+            _convert_one(source, target)
             # A copy as heavy as its source would be a regression, so it
             # stays out of the mapping and the original is embedded instead.
             if not target.is_file() or target.stat().st_size >= source.stat().st_size:

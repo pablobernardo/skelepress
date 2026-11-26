@@ -216,8 +216,8 @@
   "draft.info.rendering": "Entwurf wird gerendert: {output}",
   "draft.error.output_missing": "Entwurf gerendert, aber die Ausgabedatei fehlt.",
   "render.error.html_template_conflict": "Ein konfiguriertes pandoc.template gilt nur für PDF: das HTML-Ziel nutzt das Reader-Template des Toolkits.",
-  "render.warn.webp_unavailable": "Die WebP-Konvertierung ist aktiviert, aber Pillow mit WebP-Unterstützung ist nicht verfügbar; das HTML bettet die Originalbilder ein. Installation mit: python3 -m pip install Pillow",
+  "render.warn.webp_unavailable": "Die WebP-Konvertierung ist aktiviert, aber cwebp ist nicht verfügbar; das HTML bettet die Originalbilder ein. Das Toolkit-Bootstrap installiert es, oder Ihr Paketmanager: apt install webp / brew install webp",
   "render.info.webp_converted": "{count} Bild(er) für das HTML-Artefakt nach WebP konvertiert",
   "render.info.webp_skipped": "   Nicht konvertiert ({count}): {targets}",
-  "doctor.missing.webp": "Pillow mit WebP-Unterstützung für die HTML-Bildkonvertierung (python3 -m pip install Pillow)"
+  "doctor.missing.webp": "cwebp für die HTML-Bildkonvertierung (das Bootstrap installiert es, oder Ihr Paketmanager: apt install webp / brew install webp)"
 }

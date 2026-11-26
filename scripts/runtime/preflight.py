@@ -398,7 +398,7 @@ def main() -> None:
                 if isinstance(declared_formats, list):
                     output_formats = declared_formats
                 # The WebP conversion is opt-in: only a config that asks for it
-                # makes the Pillow capability part of the dependency set. The
+                # makes the cwebp capability part of the dependency set. The
                 # format gate is applied after the CLI override below.
                 html_output = output.get("html")
                 if isinstance(html_output, dict) and bool(html_output.get("image_conversion", False)):
@@ -491,11 +491,11 @@ def main() -> None:
     if missing_package:
         missing.append("truncate.sty")
 
-    # The capability is probed the same way the renderer probes it: a subprocess
-    # so no Pillow import warning can pollute doctor output. Lax mode may waive
-    # it because the render degrades to the original images with a note.
-    if needs_webp and image_runtime.pillow_webp_missing() is not None:
-        missing.append(t("doctor.missing.webp", "Pillow with WebP support for HTML image conversion (python3 -m pip install Pillow)"))
+    # The codec is one of the system commands, resolved like pandoc or the TeX
+    # engine: which(3) decides, no subprocess run. Lax mode may waive it because
+    # the render degrades to the original images with a note.
+    if needs_webp and not image_runtime.cwebp_available():
+        missing.append(t("doctor.missing.webp", "cwebp for HTML image conversion (bootstrap installs it, or your package manager: apt install webp / brew install webp)"))
     mermaid_error = None
     if mermaid_enabled and "mmdc" in required and command_exists("mmdc"):
         mermaid_error = mermaid_smoke_check()

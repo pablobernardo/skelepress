@@ -1088,7 +1088,7 @@ def execute_single_plan(plan: dict) -> int:
         )
         if capability_error is not None:
             print(
-                f"⚠️  {t('render.warn.webp_unavailable', 'WebP conversion is enabled but Pillow with WebP support is unavailable; the HTML embeds the original images. Install it with: python3 -m pip install Pillow')}"
+                f"⚠️  {t('render.warn.webp_unavailable', 'WebP conversion is enabled but cwebp is unavailable; the HTML embeds the original images. The toolkit bootstrap installs it, or your package manager: apt install webp / brew install webp')}"
             )
         else:
             if skipped:

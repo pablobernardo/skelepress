@@ -217,8 +217,8 @@
   "draft.error.output_missing": "Draft rendered but the output file is missing.",
   "render.output.html": "Output HTML: {path}",
   "render.error.html_template_conflict": "A configured pandoc.template only applies to PDF: the HTML target uses the toolkit reader template.",
-  "render.warn.webp_unavailable": "WebP conversion is enabled but Pillow with WebP support is unavailable; the HTML embeds the original images. Install it with: python3 -m pip install Pillow",
+  "render.warn.webp_unavailable": "WebP conversion is enabled but cwebp is unavailable; the HTML embeds the original images. The toolkit bootstrap installs it, or your package manager: apt install webp / brew install webp",
   "render.info.webp_converted": "Converted {count} image(s) to WebP for the HTML artifact",
   "render.info.webp_skipped": "   Not converted ({count}): {targets}",
-  "doctor.missing.webp": "Pillow with WebP support for HTML image conversion (python3 -m pip install Pillow)"
+  "doctor.missing.webp": "cwebp for HTML image conversion (bootstrap installs it, or your package manager: apt install webp / brew install webp)"
 }

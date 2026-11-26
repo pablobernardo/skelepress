@@ -216,8 +216,8 @@
   "draft.info.rendering": "Rendu du brouillon : {output}",
   "draft.error.output_missing": "Le brouillon a été rendu mais le fichier de sortie est manquant.",
   "render.error.html_template_conflict": "Un pandoc.template configuré ne s'applique qu'au PDF : la cible HTML utilise le template du lecteur du toolkit.",
-  "render.warn.webp_unavailable": "La conversion WebP est activée mais Pillow avec prise en charge WebP est indisponible ; le HTML intègre les images d'origine. Installez-le avec : python3 -m pip install Pillow",
+  "render.warn.webp_unavailable": "La conversion WebP est activée mais cwebp est indisponible ; le HTML intègre les images d'origine. Le bootstrap du toolkit l'installe, ou votre gestionnaire de paquets : apt install webp / brew install webp",
   "render.info.webp_converted": "{count} image(s) converties en WebP pour l'artefact HTML",
   "render.info.webp_skipped": "   Non converties ({count}) : {targets}",
-  "doctor.missing.webp": "Pillow avec prise en charge WebP pour la conversion d'images HTML (python3 -m pip install Pillow)"
+  "doctor.missing.webp": "cwebp pour la conversion d'images HTML (installé par le bootstrap, ou votre gestionnaire de paquets : apt install webp / brew install webp)"
 }

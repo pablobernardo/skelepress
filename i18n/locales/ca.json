@@ -216,8 +216,8 @@
   "draft.info.rendering": "Render de l'esborrany: {output}",
   "draft.error.output_missing": "L'esborrany s'ha renderitzat però falta el fitxer de sortida.",
   "render.error.html_template_conflict": "Un pandoc.template configurat només s'aplica al PDF: la destinació HTML utilitza la plantilla de reader del toolkit.",
-  "render.warn.webp_unavailable": "La conversió a WebP està activada però Pillow amb suport WebP no està disponible; l'HTML incrustarà les imatges originals. Instal·la'l amb: python3 -m pip install Pillow",
+  "render.warn.webp_unavailable": "La conversió a WebP està activada però cwebp no està disponible; l'HTML incrustarà les imatges originals. El bootstrap del kit l'instal·la, o el teu gestor de paquets: apt install webp / brew install webp",
   "render.info.webp_converted": "Convertides {count} imatges a WebP per a l'artefacte HTML",
   "render.info.webp_skipped": "   No convertides ({count}): {targets}",
-  "doctor.missing.webp": "Pillow amb suport WebP per a la conversió d'imatges HTML (python3 -m pip install Pillow)"
+  "doctor.missing.webp": "cwebp per a la conversió d'imatges HTML (l'instal·la el bootstrap, o el teu gestor de paquets: apt install webp / brew install webp)"
 }
