@@ -23,6 +23,15 @@ The project follows semantic versioning and keeps two versioned contracts:
 - `filters/lazy-images.lua`, always on for HTML: images are marked
   `loading="lazy"` and `decoding="async"` in the HTML target; other formats are
   unchanged.
+- Reader conveniences: a full-width reading bar above sidebar and content
+  with a contents-panel toggle, a chapter search box, a chapter/scroll mode
+  switch (chapter mode is the default; scroll keeps one continuous document),
+  a manual theme toggle that remembers the choice and the toolkit credit. The
+  title sits fixed over the reading column, which widens further with the
+  sidebar folded; off-screen chapters defer rendering under
+  `content-visibility: auto` where the browser supports it. The mobile
+  contents drawer completes navigation; all of it degrades to the wave-1
+  static reader.
 
 ### Changed
 
