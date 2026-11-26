@@ -435,14 +435,17 @@ WebP copies live in a working directory that Pandoc embeds and the render
 removes afterwards. When the render ends, the output lists how many images were
 converted and names anything it left alone.
 
-WebP is optional: Pillow (`python3 -m pip install Pillow`) provides the codec
-and `skelepress doctor` checks it whenever the configuration enables the
-option. Without it the render is not a failure: it continues embedding the
+WebP is optional: the system binary `cwebp` provides the codec and
+`skelepress doctor` checks it whenever the configuration enables the option
+(`make bootstrap` or `scripts/delivery/bootstrap.sh` install it; the package
+is `webp` in apt/brew, `libwebp` in pacman, `libwebp-tools` in dnf/yum/apk).
+Without it the render is not a failure: it continues embedding the
 original images and says so in a note.
 
-<!-- render: note on missing Pillow | ⚠️  WebP conversion is enabled but Pillow
-     with WebP support is unavailable; the HTML embeds the original images.
-     Install it with: python3 -m pip install Pillow -->
+<!-- render: note on missing cwebp | ⚠️  WebP conversion is enabled but cwebp
+     is unavailable; the HTML embeds the original images. The toolkit
+     bootstrap installs it, or your package manager: apt install webp /
+     brew install webp -->
 
 The supported rule set is intentionally small: reference-style and HTML `<img>`
 image syntaxes are not converted (they keep their original bytes, never a

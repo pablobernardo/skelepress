@@ -37,14 +37,15 @@ See [running-header layout and page exceptions](usage.md#pdf-running-headers).
 ## Optional WebP image conversion
 
 Enable `output.html.image_conversion: true` for the self-contained HTML only
-when Python has **Pillow with WebP support** installed: `python3 -m pip install
-Pillow`. The PyPI wheels bundle the libwebp codec, so no system package is
-needed on any platform; only a source-built Pillow without `libwebp` would
-lack the codec.
+when the system has the **`cwebp` codec** installed: `make bootstrap`
+(`scripts/delivery/bootstrap.sh`) installs it alongside the other render
+dependencies — the package is `webp` in apt and Homebrew, `libwebp` in pacman,
+`libwebp-tools` in dnf/yum/apk, and the upstream binaries from Google's WebP
+project cover the rest. Nothing is compiled from source.
 
-`skelepress doctor` probes the codec when the configuration enables the
+`skelepress doctor` checks `cwebp` when the configuration enables the
 option and reports the same way as any missing dependency, with the install
-command in the message. A render without the capability is not a failure: it
+hint in the message. A render without the codec is not a failure: it
 continues embedding the original images and says so in a localized note, so
 CI cannot silently degrade a book the operator meant to ship lighter —
 `doctor` is the check to trust before a release render.

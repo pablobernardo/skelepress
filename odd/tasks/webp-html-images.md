@@ -6,7 +6,7 @@ embeds lighter copies. Artifacts stay in English (repo policy).
 ## Specs
 
 - S1: "a la hora de embeber imagenes para el html deberíamos convertir aquellas que se pueda a un formato mas liviano y con poca pérdida para leer en pantallas, tipo webp" — the HTML render must embed WebP copies of convertible raster images when the option is on.
-- S2 (user decision): implementation uses Pillow ("el usuario tenga que `pip install Pillow`"), not the `cwebp` binary; no binaries added to the repo.
+- S2 (user decision, later reversed): the first implementation used Pillow; after the user hit PEP 668/venv friction and decided for a system binary, the codec is `cwebp` (L6).
 - S3 (user decision): `skelepress doctor` checks WebP capability in the machine ("en cmb-editorial lo añadimos a un doctor para comprobarlo en el equipo").
 - S4 (approved design): the feature is opt-in via a new optional `output.html` config field; default behavior unchanged.
 - S5 (approved design): when the option is on and the capability is missing, the render degrades with a note instead of failing; doctor is the place that flags the missing capability.
@@ -20,10 +20,11 @@ embeds lighter copies. Artifacts stay in English (repo policy).
 | --- | --- | --- | --- |
 | T1 | S4, S7 | Schema: optional `output.html.image_conversion` (boolean) in `schemas/skelepress-config.schema.json`; `reader` stops being required (renderer defaults it to `true`, so every previously valid config stays valid) | 3fe309b |
 | T2 | S1, S2, S5, S6, S8 | Runtime: `scripts/runtime/image_runtime.py` (capability + conversion), renderer integration (plan flag, execution-time conversion, Lua src rewrite, degrade note, conversion summary) | 3fe309b |
-| T3 | S3, S5 | Doctor: config-gated WebP capability check in `scripts/runtime/preflight.py` | 3fe309b |
+| T3 | S3, S5 | Doctor: config-gated WebP capability check in `scripts/runtime/preflight.py` (cwebp since L6) | 3fe309b ✅ + L6 rework pending |
 | T4 | — | i18n: new keys in all 12 locales (base `es.json`) | 3fe309b |
 | T5 | S1, S5, S8 | Tests: L1 render tests for conversion, degradation, no-op; conformance expected update; i18n consistency | 454911a |
 | T6 | — | Docs: `docs/user/usage.md` field documentation + `docs/dev/architecture.md` D22 + CHANGELOG Unreleased | a55932b |
+| T7 | S2, S5 | L6 codec swap: cwebp subprocess in image_runtime, bootstrap.sh packages, i18n install hint, docs and tests adapted | 6c78c55, dcf23dc, a8c8b7b |
 
 ## Log
 
@@ -42,4 +43,4 @@ embeds lighter copies. Artifacts stay in English (repo policy).
   capability probe in a separate interpreter (R3-WEBP-INTERPRETER), angle-bracketed destinations
   with spaces never collected (R3-WEBP-PATH-SPACES), and the converted-count summary counting
   mappings instead of verified embeddings (R4-002).
-
+- L6 (user decision): "entonces igual es mejor utilizar cwebp no?" … "lo que esta claro es que haciendo un make install-local-dev no carga el conversor" — the codec becomes the system binary cwebp (never compiled in-tree: packaged by apt `webp`, brew `webp`, pacman `libwebp`, dnf/yum/apk `libwebp-tools`), integrated into the existing dependency installer `scripts/delivery/bootstrap.sh` rather than `install-local-dev`, which stays a payload linker.

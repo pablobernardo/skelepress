@@ -16,10 +16,10 @@ The project follows semantic versioning and keeps two versioned contracts:
   and JPEG (quality 85) images to WebP before `--embed-resources` inlines
   them, so screenshot-heavy books stop paying base64's third again on every
   image. Source files are never modified, SVG/GIF/WebP stay untouched, and a
-  copy that is not smaller keeps the original. The codec comes from Pillow
-  (`python3 -m pip install Pillow`); `skelepress doctor` checks it when the
-  option is enabled, and a render without it degrades with a note instead of
-  failing. Contract version stays `1`.
+  copy that is not smaller keeps the original. The codec is the system binary
+  `cwebp` (bootstrap.sh installs it; apt/brew `webp`, pacman `libwebp`,
+  dnf/yum/apk `libwebp-tools`); `skelepress doctor` checks it when the option
+  is enabled, and a render without it degrades with a note instead of failing. Contract version stays `1`.
 
 ## [3.6.0] - 2026-11-26
 
