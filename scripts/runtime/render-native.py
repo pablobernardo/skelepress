@@ -66,7 +66,7 @@ def file_stem(document: dict, output: dict) -> str:
 DOCUMENT_VAR_FIELDS = ("title", "subtitle", "publisher", "author", "date", "rights")
 
 # babel wants a language name, the contract uses the code.
-BABEL_LANGS = {"en": "english", "es": "spanish", "pt": "portuguese", "gl": "galician"}
+BABEL_LANGS = {"en": "english", "es": "spanish", "pt": "portuguese", "gl": "galician", "fr": "french", "de": "german", "it": "italian", "ca": "catalan", "nl": "dutch", "da": "danish", "nb": "norsk", "sv": "swedish"}
 # English is the default: the toolkit is consumed across languages, so the
 # fallback cannot be the language of one of them. Declare document.language to
 # get another one.
@@ -80,7 +80,7 @@ FORMAT_HTML = "html"
 FORMAT_CHOICES = (FORMAT_PDF, FORMAT_EPUB, FORMAT_HTML)
 
 # EPUB records BCP 47 language tags, not babel names.
-EPUB_LANGS = {"en": "en", "es": "es", "pt": "pt", "gl": "gl"}
+EPUB_LANGS = {"en": "en", "es": "es", "pt": "pt", "gl": "gl", "fr": "fr", "de": "de", "it": "it", "ca": "ca", "nl": "nl", "da": "da", "nb": "nb", "sv": "sv"}
 DEFAULT_EPUB_LANGUAGE = "en"
 
 # The HTML reader is a toolkit asset like the .tex styles: one path below the

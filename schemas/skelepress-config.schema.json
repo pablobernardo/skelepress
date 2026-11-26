@@ -39,7 +39,7 @@
         "author": { "type": "string" },
         "date": { "type": "string" },
         "rights": { "type": "string" },
-        "language": { "type": "string", "enum": ["en", "es", "pt", "gl"] },
+        "language": { "type": "string", "enum": ["en", "es", "pt", "gl", "fr", "de", "it", "ca", "nl", "da", "nb", "sv"] },
         "titlepage": { "type": "boolean" },
         "metadata": {
           "type": "object",

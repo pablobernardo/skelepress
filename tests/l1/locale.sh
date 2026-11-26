@@ -56,7 +56,9 @@ run_locale_command_tests() {
   assert_contains "$out" "(source|fuente|origem|orixe): project_config" "locale show reports project source"
 
   set +e
-  HOME="$tmp_home" XDG_CONFIG_HOME="$tmp_home/.config" "$CLI" locale set fr >"$out" 2>&1
+  # fr became a supported locale: the rejection case needs a code no catalog
+  # ships, and one that stays outside the document.language enum too.
+  HOME="$tmp_home" XDG_CONFIG_HOME="$tmp_home/.config" "$CLI" locale set xx >"$out" 2>&1
   local code=$?
   set -e
   assert_exit_code "1" "$code" "locale set fails with unsupported locale"
