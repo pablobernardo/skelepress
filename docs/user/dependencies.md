@@ -1,4 +1,6 @@
-# Optional PDF layout dependencies
+# Optional render dependencies
+
+## Optional PDF layout dependencies
 
 Enable `pandoc.running_headers: true` for the shipped default or book PDF
 template only when the TeX toolchain provides **`truncate.sty`** and
@@ -31,3 +33,21 @@ the toolkit does not change a host installation. The broader installation and
 version policy remains in [dependency policy](../dev/dependency-policy.md).
 
 See [running-header layout and page exceptions](usage.md#pdf-running-headers).
+
+## Optional WebP image conversion
+
+Enable `output.html.image_conversion: true` for the self-contained HTML only
+when Python has **Pillow with WebP support** installed: `python3 -m pip install
+Pillow`. The PyPI wheels bundle the libwebp codec, so no system package is
+needed on any platform; only a source-built Pillow without `libwebp` would
+lack the codec.
+
+`skelepress doctor` probes the codec when the configuration enables the
+option and reports the same way as any missing dependency, with the install
+command in the message. A render without the capability is not a failure: it
+continues embedding the original images and says so in a localized note, so
+CI cannot silently degrade a book the operator meant to ship lighter —
+`doctor` is the check to trust before a release render.
+
+See [lighter embedded images](usage.md#lighter-embedded-images-output-html-image-conversion).
+
