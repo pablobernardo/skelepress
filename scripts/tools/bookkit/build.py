@@ -507,10 +507,10 @@ def build_volume(
         template_used = DEFAULT_TEMPLATE
 
     # Where the volume's output is decided. The contract pins the vocabulary
-    # (pdf, epub), so the shape and values are already validated; the format
-    # list only decides what the generated configuration asks for.
+    # (pdf, epub, html), so the shape and values are already validated; the
+    # format list only decides what the generated configuration asks for.
     formats = output_formats(merged)
-    epub_requested = "epub" in formats
+    latex_switches_gated = any(fmt != LATEX_ONLY_FORMAT for fmt in formats)
 
     front = resolve_listed(
         ordered_entries("front_matter", merged.get("front_matter"), volume_name), volume_dir
@@ -547,15 +547,12 @@ def build_volume(
     # directories. explicit_files resolves against the volume directory
     # (input.chapters_dir is "."), so the tool computes the relative hops.
     # The switches are LaTeX: when the volume outputs more than PDF they are
-    # format-gated entries, so an EPUB never receives them.
+    # format-gated entries, so a non-PDF job never receives them.
     generated_dir = out_volume_dir / "generated"
-    # The gate is "any requested format that cannot consume LaTeX switches";
-    # today the only such format is epub, so this stays a boolean read off the
-    # declared formats. format_gated_entry hardcodes the LaTeX job as pdf and
-    # emit_config keys the xelatex entry in runtime.required_commands on the
-    # same fact: extend the format vocabulary and re-check all three spots
-    # (LATEX_ONLY_FORMAT is the marker they must agree on).
-    latex_switches_gated = epub_requested
+    # The gate is "any requested format that cannot consume LaTeX switches":
+    # epub and html both qualify. format_gated_entry hardcodes the LaTeX job
+    # as pdf and emit_config keys the xelatex entry in runtime.required_commands
+    # on the same fact; the three spots agree through LATEX_ONLY_FORMAT.
     mainmatter_file = generated_dir / "00-mainmatter.md"
     mainmatter_text = "\\mainmatter\n"
     if chapter_start is not None:

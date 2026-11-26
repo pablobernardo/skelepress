@@ -9,6 +9,13 @@ The project follows semantic versioning and keeps two versioned contracts:
 
 ## [Unreleased]
 
+### Fixed
+
+- `skelepress book` accepts `html` in a series/volume `formats` list: the
+  schemas gate the vocabulary, an HTML job joins the LaTeX-switch gate (the
+  generated configuration demands no TeX engine for an HTML-only volume),
+  and the volume plans the self-contained reader artifact (#258).
+
 ### Added
 
 - `html` as a third value for `output.formats`: one self-contained HTML file
