@@ -11,6 +11,7 @@ directory owned by the render, and the original paths stay as declared.
 
 from __future__ import annotations
 
+import hashlib
 import re
 import subprocess
 from pathlib import Path
@@ -143,7 +144,9 @@ def convert_images_for_html(
         if absolute in mapping:
             continue
 
-        target = work_dir / f"{source.stem}.webp"
+        # One unique copy per source: same-stem sources must never share a target.
+        digest = hashlib.sha256(absolute.encode("utf-8")).hexdigest()[:12]
+        target = work_dir / f"{digest}-{source.name}.webp"
         options = (
             {"lossless": True, "quality": PNG_LOSSLESS_QUALITY}
             if source.suffix.lower() == ".png"

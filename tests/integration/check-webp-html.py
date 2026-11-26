@@ -190,6 +190,23 @@ class WebpArtifactTest(unittest.TestCase):
         self.assertIn("Not converted", result.stdout)
         self.assertIn("media/nope.png", result.stdout)
 
+    def test_same_stem_images_in_different_directories_never_share_a_copy(self):
+        import io
+
+        from PIL import Image  # type: ignore[import-not-found]  # capability-guarded above
+
+        media = self.root / "chapters"
+        for colour, rel in (((10, 20, 30), "one/pic.png"), ((240, 220, 200), "two/pic.png")):
+            (media / rel).parent.mkdir(parents=True, exist_ok=True)
+            buf = io.BytesIO()
+            Image.new("RGB", (40, 30), colour).save(buf, format="PNG")
+            (media / rel).write_bytes(buf.getvalue())
+        (media / "one.md").write_text("# One\n\n![a](one/pic.png)\n\n![b](two/pic.png)\n\nBye.\n")
+        result = self.render()
+        artifact = next((self.root / "out").glob("*.html"))
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(artifact.read_text(encoding="utf-8").count("data:image/webp;"), 2)
+
     def test_config_without_conversion_keeps_png_bytes(self):
         self.config["output"]["html"] = {"reader": True}
         result = self.render()
