@@ -9,6 +9,15 @@ The project follows semantic versioning and keeps two versioned contracts:
 
 ## [Unreleased]
 
+### Added
+
+- `fr`, `de`, `it`, `ca`, `nl`, `da`, `nb` and `sv` as values for
+  `document.language` and CLI locales: eight full message catalogs enter the
+  toolkit alongside en/es/pt/gl, with the babel and EPUB language maps
+  extended to match. Russian stays out for now: it needs a transliteration
+  policy for slugs (Cyrillic collapses under the ASCII slug) before it can
+  ship.
+
 ### Fixed
 
 - `skelepress book` accepts `html` in a series/volume `formats` list: the
