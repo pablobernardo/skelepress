@@ -7,7 +7,7 @@ The project follows semantic versioning and keeps two versioned contracts:
 - `VERSION` for the toolkit version
 - `skelepress.config.yaml -> version` for the configuration contract
 
-## [Unreleased]
+## [3.6.0] - 2026-11-26
 
 ### Added
 
