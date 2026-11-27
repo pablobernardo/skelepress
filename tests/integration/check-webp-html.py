@@ -5,6 +5,7 @@ Plan assertions run dry and need no pandoc. The conversion renders need a real
 pandoc and a real `cwebp`; the degradation class hides `cwebp` behind a stub
 PATH, so it observes the note instead of depending on what the host lacks.
 """
+import contextlib
 import json
 import os
 import shutil
@@ -235,8 +236,23 @@ class WebpDegradationTest(unittest.TestCase):
             shim = bin_dir / forwarded
             shim.write_text("#!/bin/sh\nexec '" + real + "' \"$@\"\n")
             shim.chmod(0o755)
+        # Mirror every other executable the runner's own PATH provides, but
+        # never the codec: whether cwebp degrades must not depend on where
+        # (or whether) the host installed it, /usr/bin included.
+        masked = {"cwebp"}
+        provided = {entry.name for entry in bin_dir.iterdir()}
+        for directory in os.environ.get("PATH", "").split(os.pathsep):
+            if not directory or not Path(directory).is_dir():
+                continue
+            for entry in Path(directory).iterdir():
+                if entry.name in masked or entry.name in provided:
+                    continue
+                if entry.is_file() and os.access(entry, os.X_OK):
+                    with contextlib.suppress(OSError):
+                        (bin_dir / entry.name).symlink_to(entry)
+                provided.add(entry.name)
         return {**os.environ, "SKELEPRESS_LANG": "en",
-                "PATH": os.pathsep.join([str(bin_dir), "/usr/bin", "/bin"])}
+                "PATH": str(bin_dir)}
 
     def render(self, env):
         self.path.write_text(json.dumps(self.config))
