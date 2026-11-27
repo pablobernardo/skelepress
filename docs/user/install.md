@@ -136,6 +136,7 @@ Install at least:
 - YAML parser: **PyYAML** for Python or **Ruby's stdlib YAML**
 - `curl`
 - `mmdc` (Mermaid CLI)
+- `cwebp` — only for `output.html.image_conversion: true`; `make bootstrap` installs it (the package is `webp` in apt and Homebrew, `libwebp` in pacman, `libwebp-tools` in dnf/yum/apk/zypper; manual instructions at [optional dependencies](dependencies.md#optional-webp-image-conversion)). A render without it degrades to the original images with a note rather than failing.
 - Optional: **GNU FreeSerif**, so the six ballot/warning symbols (`☐ ☑ ☒ ✅ ❌ ⚠`)
   appear in PDF prose and inline code. A full TeX Live/MacTeX install already
   ships it; on Debian/Ubuntu: `sudo apt install fonts-freefont-ttf`. Without it
