@@ -128,6 +128,15 @@ the others are translations, not copies.
 ## Commits and pull requests
 
 - Branch from `main`, one branch per change.
+- Work on a feature or fix inside a **sibling worktree** of the primary clone,
+  never a directory inside the repository: `git worktree add
+  ../skelepress-<branch> -b <branch>` from the primary checkout, with `/` in
+  the branch name replaced by `-` (branch `docs/worktree-policy` lives at
+  `../skelepress-docs-worktree-policy`). The primary checkout stays on `main`
+  for releases and small fixes; the sibling naming keeps worktree checkouts
+  recognisable at a glance, and `git worktree list` is always the ground truth
+  about which checkout holds what. Remove the worktree and its branch after
+  the pull request merges.
 - Conventional Commits: `feat:`, `fix:`, `docs:`, `test:`, `ci:`, `refactor:`.
 - Tests and documentation belong in the same commit as the behaviour.
 - Keep a pull request reviewable, around 400 changed lines; beyond that, split it.
