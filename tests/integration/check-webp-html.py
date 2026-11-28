@@ -208,7 +208,12 @@ class WebpArtifactTest(unittest.TestCase):
 
 
 class WebpDegradationTest(unittest.TestCase):
-    """Without cwebp on PATH the render continues with the original bytes."""
+    """Without cwebp on PATH the render continues with the original bytes.
+
+    The class forwards the real pandoc and python3 into the mocked PATH;
+    a host missing either has no observable degradation render to run, and
+    mocked_env then skips the test instead of trusting a fallback shim.
+    """
 
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -232,7 +237,11 @@ class WebpDegradationTest(unittest.TestCase):
             (bin_dir / command).write_text("#!/bin/sh\nexit 0\n")
             (bin_dir / command).chmod(0o755)
         for forwarded in ("pandoc", "python3"):
-            real = shutil.which(forwarded) or forwarded
+            real = shutil.which(forwarded)
+            if real is None:
+                # A bare-name fallback would put this mock dir first on the
+                # child PATH and exec itself: that is the CI hang of #262.
+                raise unittest.SkipTest(f"a real {forwarded} is required to observe the degradation")
             shim = bin_dir / forwarded
             shim.write_text("#!/bin/sh\nexec '" + real + "' \"$@\"\n")
             shim.chmod(0o755)
